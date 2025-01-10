@@ -11,23 +11,18 @@ import {
   Pressable
 } from "react-native";
 import { useState ,useRef} from "react";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import BottomSheet, { BottomSheetRef } from "@/Components/Bottomsheet";
+
+import  {Countries} from "@/Constants/Country"
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 export default function Explore() {
   const [isEnabled, setIsEnabled] = useState(false);
   const[open,setOpen]=useState(false);
   const toggleSwitch = () => {
     setIsEnabled((prev) => !prev);
   };
-  const bottomSheetRef = useRef<BottomSheetRef>(null);
-   
-  const openBottomSheet=()=>{
-    
-    bottomSheetRef.current?.open()
-  }
-
-  
+ 
   return (
     <SafeAreaView style={styles.mainContainer}>
       <FlatList
@@ -36,7 +31,7 @@ export default function Explore() {
           <View style={styles.mainContainer}>
             <View style={styles.propertyContainer}>
               <View style={{position:"relative"}}>
-              <Pressable onPress={openBottomSheet}>
+              <Pressable >
               
               <Image
                 
@@ -109,7 +104,23 @@ export default function Explore() {
                 onValueChange={toggleSwitch}
                 value={isEnabled}
               />
-            </View>
+                </View>
+              <View style={{flex:1,margin:8,marginTop:15}}>
+                <FlatList
+                  data={Countries}
+                  keyExtractor={(item,index)=>index.toString()}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  renderItem={({item})=>(
+                    <View style={{flex:1,alignItems:"center"}} >
+                      <Image source={{uri:item.imageUrl}} style={{width:100,height:100,margin:4,borderRadius:100}}/>
+                      <Text>{item.name}</Text>
+                    </View>
+                  )} 
+                />
+              </View>  
+
+             
             <View style={styles.featuredText}>
               <Text style={{ fontSize: 20, fontWeight: "bold" }}>
                 Featured places to stay
@@ -122,7 +133,7 @@ export default function Explore() {
         }
         
       />
-      <BottomSheet ref={bottomSheetRef} />
+      
     </SafeAreaView>
   );
 }
@@ -130,15 +141,14 @@ export default function Explore() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#fff",
-
+    backgroundColor: "#fff", // Original white background
     alignItems: "center",
     width: "100%",
     height: "100%",
   },
   input: {
     textAlign: "left",
-    width: "75%",
+    width: "75%", // Limit the width
     height: 50,
     backgroundColor: "#fff",
     borderRadius: 20, // Rounded corners
@@ -146,14 +156,17 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     fontSize: 20,
     shadowColor: "#000",
-    elevation: 20,
-    shadowOffset: { width: 5, height: 40 },
+    elevation: 10, // Slightly reduced shadow elevation for subtlety
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.2, 
+    flexShrink: 1,  // Prevent it from expanding beyond the container
+    maxWidth: "100%", // Prevents it from overflowing
+    overflow: 'hidden',
   },
   switchContainer: {
     flex: 1,
     flexDirection: "row",
     width: "100%",
-    // backgroundColor:"pink",
     maxHeight: 50,
     justifyContent: "space-around",
     alignItems: "center",
@@ -164,13 +177,12 @@ const styles = StyleSheet.create({
   },
   featuredText: {
     width: "100%",
-    padding: 30,
+    padding: 20,
   },
   imageContainer: {
     width: 300,
     height: 300,
     borderRadius: 10,
-    //position:"relative"
   },
   propertyContainer: {
     margin: 15,
