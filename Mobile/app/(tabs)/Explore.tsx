@@ -16,13 +16,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Countries } from "@/Constants/Country";
 import { propertyTypes } from "@/Constants/Country";
 import Ionicons from "@expo/vector-icons/Ionicons";
-
+import { useRouter } from "expo-router";
 export default function Explore() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [open, setOpen] = useState(false);
   const toggleSwitch = () => {
     setIsEnabled((prev) => !prev);
   };
+  const router = useRouter();
+  const handleImageTap=()=>{
+    router.push('/(screens)/PropertyInfo')
+  }
 
   return (
     <SafeAreaView style={styles.mainContainer}>
@@ -32,7 +36,7 @@ export default function Explore() {
           <View style={styles.mainContainer}>
             <View style={styles.propertyContainer}>
               <View style={{ position: "relative" }}>
-                <Pressable>
+                <Pressable onPress={handleImageTap} hitSlop={{ top: 0, bottom: 0, left: 0, right: 0 }}>
                   <Image
                     style={styles.imageContainer}
                     source={{
@@ -97,12 +101,14 @@ export default function Explore() {
             </View>
             <View style={styles.propertyContainer}>
               <View style={{ position: "relative" }}>
-                <Image
-                  style={styles.imageContainer}
-                  source={{
-                    uri: "https://img.freepik.com/free-photo/view-beautiful-blooming-roses_23-2150718897.jpg?t=st=1736506501~exp=1736510101~hmac=85f18cdc7f74a8956c6ea11793b7f77dffdca04b83b087a65c3814f412bbde47&w=996",
+                
+                 <Image
+                   style={styles.imageContainer}
+                   source={{
+                     uri: "https://img.freepik.com/free-photo/view-beautiful-blooming-roses_23-2150718897.jpg?   t=st=1736506501~exp=1736510101~hmac=85f18cdc7f74a8956c6ea11793b7f77dffdca04b83b087a65c3814f412bbde47&w=996",
                   }}
                 />
+                
                 <Ionicons
                   style={{
                     position: "absolute",
