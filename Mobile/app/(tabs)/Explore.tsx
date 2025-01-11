@@ -17,6 +17,7 @@ import { Countries } from "@/Constants/Country";
 import { propertyTypes } from "@/Constants/Country";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
+
 export default function Explore() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -24,9 +25,9 @@ export default function Explore() {
     setIsEnabled((prev) => !prev);
   };
   const router = useRouter();
-  const handleImageTap=()=>{
-    router.push('/(screens)/PropertyInfo')
-  }
+  const handleImageTap = () => {
+    router.push('/(screens)/PropertyInfo');
+  };
 
   return (
     <SafeAreaView style={styles.mainContainer}>
@@ -35,7 +36,7 @@ export default function Explore() {
         renderItem={({ item }) => (
           <View style={styles.mainContainer}>
             <View style={styles.propertyContainer}>
-              <View style={{ position: "relative" }}>
+              <View style={styles.imageWrapper}>
                 <Pressable onPress={handleImageTap} hitSlop={{ top: 0, bottom: 0, left: 0, right: 0 }}>
                   <Image
                     style={styles.imageContainer}
@@ -46,30 +47,23 @@ export default function Explore() {
                 </Pressable>
 
                 <Ionicons
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    left: "87%",
-                    backgroundColor: "rgba(0,0,0,0.3)",
-                    borderRadius: 100,
-                    padding: 4,
-                  }}
+                  style={styles.icon}
                   size={20}
                   name="heart-outline"
                   color={"white"}
                 />
               </View>
-              <Text style={{ color: "gray", padding: 2 }}>1 beds</Text>
-              <Text style={{ fontSize: 17, fontWeight: 500, padding: 2 }}>
+              <Text style={styles.propertyText}>1 beds</Text>
+              <Text style={styles.propertyTitle}>
                 VS ID - X3DQ0BS, Villa
               </Text>
-              <Text style={{ color: "gray", padding: 2 }}>
+              <Text style={styles.locationText}>
                 <Ionicons name="location-outline" size={15} color="gray" />
                 30019 Municipal Unit of Palairos Greece
               </Text>
             </View>
             <View style={styles.propertyContainer}>
-              <View>
+              <View style={styles.imageWrapper}>
                 <Image
                   style={styles.imageContainer}
                   source={{
@@ -77,57 +71,41 @@ export default function Explore() {
                   }}
                 />
                 <Ionicons
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    left: "87%",
-                    backgroundColor: "rgba(0,0,0,0.3)",
-                    borderRadius: 100,
-                    padding: 4,
-                  }}
+                  style={styles.icon}
                   size={20}
                   name="heart-outline"
                   color={"white"}
                 />
               </View>
-              <Text style={{ color: "gray", padding: 2 }}>1 beds</Text>
-              <Text style={{ fontSize: 17, fontWeight: 500, padding: 2 }}>
+              <Text style={styles.propertyText}>1 beds</Text>
+              <Text style={styles.propertyTitle}>
                 VS ID - X3DQ0BS, Villa
               </Text>
-              <Text style={{ color: "gray", padding: 2 }}>
+              <Text style={styles.locationText}>
                 <Ionicons name="location-outline" size={15} color="gray" />
                 30019 Municipal Unit of Palairos Greece
               </Text>
             </View>
             <View style={styles.propertyContainer}>
-              <View style={{ position: "relative" }}>
-                
-                 <Image
-                   style={styles.imageContainer}
-                   source={{
-                     uri: "https://img.freepik.com/free-photo/view-beautiful-blooming-roses_23-2150718897.jpg?   t=st=1736506501~exp=1736510101~hmac=85f18cdc7f74a8956c6ea11793b7f77dffdca04b83b087a65c3814f412bbde47&w=996",
+              <View style={styles.imageWrapper}>
+                <Image
+                  style={styles.imageContainer}
+                  source={{
+                    uri: "https://img.freepik.com/free-photo/view-beautiful-blooming-roses_23-2150718897.jpg?t=st=1736506501~exp=1736510101~hmac=85f18cdc7f74a8956c6ea11793b7f77dffdca04b83b087a65c3814f412bbde47&w=996",
                   }}
                 />
-                
                 <Ionicons
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    left: "87%",
-                    backgroundColor: "rgba(0,0,0,0.3)",
-                    borderRadius: 100,
-                    padding: 4,
-                  }}
+                  style={styles.icon}
                   size={20}
                   name="heart-outline"
                   color={"white"}
                 />
               </View>
-              <Text style={{ color: "gray", padding: 2 }}>1 beds</Text>
-              <Text style={{ fontSize: 17, fontWeight: 500, padding: 2 }}>
+              <Text style={styles.propertyText}>1 beds</Text>
+              <Text style={styles.propertyTitle}>
                 VS ID - X3DQ0BS, Villa
               </Text>
-              <Text style={{ color: "gray", padding: 2 }}>
+              <Text style={styles.locationText}>
                 <Ionicons name="location-outline" size={15} color="gray" />
                 30019 Municipal Unit of Palairos Greece
               </Text>
@@ -139,83 +117,41 @@ export default function Explore() {
             <View style={styles.inputDiv}>
               <Ionicons name="search" size={24} color={"gray"} />
               <TextInput
-                style={{ width: "75%" }}
+                style={styles.input}
                 placeholder="Start Search"
                 placeholderTextColor={"gray"}
               />
+              <Ionicons name="options" size={24} color={"gray"} />
             </View>
-            {/* <View style={styles.switchContainer}>
-              <Text style={{ fontSize: 15 }}>Tap for Long Term</Text>
-              <Switch
-                trackColor={{ false: "orange", true: "orange" }}
-                style={styles.switch}
-                thumbColor={"white"}
-                onValueChange={toggleSwitch}
-                value={isEnabled}
-              />
-            </View> */}
 
             <FlatList
-              style={{ padding: 8, height: 140 }}
+              style={styles.horizontalList}
               data={Countries}
               keyExtractor={(item, index) => index.toString()}
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => (
-                <View style={{ alignItems: "center", paddingHorizontal: 2 }}>
+                <View style={styles.countryItem}>
                   <Image
                     source={{ uri: item.imageUrl }}
-                    style={{
-                      width: 100, // Adjusted size for better proportion
-                      height: 100,
-                      marginBottom: 4,
-                      borderRadius: 100,
-                    }}
+                    style={styles.countryImage}
                   />
                   <Text>{item.name}</Text>
                 </View>
               )}
             />
 
-            {/* <View style={styles.featuredText}>
-              <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-                Featured places to stay
-              </Text>
-              <Text style={{ color: "gray" }}>
-                Popular places to stay that vacation saga suggests you.
-              </Text>
-            </View> */}
             <FlatList
-              style={{
-                paddingLeft: 20,
-              }}
+              style={styles.propertyTypeList}
               data={propertyTypes}
               keyExtractor={(item) => item.id.toString()}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingRight: 20,
-              }}
+              contentContainerStyle={styles.propertyTypeContainer}
               renderItem={({ item }) => (
-                <View
-                  style={{
-                    borderColor: "black",
-                    borderWidth: 1,
-                    flex: 1,
-                    height: 32,
-                    width: "auto",
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRadius: 20,
-                    backgroundColor: "#e5e4e2",
-                    padding: 4,
-                    rowGap: 4,
-                    margin: 4,
-                  }}
-                >
+                <View style={styles.propertyTypeItem}>
                   {item.icon}
-                  <Text style={{ margin: 2 }}>{item.name}</Text>
+                  <Text style={styles.propertyTypeText}>{item.name}</Text>
                 </View>
               )}
             />
@@ -229,64 +165,92 @@ export default function Explore() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#fff", // Original white background
+    backgroundColor: "#fff",
     alignItems: "center",
     width: "100%",
     height: "100%",
   },
   inputDiv: {
     textAlign: "left",
-    width: "90%", // Limit the width
+    width: "90%",
     height: 50,
     backgroundColor: "#e5e4e2",
-    borderRadius: 15, // Rounded corners
+    borderRadius: 15,
     margin: 16,
     fontSize: 15,
     paddingHorizontal: 10,
     shadowColor: "#000",
-    elevation: 10, // Slightly reduced shadow elevation for subtlety
+    elevation: 10,
     shadowOffset: { width: 2, height: 4 },
     shadowOpacity: 0.2,
-    flexShrink: 1, // Prevent it from expanding beyond the container
-    maxWidth: "88%", // Prevents it from overflowing
+    flexShrink: 1,
+    maxWidth: "88%",
     overflow: "hidden",
-    display: "flex",
     flexDirection: "row",
     alignItems: "center",
     columnGap: 2,
   },
   input: {
     textAlign: "left",
-    width: "90%", // Limit the width
+    width: "75%",
     height: 50,
     backgroundColor: "#e5e4e2",
-    borderRadius: 15, // Rounded corners
+    borderRadius: 15,
     margin: 16,
     paddingLeft: 20,
     fontSize: 15,
-    shadowColor: "#000",
-    elevation: 10, // Slightly reduced shadow elevation for subtlety
-    shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 0.2,
-    flexShrink: 1, // Prevent it from expanding beyond the container
-    maxWidth: "100%", // Prevents it from overflowing
+    flexShrink: 1,
+    maxWidth: "100%",
     overflow: "hidden",
   },
-  switchContainer: {
-    flex: 1,
-    flexDirection: "row",
-    width: "100%",
-    maxHeight: 50,
-    justifyContent: "space-around",
+  horizontalList: {
+    padding: 8,
+    height: 140,
+  },
+  countryItem: {
     alignItems: "center",
+    paddingHorizontal: 2,
   },
-  switch: {
-    transform: [{ scaleX: 1.5 }, { scaleY: 1.5 }],
-    height: 30,
+  countryImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 4,
+    borderRadius: 100,
   },
-  featuredText: {
-    width: "100%",
-    padding: 20,
+  propertyTypeList: {
+    paddingLeft: 20,
+  },
+  propertyTypeContainer: {
+    paddingRight: 20,
+  },
+  propertyTypeItem: {
+    borderColor: "black",
+    borderWidth: 1,
+    flex: 1,
+    height: 32,
+    width: "auto",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 20,
+    backgroundColor: "#e5e4e2",
+    padding: 4,
+    rowGap: 4,
+    margin: 4,
+  },
+  propertyTypeText: {
+    margin: 2,
+  },
+  icon: {
+    position: "absolute",
+    top: 10,
+    left: "87%",
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 100,
+    padding: 4,
+  },
+  imageWrapper: {
+    position: "relative",
   },
   imageContainer: {
     width: 300,
@@ -295,5 +259,18 @@ const styles = StyleSheet.create({
   },
   propertyContainer: {
     margin: 15,
+  },
+  propertyText: {
+    color: "gray",
+    padding: 2,
+  },
+  propertyTitle: {
+    fontSize: 17,
+    fontWeight: 500,
+    padding: 2,
+  },
+  locationText: {
+    color: "gray",
+    padding: 2,
   },
 });

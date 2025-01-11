@@ -13,7 +13,6 @@ export default function _layout() {
         {/* <Slot/> */}
         <Stack screenOptions={{ headerShown: false }}/>
     </GestureHandlerRootView>
-    
   )
 }
 
