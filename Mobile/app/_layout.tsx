@@ -7,12 +7,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Slot } from 'expo-router'
 export default function _layout() {
   const isDarkMode = useColorScheme() === 'dark';
-  return (
+  return(
     <GestureHandlerRootView>
         <StatusBar barStyle="dark-content" backgroundColor="white"    />
-        {/* <Slot/> */}
         <Stack screenOptions={{ headerShown: false }}/>
     </GestureHandlerRootView>
-  )
+ )
 }
 

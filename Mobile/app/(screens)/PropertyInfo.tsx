@@ -1,4 +1,4 @@
-import { Entypo, FontAwesome6, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Entypo, FontAwesome6, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import {
   Text,
@@ -30,6 +30,7 @@ export default function PropertyInfo() {
 
       <FlatList
         data={[1]}
+        contentContainerStyle={styles.flatListContainer}
         renderItem={() => (
           <View>
             <View style={styles.apartmentTag}>
@@ -72,50 +73,128 @@ export default function PropertyInfo() {
                 </Text>
               </View>
 
-              <View>
+              <View >
                 <Text style={styles.sectionTitle}>Amenities</Text>
-                <View style={styles.amenitiesContainer}>
-                  <View style={styles.amenityItem}>
-                    <Ionicons name="wifi" size={20} />
-                    <Text>Wifi</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <Ionicons name="tv-outline" size={20} />
-                    <Text>Tv</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <Entypo name="air" size={20} />
-                    <Text>Air-Conditioning</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <MaterialCommunityIcons name="door-closed" size={20} />
-                    <Text>Private Entrance</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <MaterialCommunityIcons name="hair-dryer-outline" size={20} />
-                    <Text>Dryer</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <MaterialCommunityIcons name="washing-machine" size={20} />
-                    <Text>Washing Machine</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <FontAwesome6 name="jug-detergent" size={20} />
-                    <Text>Detergent</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <MaterialCommunityIcons name="desk" size={20} />
-                    <Text>Desk</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <MaterialCommunityIcons name="fridge-outline" size={20} />
-                    <Text>Refrigerator</Text>
-                  </View>
-                  <View style={styles.amenityItem}>
-                    <MaterialCommunityIcons name="silverware-clean" size={20} />
-                    <Text>Cleaning products</Text>
-                  </View>
+                {/* <View style={{display:"flex",flexDirection:"row",borderColor:"black",borderWidth:1}}> */}
+                    <View style={styles.amenitiesContainer}>
+                      <View style={styles.amenityItem}>
+                        <Ionicons name="wifi" size={20} />
+                        <Text>Wifi</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <Ionicons name="tv-outline" size={20} />
+                        <Text>Tv</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <Entypo name="air" size={20} />
+                        <Text>Air-Conditioning</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <MaterialCommunityIcons name="door-closed" size={20} />
+                        <Text>Private Entrance</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <MaterialCommunityIcons name="hair-dryer-outline" size={20} />
+                        <Text>Dryer</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <MaterialCommunityIcons name="washing-machine" size={20} />
+                        <Text>Washing Machine</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <FontAwesome6 name="jug-detergent" size={20} />
+                            <Text>Detergent</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <MaterialCommunityIcons name="desk" size={20} />
+                        <Text>Desk</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <MaterialCommunityIcons name="fridge-outline" size={20} />
+                        <Text>Refrigerator</Text>
+                      </View>
+                      <View style={styles.amenityItem}>
+                        <MaterialCommunityIcons name="silverware-clean" size={20} />
+                        <Text>Cleaning products</Text>
+                      </View>
+                   </View>
+               
+                
+              </View>
+              <View>   
+                <Text style={styles.sectionTitle}>Room Rates</Text>
+                <Text style={styles.stayInfoText}>Prices may increase in weekends and holidays</Text>
+                
+                <View style={styles.rateItem}>
+                    <Text>Monday-Thursday</Text>
+                    <Text>€115</Text>
                 </View>
+
+                <View style={styles.rateItem}>
+                    <Text>Friday-Sunday</Text>
+                    <Text>€115</Text>
+                </View>
+
+                <View style={styles.rateItem}>
+                    <Text>Weekly Discount</Text>
+                    <Text>€</Text>
+                </View>
+
+                <View style={styles.rateItem}>
+                    <Text>Minimum number of nights</Text>
+                    <Text>7 nights</Text>
+                </View>
+
+                <View style={styles.rateItem}>
+                    <Text>Max number of nights</Text>
+                    <Text>21 nights</Text>
+                </View>
+                
+
+              </View>
+
+              <View>
+                <Text style={styles.sectionTitle}>Host information</Text>
+                <View style={styles.hostInfo}>
+                  <Image style={styles.hostImage} source={{uri:"https://cdn.pixabay.com/photo/2015/01/27/09/58/man-613601_640.jpg"}}/>
+                  <Text style={{fontSize:20}}>Viki</Text>
+                </View>
+                <View style={styles.container}>
+                   <View style={styles.hostItem}>
+                       <MaterialIcons name="date-range" size={20} />
+                       <Text>Joined long time ago</Text>
+                   </View>
+                   <View style={styles.hostItem}>
+                       <MaterialCommunityIcons name="message-text-outline" size={20} />
+                       <Text>Response rate - 100%</Text>
+                   </View>
+                   <View style={styles.hostItem}>
+                       <MaterialCommunityIcons name="clock-time-nine-outline" size={20} />
+                       <Text>Fast response - within a few hours</Text>
+                   </View>
+                   <View style={styles.hostItem}>
+                       <Ionicons name="language-outline" size={20} />
+                       <Text>Language Spoken - English , Greek</Text>
+                   </View>
+                </View>
+              </View>
+              <View>
+                <Text style={styles.sectionTitle}>Things to Know</Text>
+                <Text style={styles.subheading}>Check-in time</Text>
+                <View style={styles.rateItem}>
+                    <Text>Check-in Time</Text>
+                    <Text>15:00</Text>
+                </View>
+                <View style={styles.rateItem}>
+                    <Text>Check-out Time</Text>
+                    <Text>11:00</Text>
+                </View>
+                <View style={styles.container}>
+                  <Text style={styles.specialnote}>Special note</Text>
+                  <Text>No smoking in common area</Text>
+                  <Text>No cooking in bedroom</Text>
+                </View>
+                
               </View>
             </View>
           </View>
@@ -201,15 +280,73 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   stayInfoText: { textAlign: "justify", marginHorizontal: 15, marginTop: 4 },
+  container:{
+    marginHorizontal: 15,
+    display: "flex",
+    gap: 10,
+    marginTop: 10,
+
+  },
   amenitiesContainer: {
     marginHorizontal: 15,
     display: "flex",
+    flexDirection:"row",
+    flexWrap:"wrap",
     gap: 10,
     marginTop: 10,
   },
   amenityItem: {
     display: "flex",
     gap: 4,
+    borderColor:"black",
+    borderWidth:1,
+    borderRadius:20,
+    padding:5,
     flexDirection: "row",
   },
+  hostItem:{
+    display: "flex",
+    gap: 4,
+    flexDirection: "row",
+
+  },
+  flatListContainer:{
+    paddingBottom:20
+  },
+  rateItem:{
+    display:"flex",
+    flexDirection:"row",
+    gap:4,
+    marginTop:10,
+    justifyContent:"space-between",
+    paddingHorizontal:15
+
+  },
+  hostInfo:{
+    display: "flex",
+    gap: 8,
+    flexDirection: "row",
+    alignItems:"center",
+    marginHorizontal:15,
+    marginTop:10,
+
+  },
+  hostImage:{
+    height:60,
+    width:60,
+    borderRadius:100,
+    objectFit:"cover"
+  },
+  subheading:{
+    fontSize: 20,
+    marginHorizontal: 15,
+    fontWeight: "400",
+  },
+  specialnote:{
+    fontSize: 20,
+    
+    fontWeight: "400",
+    marginTop:15
+  }
+  
 });
