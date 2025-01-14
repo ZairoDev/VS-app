@@ -178,24 +178,23 @@ export default function PropertyInfo() {
                    </View>
                 </View>
               </View>
-              <View>
-                <Text style={styles.sectionTitle}>Things to Know</Text>
-                <Text style={styles.subheading}>Check-in time</Text>
+              <View style={{borderColor:"black",borderWidth:1,marginHorizontal:15,marginTop:10, borderRadius:10}}>
+                
                 <View style={styles.rateItem}>
-                    <Text>Check-in Time</Text>
-                    <Text>15:00</Text>
+                    <Text style={{fontSize:15,fontWeight:500}}>Check-in Time</Text>
+                    <Text style={{fontSize:15,fontWeight:500}}>Check-out Time</Text>
                 </View>
                 <View style={styles.rateItem}>
-                    <Text>Check-out Time</Text>
+                    <Text>15:00</Text>
                     <Text>11:00</Text>
                 </View>
+              </View>
                 <View style={styles.container}>
-                  <Text style={styles.specialnote}>Special note</Text>
+                  
                   <Text>No smoking in common area</Text>
                   <Text>No cooking in bedroom</Text>
                 </View>
                 
-              </View>
             </View>
           </View>
         )}
@@ -317,7 +316,7 @@ const styles = StyleSheet.create({
     display:"flex",
     flexDirection:"row",
     gap:4,
-    marginTop:10,
+    margin:5,
     justifyContent:"space-between",
     paddingHorizontal:15
 
@@ -329,7 +328,6 @@ const styles = StyleSheet.create({
     alignItems:"center",
     marginHorizontal:15,
     marginTop:10,
-
   },
   hostImage:{
     height:60,
@@ -348,5 +346,4 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginTop:15
   }
-  
 });
