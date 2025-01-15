@@ -143,7 +143,7 @@ const PropertySchema: Schema = new Schema(
   },
   { timestamps: true }
 );
-
+  
 // Property Model Export
 export const Properties =
   mongoose.models?.properties || mongoose.model("properties", PropertySchema);

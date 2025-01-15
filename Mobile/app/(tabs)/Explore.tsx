@@ -17,10 +17,11 @@ import { Countries } from "@/Constants/Country";
 import { propertyTypes } from "@/Constants/Country";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
-
+import axios from 'axios';
 export default function Explore() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [open, setOpen] = useState(false);
+  
   const toggleSwitch = () => {
     setIsEnabled((prev) => !prev);
   };
@@ -28,6 +29,9 @@ export default function Explore() {
   const handleImageTap = () => {
     router.push('/(screens)/PropertyInfo');
   };
+  
+  
+
 
   return (
     <SafeAreaView style={styles.mainContainer}>

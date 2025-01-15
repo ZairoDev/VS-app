@@ -7,7 +7,7 @@ export default function Wishlist() {
 
   useEffect(() => {
     axios
-      .get("http://192.168.1.163:8000") // Replace with your machine's IP or emulator address
+      .get("http://192.168.1.163:5000") // Replace with your machine's IP or emulator address
       .then((response) => {
         setData(response.data);
       })
