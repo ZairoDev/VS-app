@@ -1,33 +1,51 @@
 import {
   View,
   Text,
-  TextInput,
-  StyleSheet,
-  Platform,
-  TouchableOpacity,
-  Switch,
   Image,
   FlatList,
+  TextInput,
   Pressable,
+  StyleSheet,
 } from "react-native";
-import { useState, useRef } from "react";
+import axios from "axios";
+import { useRouter } from "expo-router";
+import { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Countries } from "@/Constants/Country";
 import { propertyTypes } from "@/Constants/Country";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useRouter } from "expo-router";
 
 export default function Explore() {
-  const [isEnabled, setIsEnabled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [properties, setProperties] = useState([]);
+
   const toggleSwitch = () => {
     setIsEnabled((prev) => !prev);
   };
+
   const router = useRouter();
+
   const handleImageTap = () => {
-    router.push('/(screens)/PropertyInfo');
+    router.push("/(screens)/PropertyInfo");
   };
+
+  const fetchProperties = async () => {
+    try {
+      const response = await axios.get(
+        "http://192.168.1.176:8000/properties/getAllProperties"
+      );
+      console.log("all properties", response.data.properties.length);
+      setProperties(response.data);
+    } catch (err) {
+      console.log("err");
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
 
   return (
     <SafeAreaView style={styles.mainContainer}>
@@ -37,7 +55,10 @@ export default function Explore() {
           <View style={styles.mainContainer}>
             <View style={styles.propertyContainer}>
               <View style={styles.imageWrapper}>
-                <Pressable onPress={handleImageTap} hitSlop={{ top: 0, bottom: 0, left: 0, right: 0 }}>
+                <Pressable
+                  onPress={handleImageTap}
+                  hitSlop={{ top: 0, bottom: 0, left: 0, right: 0 }}
+                >
                   <Image
                     style={styles.imageContainer}
                     source={{
@@ -54,9 +75,7 @@ export default function Explore() {
                 />
               </View>
               <Text style={styles.propertyText}>1 beds</Text>
-              <Text style={styles.propertyTitle}>
-                VS ID - X3DQ0BS, Villa
-              </Text>
+              <Text style={styles.propertyTitle}>VS ID - X3DQ0BS, Villa</Text>
               <Text style={styles.locationText}>
                 <Ionicons name="location-outline" size={15} color="gray" />
                 30019 Municipal Unit of Palairos Greece
@@ -78,9 +97,7 @@ export default function Explore() {
                 />
               </View>
               <Text style={styles.propertyText}>1 beds</Text>
-              <Text style={styles.propertyTitle}>
-                VS ID - X3DQ0BS, Villa
-              </Text>
+              <Text style={styles.propertyTitle}>VS ID - X3DQ0BS, Villa</Text>
               <Text style={styles.locationText}>
                 <Ionicons name="location-outline" size={15} color="gray" />
                 30019 Municipal Unit of Palairos Greece
@@ -102,9 +119,7 @@ export default function Explore() {
                 />
               </View>
               <Text style={styles.propertyText}>1 beds</Text>
-              <Text style={styles.propertyTitle}>
-                VS ID - X3DQ0BS, Villa
-              </Text>
+              <Text style={styles.propertyTitle}>VS ID - X3DQ0BS, Villa</Text>
               <Text style={styles.locationText}>
                 <Ionicons name="location-outline" size={15} color="gray" />
                 30019 Municipal Unit of Palairos Greece

@@ -1,5 +1,5 @@
-import mongoose, { Document, Schema } from "mongoose";
 import { customAlphabet } from "nanoid";
+import mongoose, { Schema } from "mongoose";
 
 const generateVSID = (length: number): string => {
   const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -145,5 +145,4 @@ const PropertySchema: Schema = new Schema(
 );
 
 // Property Model Export
-export const Properties =
-  mongoose.models?.properties || mongoose.model("properties", PropertySchema);
+export const Properties = mongoose.model("properties", PropertySchema);
