@@ -1,12 +1,13 @@
 import React from 'react';
-import {SafeAreaView, View,Image } from "react-native";
+import {SafeAreaView, View,Image , Text} from "react-native";
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+
 import Wishlist from './Wishlist'
 import Explore from './Explore'
 import Menu from "./Menu";
 import Trips from './Trips';
 import Booking from './Booking';
+
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
 export default function Layout() {

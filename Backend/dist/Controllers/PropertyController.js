@@ -7,17 +7,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-;
 import { Properties } from "../models/property.js";
 export const getAllProperties = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("inside getAllProperties");
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 2;
+        const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
         const properties = yield Properties.find().skip(skip).limit(limit);
         res.status(200).json({
             success: true,
-            data: properties
+            data: properties,
         });
     }
     catch (error) {
@@ -25,8 +25,28 @@ export const getAllProperties = (req, res) => __awaiter(void 0, void 0, void 0, 
         res.status(500).json({
             success: false,
             message: "failed to fetch properties",
-            error: error.message
+            error: error.message,
         });
     }
+});
+export const getOneProperty = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("inside one property route");
+    try {
+        const id = req.params.id;
+        console.log("id", id);
+        const ParticularProperty = yield Properties.findById(id);
+        console.log("particularproperty", ParticularProperty);
+        res.status(200).json({
+            success: true,
+            data: ParticularProperty,
+        });
+    }
+    catch (error) {
+        console.error("error fetching properties", error);
+    }
+});
+export const temp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("call in temp");
+    res.json({ message: "successfullllll" });
 });
 //# sourceMappingURL=PropertyController.js.map

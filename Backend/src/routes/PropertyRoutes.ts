@@ -1,9 +1,15 @@
-import {Router} from "express";
+import { Router } from "express";
 
-import { getAllProperties } from "../Controllers/PropertyController.js";
+import {
+  getAllProperties,
+  getOneProperty,
+  temp,
+} from "../Controllers/PropertyController.js";
 
-const router =Router();
+const router = Router();
 
-router.get("/",getAllProperties)
+router.get("/", getAllProperties);
+router.get("/abc", temp);
+router.post("/particularProperty/:id", getOneProperty);
 
 export default router;
