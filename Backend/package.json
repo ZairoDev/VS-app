@@ -2,10 +2,11 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "index.ts",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && node dist/index.js"
+    "dev": "nodemon -r tsconfig-paths/register --exec ts-node src/index.ts",
+    "start": "ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +15,8 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "@types/node": "^22.10.6",
+    "@types/node": "^22.10.7",
+    "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
@@ -24,6 +26,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mongoose": "^8.9.5",
-    "nanoid": "^5.0.9"
+    "nanoid": "^5.0.9",
+    "tsconfig-paths": "^4.2.0"
   }
 }

@@ -1,10 +1,12 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { customAlphabet } from "nanoid";
 
 const generateVSID = (length: number): string => {
   const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const generateUniqueId = customAlphabet(charset, length);
-  return generateUniqueId();
+  let uniqueId = "";
+  for (let i = 0; i < length; i++) {
+    charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return uniqueId;
 };
 
 const PropertySchema: Schema = new Schema(
@@ -143,7 +145,7 @@ const PropertySchema: Schema = new Schema(
   },
   { timestamps: true }
 );
-  
+
 // Property Model Export
 export const Properties =
   mongoose.models?.properties || mongoose.model("properties", PropertySchema);

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { parse } from "path";
 
-import { Properties } from "../models/property.js";
+import { Properties } from "../models/property";
 import mongoose from "mongoose";
 
 export const getAllProperties = async (req: Request, res: Response) => {
@@ -22,7 +22,6 @@ export const getAllProperties = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "failed to fetch properties",
-      error: error.message,
     });
   }
 };

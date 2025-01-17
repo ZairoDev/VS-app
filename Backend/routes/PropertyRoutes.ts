@@ -4,7 +4,7 @@ import {
   getAllProperties,
   getOneProperty,
   temp,
-} from "../Controllers/PropertyController.js";
+} from "../Controllers/PropertyController";
 
 const router = Router();
 
