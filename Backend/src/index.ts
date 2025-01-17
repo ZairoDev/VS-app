@@ -1,9 +1,9 @@
 import cors from "cors";
 import dotenv from "dotenv";
-import express, { Application, Response } from "express";
+import express, { Application, Request, Response } from "express";
 
-import propertyRoutes from "../routes/propertyRoutes";
 import connectMongoDB from "../helper/connection";
+import propertyRoutes from "../routes/propertyRoutes";
 
 //For env File
 dotenv.config();
@@ -16,11 +16,10 @@ app.use(cors());
 // Middeleware
 app.use(express.json());
 
-app.get("/", (res: Response) => {
-  res.json({ name: "Aviral" });
-});
-
 // Routes
+app.get("/", (req: Request, res: Response) => {
+  res.json({ name: "Welcome to Vacationsaga Mobile App" });
+});
 app.use("/properties", propertyRoutes);
 
 // Server Started

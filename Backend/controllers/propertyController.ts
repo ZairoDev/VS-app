@@ -1,17 +1,33 @@
+import { Request, Response, RequestHandler } from "express";
+
 import { Properties } from "../models/properties";
-import { Request, Response } from "express";
-import { RequestHandler } from "express";
 
 const getAllProperties: RequestHandler = async (
   req: Request,
   res: Response
 ) => {
   try {
-    const properties = await Properties.find({}).limit(1);
-    res.json({ data: properties, status: 200 });
+    const { skip, limit } = await req.body;
+
+    const properties = await Properties.find({}).skip(skip).limit(limit);
+
+    res.json({ success: true, data: properties });
   } catch (err) {
     res.json({ error: "Unable to fetch Properties", status: 400 });
   }
 };
 
-export { getAllProperties };
+const getParticularProperty = async (req: Request, res: Response) => {
+  try {
+    const { propertyId } = req.body;
+    console.log("propertyId: ", propertyId);
+
+    const particularProperty = await Properties.findById(propertyId);
+
+    res.send({ data: particularProperty, status: 200 });
+  } catch (err) {
+    res.json({ error: "Unable to fetch Particular Property", status: 400 });
+  }
+};
+
+export { getAllProperties, getParticularProperty };

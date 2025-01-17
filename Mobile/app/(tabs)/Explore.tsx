@@ -4,68 +4,63 @@ import {
   Image,
   FlatList,
   TextInput,
-  Pressable,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import axios from "axios";
-import { useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PropertyInterface } from "@/types";
 import { Countries } from "@/Constants/Country";
-import { propertyTypes } from "@/Constants/Country";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { propertyTypes } from "@/Constants/Country";
 
 export default function Explore() {
-  const [open, setOpen] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [properties, setProperties] = useState([]);
-
-  const toggleSwitch = () => {
-    setIsEnabled((prev) => !prev);
-  };
-
-  const router = useRouter();
-
-  const handleImageTap = () => {
-    router.push("/(screens)/PropertyInfo");
-  };
+  const [skip, setSkip] = useState(0);
+  const [limit, setLimit] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [properties, setProperties] = useState<PropertyInterface[]>([]);
 
   const fetchProperties = async () => {
     try {
-      const response = await axios.get(
-        "http://192.168.1.176:8000/properties/getAllProperties"
+      setLoading(true);
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_BASE_URL}/properties/getAllProperties`,
+        {
+          skip,
+          limit,
+        }
       );
-      console.log("all properties", response.data.properties.length);
-      setProperties(response.data);
+      setProperties((prev) => [...prev, ...response.data.data]);
     } catch (err) {
-      console.log("err");
+      console.log("err in explore page", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [skip]);
 
   return (
     <SafeAreaView style={styles.mainContainer}>
       <FlatList
-        data={[1]}
+        data={properties}
         renderItem={({ item }) => (
           <View style={styles.mainContainer}>
             <View style={styles.propertyContainer}>
               <View style={styles.imageWrapper}>
-                <Pressable
-                  onPress={handleImageTap}
-                  hitSlop={{ top: 0, bottom: 0, left: 0, right: 0 }}
-                >
+                <Link href={`/(screens)/PropertyInfo/${item._id}`}>
                   <Image
                     style={styles.imageContainer}
                     source={{
-                      uri: "https://images.unsplash.com/photo-1544952019-734321a2a151?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Zmxvd2VyJTIwdmFsbGV5fGVufDB8fDB8fHww",
+                      uri: item.propertyCoverFileUrl,
                     }}
                   />
-                </Pressable>
+                </Link>
 
                 <Ionicons
                   style={styles.icon}
@@ -74,59 +69,21 @@ export default function Explore() {
                   color={"white"}
                 />
               </View>
-              <Text style={styles.propertyText}>1 beds</Text>
-              <Text style={styles.propertyTitle}>VS ID - X3DQ0BS, Villa</Text>
-              <Text style={styles.locationText}>
-                <Ionicons name="location-outline" size={15} color="gray" />
-                30019 Municipal Unit of Palairos Greece
+              <Text style={styles.propertyText}>{item.beds} beds</Text>
+              <Text style={styles.propertyTitle}>
+                VS ID - {item.VSID}, Villa
               </Text>
-            </View>
-            <View style={styles.propertyContainer}>
-              <View style={styles.imageWrapper}>
-                <Image
-                  style={styles.imageContainer}
-                  source={{
-                    uri: "https://cdn.pixabay.com/photo/2018/05/16/17/40/tulips-3406530_1280.jpg",
-                  }}
-                />
-                <Ionicons
-                  style={styles.icon}
-                  size={20}
-                  name="heart-outline"
-                  color={"white"}
-                />
-              </View>
-              <Text style={styles.propertyText}>1 beds</Text>
-              <Text style={styles.propertyTitle}>VS ID - X3DQ0BS, Villa</Text>
-              <Text style={styles.locationText}>
+              <Text style={styles.locationText} numberOfLines={1}>
                 <Ionicons name="location-outline" size={15} color="gray" />
-                30019 Municipal Unit of Palairos Greece
-              </Text>
-            </View>
-            <View style={styles.propertyContainer}>
-              <View style={styles.imageWrapper}>
-                <Image
-                  style={styles.imageContainer}
-                  source={{
-                    uri: "https://img.freepik.com/free-photo/view-beautiful-blooming-roses_23-2150718897.jpg?t=st=1736506501~exp=1736510101~hmac=85f18cdc7f74a8956c6ea11793b7f77dffdca04b83b087a65c3814f412bbde47&w=996",
-                  }}
-                />
-                <Ionicons
-                  style={styles.icon}
-                  size={20}
-                  name="heart-outline"
-                  color={"white"}
-                />
-              </View>
-              <Text style={styles.propertyText}>1 beds</Text>
-              <Text style={styles.propertyTitle}>VS ID - X3DQ0BS, Villa</Text>
-              <Text style={styles.locationText}>
-                <Ionicons name="location-outline" size={15} color="gray" />
-                30019 Municipal Unit of Palairos Greece
+                {item.postalCode}, {item.city}, {item.state}
               </Text>
             </View>
           </View>
         )}
+        onEndReached={() => {
+          setSkip((prev) => prev + 10);
+        }}
+        onEndReachedThreshold={0.7}
         ListHeaderComponent={
           <View style={styles.mainContainer}>
             <View style={styles.inputDiv}>
@@ -171,6 +128,9 @@ export default function Explore() {
               )}
             />
           </View>
+        }
+        ListFooterComponent={
+          <View>{loading && <ActivityIndicator size={"large"} />}</View>
         }
       />
     </SafeAreaView>
@@ -287,5 +247,6 @@ const styles = StyleSheet.create({
   locationText: {
     color: "gray",
     padding: 2,
+    maxWidth: "80%",
   },
 });
