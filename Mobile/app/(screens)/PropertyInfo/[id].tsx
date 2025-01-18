@@ -4,11 +4,6 @@ import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
-  Ionicons,
-  MaterialIcons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
-import {
   Text,
   View,
   Image,
@@ -16,8 +11,13 @@ import {
   StatusBar,
   StyleSheet,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import {
+  Ionicons,
+  MaterialIcons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { PropertyInterface } from "@/types";
+import { FontAwesome } from "@expo/vector-icons";
 import { globalStyles } from "@/Constants/Styles";
 
 export default function PropertyInfo() {
@@ -99,7 +99,7 @@ export default function PropertyInfo() {
   const renderAmenities = () => {
     return (
       <View>
-        <Text style={globalStyles.SubHeading}>Amenities</Text>
+        <Text style={globalStyles.Heading}>Amenities</Text>
         <View style={styles.amenitiesContainer}>
           {Object.keys({
             ...property?.generalAmenities,
@@ -115,7 +115,7 @@ export default function PropertyInfo() {
                 )[item] == true && index < 16
             )
             ?.map((amenity, ind) => (
-              <View style={styles.amenityItem}>
+              <View style={styles.amenityItem} key={ind}>
                 <Text>{amenity}</Text>
               </View>
             ))}
@@ -135,33 +135,119 @@ export default function PropertyInfo() {
 
   const renderPricingCard = () => {
     return (
-      <View style={{ borderWidth: 2, borderColor: "blue" }}>
-        <Text style={globalStyles.SubHeading}>Room Rates</Text>
-        <Text>Prices may increase in weekends and holidays</Text>
+      <View>
+        <Text style={globalStyles.Heading}>Room Rates</Text>
+        <Text style={globalStyles.MutedText}>
+          Prices may increase in weekends and holidays
+        </Text>
 
         <View style={styles.rateItem}>
           <Text>Monday-Thursday</Text>
-          <Text>€115</Text>
+          <Text>€ {property?.basePrice}</Text>
         </View>
 
         <View style={styles.rateItem}>
           <Text>Friday-Sunday</Text>
-          <Text>€115</Text>
+          <Text>€ {property?.weekendPrice}</Text>
         </View>
 
         <View style={styles.rateItem}>
           <Text>Weekly Discount</Text>
-          <Text>€</Text>
+          <Text>€ {property?.weeklyDiscount ?? "------"}</Text>
         </View>
 
         <View style={styles.rateItem}>
           <Text>Minimum number of nights</Text>
-          <Text>7 nights</Text>
+          <Text>{property?.night[0]} nights</Text>
         </View>
 
         <View style={styles.rateItem}>
           <Text>Max number of nights</Text>
-          <Text>21 nights</Text>
+          <Text>{property?.night[1]} nights</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderHostInfo = () => {
+    return (
+      <View>
+        <Text style={globalStyles.Heading}>Host information</Text>
+
+        {/* host image and name */}
+        <View style={styles.hostImageView}>
+          <Image
+            style={styles.hostImage}
+            source={{
+              uri: "https://cdn.pixabay.com/photo/2015/01/27/09/58/man-613601_640.jpg",
+            }}
+          />
+          <Text>Hostname</Text>
+        </View>
+
+        {/* host details */}
+        <View style={styles.container}>
+          <View style={styles.hostItem}>
+            <MaterialIcons name="date-range" size={20} />
+            <Text style={globalStyles.MutedText}>Joined long time ago</Text>
+          </View>
+
+          <View style={styles.hostItem}>
+            <MaterialCommunityIcons name="message-text-outline" size={20} />
+            <Text style={globalStyles.MutedText}>Response rate - 100%</Text>
+          </View>
+
+          <View style={styles.hostItem}>
+            <MaterialCommunityIcons name="clock-time-nine-outline" size={20} />
+            <Text style={globalStyles.MutedText}>
+              Fast response - within a few hours
+            </Text>
+          </View>
+
+          <View style={styles.hostItem}>
+            <Ionicons name="language-outline" size={20} />
+            <Text style={globalStyles.MutedText}>
+              Language Spoken - English , Greek
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderThingsToKnow = () => {
+    return (
+      <View>
+        <View
+          style={{
+            borderColor: "black",
+            borderWidth: 1,
+            marginTop: 10,
+            borderRadius: 10,
+            padding: 5,
+          }}
+        >
+          <View style={styles.rateItem}>
+            <Text style={{ fontSize: 15, fontWeight: 500 }}>Check-in Time</Text>
+            <Text style={{ fontSize: 15, fontWeight: 500 }}>
+              Check-out Time
+            </Text>
+          </View>
+          <View style={styles.rateItem}>
+            <Text>15:00</Text>
+            <Text>11:00</Text>
+          </View>
+        </View>
+        <View style={styles.container}>
+          {property?.additionalRules?.map((item, index) => (
+            <View
+              style={{ display: "flex", flexDirection: "row", gap: 5 }}
+              key={index}
+            >
+              <Text style={globalStyles.Text}>•</Text>
+              <Text style={globalStyles.Text}>{item}</Text>
+            </View>
+          ))}
         </View>
       </View>
     );
@@ -189,76 +275,18 @@ export default function PropertyInfo() {
       <FlatList
         data={[1]}
         contentContainerStyle={styles.flatListContainer}
+        keyExtractor={(item, index) => index.toString()}
         renderItem={() => (
-          <View style={globalStyles.Container}>
+          <View style={globalStyles.Container} key={property?._id}>
             {renderPropertyInfo()}
 
             {renderAmenities()}
 
             {renderPricingCard()}
 
-            <View>
-              <Text style={globalStyles.SubHeading}>Host information</Text>
-              <View style={styles.hostInfo}>
-                <Image
-                  style={styles.hostImage}
-                  source={{
-                    uri: "https://cdn.pixabay.com/photo/2015/01/27/09/58/man-613601_640.jpg",
-                  }}
-                />
-                <Text style={{ fontSize: 20 }}>Viki</Text>
-              </View>
-              <View style={styles.container}>
-                <View style={styles.hostItem}>
-                  <MaterialIcons name="date-range" size={20} />
-                  <Text>Joined long time ago</Text>
-                </View>
-                <View style={styles.hostItem}>
-                  <MaterialCommunityIcons
-                    name="message-text-outline"
-                    size={20}
-                  />
-                  <Text>Response rate - 100%</Text>
-                </View>
-                <View style={styles.hostItem}>
-                  <MaterialCommunityIcons
-                    name="clock-time-nine-outline"
-                    size={20}
-                  />
-                  <Text>Fast response - within a few hours</Text>
-                </View>
-                <View style={styles.hostItem}>
-                  <Ionicons name="language-outline" size={20} />
-                  <Text>Language Spoken - English , Greek</Text>
-                </View>
-              </View>
-            </View>
-            <View
-              style={{
-                borderColor: "black",
-                borderWidth: 1,
-                marginHorizontal: 15,
-                marginTop: 10,
-                borderRadius: 10,
-              }}
-            >
-              <View style={styles.rateItem}>
-                <Text style={{ fontSize: 15, fontWeight: 500 }}>
-                  Check-in Time
-                </Text>
-                <Text style={{ fontSize: 15, fontWeight: 500 }}>
-                  Check-out Time
-                </Text>
-              </View>
-              <View style={styles.rateItem}>
-                <Text>15:00</Text>
-                <Text>11:00</Text>
-              </View>
-            </View>
-            <View style={styles.container}>
-              <Text>No smoking in common area</Text>
-              <Text>No cooking in bedroom</Text>
-            </View>
+            {renderHostInfo()}
+
+            {renderThingsToKnow()}
           </View>
         )}
       />
@@ -312,8 +340,6 @@ const styles = StyleSheet.create({
     width: "100%",
     display: "flex",
     gap: 10,
-    // borderWidth: 5,
-    // borderColor: "green",
   },
   detailBox: {
     borderWidth: 1,
@@ -325,10 +351,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   container: {
-    marginHorizontal: 15,
     display: "flex",
     gap: 10,
     marginTop: 10,
+    fontSize: 20,
   },
   amenitiesContainer: {
     display: "flex",
@@ -350,6 +376,7 @@ const styles = StyleSheet.create({
     display: "flex",
     gap: 4,
     flexDirection: "row",
+    alignItems: "center",
   },
   flatListContainer: {
     paddingBottom: 20,
@@ -358,15 +385,14 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     gap: 4,
-    margin: 5,
+    marginVertical: 5,
     justifyContent: "space-between",
   },
-  hostInfo: {
+  hostImageView: {
     display: "flex",
     gap: 8,
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 15,
     marginTop: 10,
   },
   hostImage: {

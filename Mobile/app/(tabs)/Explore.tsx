@@ -49,6 +49,9 @@ export default function Explore() {
     <SafeAreaView style={styles.mainContainer}>
       <FlatList
         data={properties}
+        keyExtractor={(item) =>
+          `${item._id.toString()}${Math.random().toFixed(5)}`
+        }
         renderItem={({ item }) => (
           <View style={styles.mainContainer}>
             <View style={styles.propertyContainer}>
@@ -57,7 +60,11 @@ export default function Explore() {
                   <Image
                     style={styles.imageContainer}
                     source={{
-                      uri: item.propertyCoverFileUrl,
+                      uri:
+                        item.propertyCoverFileUrl &&
+                        item.propertyCoverFileUrl !== ""
+                          ? item.propertyCoverFileUrl
+                          : "https://vacationsaga.b-cdn.net/assets/suitcase.png",
                     }}
                   />
                 </Link>
@@ -71,7 +78,7 @@ export default function Explore() {
               </View>
               <Text style={styles.propertyText}>{item.beds} beds</Text>
               <Text style={styles.propertyTitle}>
-                VS ID - {item.VSID}, Villa
+                VS ID - {item.VSID}, {item.propertyType}
               </Text>
               <Text style={styles.locationText} numberOfLines={1}>
                 <Ionicons name="location-outline" size={15} color="gray" />
@@ -105,7 +112,11 @@ export default function Explore() {
               renderItem={({ item }) => (
                 <View style={styles.countryItem}>
                   <Image
-                    source={{ uri: item.imageUrl }}
+                    source={{
+                      uri:
+                        item.imageUrl ??
+                        "https://picsum.photos/seed/picsum/200/300",
+                    }}
                     style={styles.countryImage}
                   />
                   <Text>{item.name}</Text>
@@ -231,6 +242,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 10,
+    borderWidth: 0.3,
   },
   propertyContainer: {
     margin: 15,

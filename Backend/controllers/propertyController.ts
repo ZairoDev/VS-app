@@ -8,8 +8,12 @@ const getAllProperties: RequestHandler = async (
 ) => {
   try {
     const { skip, limit } = await req.body;
-
-    const properties = await Properties.find({}).skip(skip).limit(limit);
+    // const properties = await Properties.find({}).skip(skip).limit(limit);
+    const properties = await Properties.aggregate([
+      { $sample: { size: limit } },
+      // { $skip: skip },
+      // { $limit: limit },
+    ]);
 
     res.json({ success: true, data: properties });
   } catch (err) {
@@ -20,7 +24,6 @@ const getAllProperties: RequestHandler = async (
 const getParticularProperty = async (req: Request, res: Response) => {
   try {
     const { propertyId } = req.body;
-    console.log("propertyId: ", propertyId);
 
     const particularProperty = await Properties.findById(propertyId);
 
