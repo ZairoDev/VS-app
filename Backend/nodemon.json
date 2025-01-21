@@ -1,5 +1,11 @@
 {
-  "watch": ["src"],
-  "ext":  "ts",
+  "watch": [
+    "src/**/*",
+    "controllers/**/*",
+    "models/**/*",
+    "routes/**/*",
+    "helper/**/*"
+  ],
+  "ext": "ts,js",
   "exec": "ts-node src/index.ts"
 }

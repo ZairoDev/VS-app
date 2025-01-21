@@ -21,5 +21,6 @@ export interface PropertyInterface {
   basePrice: number;
   propertyImages: string[];
   propertyCoverFileUrl: string;
+  propertyType: string;
   center: Center;
 }
