@@ -15,7 +15,7 @@ export const globalStyles = StyleSheet.create({
   MutedHeading: {
     fontWeight: 600,
     fontSize: 28,
-    color: "4D4C5C",
+    color: "#4D4C5C",
   },
   SubHeading: {
     fontWeight: 500,
@@ -24,7 +24,7 @@ export const globalStyles = StyleSheet.create({
   MutedSubHeading: {
     fontWeight: 500,
     fontSize: 24,
-    color: "4D4C5C",
+    color: "#4D4C5C",
   },
   Text: {
     fontSize: 16,
@@ -45,3 +45,4 @@ export const globalStyles = StyleSheet.create({
     color: "#4D4C5C",
   },
 });
+ 

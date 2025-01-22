@@ -1,17 +1,18 @@
-import {View} from 'react-native'
+import { View } from 'react-native';
 import { StatusBar, useColorScheme } from 'react-native';
-import {Stack} from 'expo-router'
-// Inside your component:
+import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { Slot } from 'expo-router'
-export default function _layout() {
+export default function RootLayout() {
   const isDarkMode = useColorScheme() === 'dark';
-  return(
-    <GestureHandlerRootView>
-        <StatusBar barStyle="dark-content" backgroundColor="white"    />
-        <Stack screenOptions={{ headerShown: false }}/>
-    </GestureHandlerRootView>
- )
-}
 
+  return (
+    <GestureHandlerRootView>
+      <StatusBar 
+        barStyle={isDarkMode ? 'dark-content' : 'dark-content'} 
+        backgroundColor={isDarkMode ? '#fff' : '#fff'} 
+      />
+      <Stack screenOptions={{ headerShown: false }} />
+    </GestureHandlerRootView>
+  );
+}

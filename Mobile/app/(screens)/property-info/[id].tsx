@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import Carousel from "react-native-reanimated-carousel";
 import {
   Text,
   View,
@@ -10,6 +10,7 @@ import {
   FlatList,
   StatusBar,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import {
   Ionicons,
@@ -36,7 +37,6 @@ export default function PropertyInfo() {
       console.log("error in fetching particular property");
     }
   };
-
   useEffect(() => {
     getproperty();
   }, []);
@@ -49,22 +49,18 @@ export default function PropertyInfo() {
           <Ionicons name="home-outline" color={"black"} size={12} />
           <Text>{property?.propertyType}</Text>
         </View>
-
         {/* VSID */}
         <Text style={styles.infoContainer}>VS ID - {property?.VSID}</Text>
-
         {/* country */}
         <View style={styles.infoContainer}>
           <Ionicons name="location" size={16} />
           <Text>{property?.country}</Text>
         </View>
-
         {/* hosted by */}
         <View style={styles.infoContainer}>
           <Ionicons name="person-circle-outline" size={28} />
           <Text numberOfLines={1}>Hosted by {property?.email}</Text>
         </View>
-
         {/* beds and Bathrooms */}
         <View style={{ display: "flex", flexDirection: "row", gap: 7 }}>
           <View style={styles.detailBox}>
@@ -84,7 +80,6 @@ export default function PropertyInfo() {
             <Text>{property?.size}</Text>
           </View>
         </View>
-
         {/* description */}
         <View>
           <Text style={globalStyles.Heading}>Stay Information</Text>
@@ -95,7 +90,6 @@ export default function PropertyInfo() {
       </View>
     );
   };
-
   const renderAmenities = () => {
     return (
       <View>
@@ -220,22 +214,43 @@ export default function PropertyInfo() {
       <View>
         <View
           style={{
-            borderColor: "black",
-            borderWidth: 1,
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
             marginTop: 10,
             borderRadius: 10,
             padding: 5,
           }}
         >
-          <View style={styles.rateItem}>
-            <Text style={{ fontSize: 15, fontWeight: 500 }}>Check-in Time</Text>
-            <Text style={{ fontSize: 15, fontWeight: 500 }}>
-              Check-out Time
-            </Text>
+          <View
+            style={{
+              display: "flex",
+              gap: 10,
+              shadowColor: "black",
+              elevation: 10,
+              padding: 5,
+              borderRadius: 10,
+              backgroundColor: "#e0e0e0",
+              width: "40%",
+            }}
+          >
+            <Text style={{ fontSize: 20 }}>Check-in</Text>
+            <Text style={{ fontSize: 15 }}>15:00</Text>
           </View>
-          <View style={styles.rateItem}>
-            <Text>15:00</Text>
-            <Text>11:00</Text>
+          <View
+            style={{
+              display: "flex",
+              gap: 10,
+              shadowColor: "black",
+              elevation: 10,
+              padding: 5,
+              borderRadius: 10,
+              backgroundColor: "#e0e0e0",
+              width: "40%",
+            }}
+          >
+            <Text style={{ fontSize: 20, textAlign: "right" }}>Check-out</Text>
+            <Text style={{ textAlign: "right", fontSize: 15 }}>11:00</Text>
           </View>
         </View>
         <View style={styles.container}>
@@ -259,23 +274,47 @@ export default function PropertyInfo() {
       style={styles.safeAreaView}
     >
       <StatusBar hidden={true} />
-      <View style={styles.imageContainer}>
-        <Image
-          source={{
-            uri: property?.propertyCoverFileUrl,
-          }}
-          style={styles.image}
-        />
-        <View style={styles.allPhotosTextContainer}>
-          <Ionicons name="albums-outline" color={"white"} size={24} />
-          <Text style={styles.allPhotosText}> All Photos</Text>
-        </View>
-      </View>
 
       <FlatList
         data={[1]}
         contentContainerStyle={styles.flatListContainer}
         keyExtractor={(item, index) => index.toString()}
+        ListHeaderComponent={
+          <View style={styles.imageContainer}>
+            {/* <Image
+          source={{
+            uri: property?.propertyCoverFileUrl,
+          }}
+          style={styles.image}
+        /> */}
+            {property?.propertyImages && property?.propertyImages.length > 0 ? (
+              <Carousel
+                loop
+                height={300}
+                width={Dimensions.get("window").width}
+                autoPlay
+                autoPlayInterval={3000}
+                data={property.propertyImages}
+                renderItem={({ item, index }) => (
+                  <View key={index}>
+                    <Image
+                      source={{ uri: item }}
+                      resizeMode="cover"
+                      style={styles.image}
+                    />
+                  </View>
+                )}
+              />
+            ) : (
+              <Text>No images available</Text>
+            )}
+
+            <View style={styles.allPhotosTextContainer}>
+              <Ionicons name="albums-outline" color={"white"} size={24} />
+              <Text style={styles.allPhotosText}> All Photos</Text>
+            </View>
+          </View>
+        }
         renderItem={() => (
           <View style={globalStyles.Container} key={property?._id}>
             {renderPropertyInfo()}
@@ -284,9 +323,9 @@ export default function PropertyInfo() {
 
             {renderPricingCard()}
 
-            {renderHostInfo()}
-
             {renderThingsToKnow()}
+
+            {renderHostInfo()}
           </View>
         )}
       />

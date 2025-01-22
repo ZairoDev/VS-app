@@ -24,5 +24,5 @@ app.use("/properties", propertyRoutes);
 
 // Server Started
 app.listen(port, () => {
-  console.log(`Server is Fire at https://localhost:${port}`);
+  console.log(`Server is Fire at https://localhost:${port}`);                                                                                                                                                                                                                                                                                                                                                                                                                           
 });

@@ -6,22 +6,37 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  Dimensions,
+  TouchableOpacity,
 } from "react-native";
+import FastImage from "react-native-fast-image";
 import axios from "axios";
-import { Link } from "expo-router";
+import { Link, Route } from "expo-router";
 import { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { PropertyInterface } from "@/types";
+import { PropertyInterface } from "@/data/types";
 import { Countries } from "@/Constants/Country";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { propertyTypes } from "@/Constants/Country";
+import Carousel from "react-native-reanimated-carousel";
+import { ScrollView } from "react-native-gesture-handler";
 
-export default function Explore() {
+export default function Index() {
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<string[]>([]);
+
+  const handleSelectCountry = (id: string) => {
+    setSelectedCountry((prev) =>
+      prev.includes(id)
+        ? prev.filter((countryId) => countryId !== id)
+        : [...prev, id]
+    );
+  };
 
   const fetchProperties = async () => {
     try {
@@ -45,10 +60,162 @@ export default function Explore() {
     fetchProperties();
   }, [skip]);
 
+  // const filteredProperties=selectedCountry.length===0?properties:properties.filter((property)=>{
+
+  //   selectedCountry.includes(property.country)
+  // })
+
+  const [filteredProperties, setFilteredProperties] =
+    useState<PropertyInterface[]>(properties);
+
+  useEffect(() => {
+    if (selectedCountry.length === 0) {
+      setFilteredProperties(properties);
+    } else {
+      setFilteredProperties(
+        properties.filter((property) =>
+          selectedCountry.some(
+            (countryId) =>
+              Countries.find((country) => country.id === countryId)?.name ===
+              property.country
+          )
+        )
+      );
+    }
+  }, [selectedCountry]);
+
+  const skeleton = () => (
+    <View
+      style={{
+        display: "flex",
+        marginTop: 10,
+        backgroundColor: "#fff",
+        alignItems: "center",
+        width: "100%",
+        height: "100%",
+      }}
+    >
+      <View
+        style={{
+          width: 300,
+          height: 300,
+          backgroundColor: "#e0e0e0",
+          borderRadius: 10,
+          marginRight: 10,
+        }}
+      />
+      <View style={{ width: 300, height: 300 }}>
+        <View
+          style={{
+            width: 100,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+        <View
+          style={{
+            width: 150,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+        <View
+          style={{
+            width: 200,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+      </View>
+      <View
+        style={{
+          width: 300,
+          height: 300,
+          backgroundColor: "#e0e0e0",
+          borderRadius: 10,
+          marginRight: 10,
+        }}
+      />
+      <View style={{ width: 300, height: 300 }}>
+        <View
+          style={{
+            width: 100,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+        <View
+          style={{
+            width: 150,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+        <View
+          style={{
+            width: 200,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+      </View>
+      <View
+        style={{
+          width: 300,
+          height: 300,
+          backgroundColor: "#e0e0e0",
+          borderRadius: 10,
+          marginRight: 10,
+        }}
+      />
+      <View style={{ width: 300, height: 300 }}>
+        <View
+          style={{
+            width: 100,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+        <View
+          style={{
+            width: 150,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+        <View
+          style={{
+            width: 200,
+            height: 15,
+            backgroundColor: "#e0e0e0",
+            borderRadius: 5,
+            marginTop: 10,
+          }}
+        />
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.mainContainer}>
       <FlatList
-        data={properties}
+        data={filteredProperties}
         keyExtractor={(item) =>
           `${item._id.toString()}${Math.random().toFixed(5)}`
         }
@@ -56,7 +223,8 @@ export default function Explore() {
           <View style={styles.mainContainer}>
             <View style={styles.propertyContainer}>
               <View style={styles.imageWrapper}>
-                <Link href={`/(screens)/PropertyInfo/${item._id}`}>
+                {/* <Link href={`/(screens)/PropertyInfo/${item._id}`}> */}
+                <Link href={`/(screens)/PropertyInfo/${item._id}` as Route}>
                   <Image
                     style={styles.imageContainer}
                     source={{
@@ -78,7 +246,7 @@ export default function Explore() {
               </View>
               <Text style={styles.propertyText}>{item.beds} beds</Text>
               <Text style={styles.propertyTitle}>
-                VS ID - {item.VSID}, {item.propertyType}
+                VS ID - {item.VSID}, {item?.propertyType}
               </Text>
               <Text style={styles.locationText} numberOfLines={1}>
                 <Ionicons name="location-outline" size={15} color="gray" />
@@ -109,21 +277,31 @@ export default function Explore() {
               keyExtractor={(item, index) => index.toString()}
               horizontal
               showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <View style={styles.countryItem}>
-                  <Image
-                    source={{
-                      uri:
-                        item.imageUrl ??
-                        "https://picsum.photos/seed/picsum/200/300",
-                    }}
-                    style={styles.countryImage}
-                  />
-                  <Text>{item.name}</Text>
-                </View>
-              )}
+              renderItem={({ item }) => {
+                const isSelected = selectedCountry.includes(item.id);
+                return (
+                  <TouchableOpacity
+                    style={styles.countryItem}
+                    onPress={() => handleSelectCountry(item.id)}
+                  >
+                    <Image
+                      source={{
+                        uri:
+                          item.imageUrl ??
+                          "https://picsum.photos/seed/picsum/200/300",
+                      }}
+                      style={[
+                        styles.countryImage,
+                        isSelected && styles.selectedcountryimage,
+                      ]}
+                    />
+                    <Text style={[isSelected && styles.selectedcountrytext]}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
             />
-
             <FlatList
               style={styles.propertyTypeList}
               data={propertyTypes}
@@ -140,14 +318,11 @@ export default function Explore() {
             />
           </View>
         }
-        ListFooterComponent={
-          <View>{loading && <ActivityIndicator size={"large"} />}</View>
-        }
+        ListFooterComponent={<View>{loading && skeleton()}</View>}
       />
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
@@ -241,6 +416,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: 300,
     height: 300,
+
     borderRadius: 10,
     borderWidth: 0.3,
   },
@@ -257,8 +433,22 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   locationText: {
+    flexWrap: "wrap",
+    maxWidth: "90%",
     color: "gray",
     padding: 2,
-    maxWidth: "80%",
+  },
+  selectedcountryimage: {
+    width: 100,
+    height: 100,
+    marginBottom: 4,
+    borderRadius: 100,
+    borderWidth: 2,
+    borderColor: "orange",
+  },
+  selectedcountrytext: {
+    fontWeight: 500,
+    fontSize: 15,
+    color: "orange",
   },
 });
