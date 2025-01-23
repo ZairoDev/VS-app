@@ -63,11 +63,11 @@ export const Countries = [
 ];
 
 export const propertyTypes: FeaturedPropertyTypes[] = [
-  {
-    id: 0,
-    name: "All",
-    icon:<FontAwesome name="globe" size={24} color="gray" /> ,
-  },
+  // {
+  //   id: 0,
+  //   name: "All",
+  //   icon:<FontAwesome name="globe" size={24} color="gray" /> ,
+  // },
   {
     id: 1,
     name: "Apartment",

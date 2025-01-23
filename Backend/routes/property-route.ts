@@ -3,7 +3,7 @@ import express from "express";
 import {
   getAllProperties,
   getParticularProperty,
-} from "../controllers/propertyController";
+} from "@/controllers/propertyController";
 
 const router = express.Router();
 

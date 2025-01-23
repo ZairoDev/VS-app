@@ -2,8 +2,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express, { Application, Request, Response } from "express";
 
-import connectMongoDB from "../helper/connection";
-import propertyRoutes from "../routes/propertyRoutes";
+import connectMongoDB from "@/config/Connection";
+import propertyRoutes from "@/routes/property-route";
 
 //For env File
 dotenv.config();
@@ -24,5 +24,5 @@ app.use("/properties", propertyRoutes);
 
 // Server Started
 app.listen(port, () => {
-  console.log(`Server is Fire at https://localhost:${port}`);                                                                                                                                                                                                                                                                                                                                                                                                                           
+  console.log(`Server is Fire at https://localhost:${port}`);
 });

@@ -5,217 +5,228 @@ import {
   FlatList,
   TextInput,
   StyleSheet,
-  ActivityIndicator,
-  Dimensions,
   TouchableOpacity,
 } from "react-native";
-import FastImage from "react-native-fast-image";
 import axios from "axios";
 import { Link, Route } from "expo-router";
 import { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { PropertyInterface } from "@/data/types";
 import { Countries } from "@/Constants/Country";
+import { PropertyInterface } from "@/data/types";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { propertyTypes } from "@/Constants/Country";
-import Carousel from "react-native-reanimated-carousel";
-import { ScrollView } from "react-native-gesture-handler";
+
+export interface FetchPropertiesRequest {
+  skip: number;
+  limit: number;
+  selectedCountry: string[];
+  propertyType: string[];
+}
+
+export interface FetchPropertiesResponse {
+  status?: number;
+  error?: string;
+  data: PropertyInterface[];
+}
+
+enum SelectedType {
+  COUNTRY = "country",
+  PROPERTY_TYPE = "propertyType",
+}
 
 export default function Index() {
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
-  const [propertyTypeFilter, setPropertyTypeFilter] = useState<string[]>([]);
 
-  const handleSelectCountry = (id: string) => {
-    setSelectedCountry((prev) =>
-      prev.includes(id)
-        ? prev.filter((countryId) => countryId !== id)
-        : [...prev, id]
-    );
-  };
+  const [propertyType, setPropertyType] = useState<string[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
 
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(
+      console.log("process: ", process.env.EXPO_PUBLIC_BASE_URL);
+
+      const requestBody: FetchPropertiesRequest = {
+        skip,
+        limit,
+        selectedCountry,
+        propertyType,
+      };
+
+      const response = await axios.post<FetchPropertiesResponse>(
         `${process.env.EXPO_PUBLIC_BASE_URL}/properties/getAllProperties`,
-        {
-          skip,
-          limit,
-        }
+        requestBody
       );
+      console.log("response", response.data.data.length);
       setProperties((prev) => [...prev, ...response.data.data]);
     } catch (err) {
-      console.log("err in explore page", err);
+      console.log("err in explore page: ", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProperties();
-  }, [skip]);
-
-  // const filteredProperties=selectedCountry.length===0?properties:properties.filter((property)=>{
-
-  //   selectedCountry.includes(property.country)
-  // })
-
-  const [filteredProperties, setFilteredProperties] =
-    useState<PropertyInterface[]>(properties);
-
-  useEffect(() => {
-    if (selectedCountry.length === 0) {
-      setFilteredProperties(properties);
-    } else {
-      setFilteredProperties(
-        properties.filter((property) =>
-          selectedCountry.some(
-            (countryId) =>
-              Countries.find((country) => country.id === countryId)?.name ===
-              property.country
-          )
-        )
+  const handleSelect = (type: string, value: string) => {
+    setProperties([]);
+    setSkip(0);
+    if (type === SelectedType.COUNTRY) {
+      setSelectedCountry((prev) =>
+        prev.includes(value)
+          ? prev.filter((countryId) => countryId !== value)
+          : [...prev, value]
+      );
+    } else if (type === SelectedType.PROPERTY_TYPE) {
+      setPropertyType((prev) =>
+        prev.includes(value)
+          ? prev.filter((propertyType) => propertyType !== value)
+          : [...prev, value]
       );
     }
-  }, [selectedCountry]);
+  };
 
-  const skeleton = () => (
-    <View
-      style={{
-        display: "flex",
-        marginTop: 10,
-        backgroundColor: "#fff",
-        alignItems: "center",
-        width: "100%",
-        height: "100%",
-      }}
-    >
-      <View
-        style={{
-          width: 300,
-          height: 300,
-          backgroundColor: "#e0e0e0",
-          borderRadius: 10,
-          marginRight: 10,
-        }}
-      />
-      <View style={{ width: 300, height: 300 }}>
-        <View
-          style={{
-            width: 100,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-        <View
-          style={{
-            width: 150,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-        <View
-          style={{
-            width: 200,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-      </View>
-      <View
-        style={{
-          width: 300,
-          height: 300,
-          backgroundColor: "#e0e0e0",
-          borderRadius: 10,
-          marginRight: 10,
-        }}
-      />
-      <View style={{ width: 300, height: 300 }}>
-        <View
-          style={{
-            width: 100,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-        <View
-          style={{
-            width: 150,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-        <View
-          style={{
-            width: 200,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-      </View>
-      <View
-        style={{
-          width: 300,
-          height: 300,
-          backgroundColor: "#e0e0e0",
-          borderRadius: 10,
-          marginRight: 10,
-        }}
-      />
-      <View style={{ width: 300, height: 300 }}>
-        <View
-          style={{
-            width: 100,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-        <View
-          style={{
-            width: 150,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-        <View
-          style={{
-            width: 200,
-            height: 15,
-            backgroundColor: "#e0e0e0",
-            borderRadius: 5,
-            marginTop: 10,
-          }}
-        />
-      </View>
-    </View>
-  );
+  useEffect(() => {
+    fetchProperties();
+  }, [skip, propertyType, selectedCountry]);
+
+  useEffect(() => {
+    console.log("property array: ", properties.length);
+  }, [properties]);
+
+  // const skeleton = () => (
+  //   <View
+  //     style={{
+  //       display: "flex",
+  //       marginTop: 10,
+  //       backgroundColor: "#fff",
+  //       alignItems: "center",
+  //       width: "100%",
+  //       height: "100%",
+  //     }}
+  //   >
+  //     <View
+  //       style={{
+  //         width: 300,
+  //         height: 300,
+  //         backgroundColor: "#e0e0e0",
+  //         borderRadius: 10,
+  //         marginRight: 10,
+  //       }}
+  //     />
+  //     <View style={{ width: 300, height: 300 }}>
+  //       <View
+  //         style={{
+  //           width: 100,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //       <View
+  //         style={{
+  //           width: 150,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //       <View
+  //         style={{
+  //           width: 200,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //     </View>
+  //     <View
+  //       style={{
+  //         width: 300,
+  //         height: 300,
+  //         backgroundColor: "#e0e0e0",
+  //         borderRadius: 10,
+  //         marginRight: 10,
+  //       }}
+  //     />
+  //     <View style={{ width: 300, height: 300 }}>
+  //       <View
+  //         style={{
+  //           width: 100,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //       <View
+  //         style={{
+  //           width: 150,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //       <View
+  //         style={{
+  //           width: 200,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //     </View>
+  //     <View
+  //       style={{
+  //         width: 300,
+  //         height: 300,
+  //         backgroundColor: "#e0e0e0",
+  //         borderRadius: 10,
+  //         marginRight: 10,
+  //       }}
+  //     />
+  //     <View style={{ width: 300, height: 300 }}>
+  //       <View
+  //         style={{
+  //           width: 100,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //       <View
+  //         style={{
+  //           width: 150,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //       <View
+  //         style={{
+  //           width: 200,
+  //           height: 15,
+  //           backgroundColor: "#e0e0e0",
+  //           borderRadius: 5,
+  //           marginTop: 10,
+  //         }}
+  //       />
+  //     </View>
+  //   </View>
+  // );
 
   return (
     <SafeAreaView style={styles.mainContainer}>
       <FlatList
-        data={filteredProperties}
+        data={properties}
         keyExtractor={(item) =>
           `${item._id.toString()}${Math.random().toFixed(5)}`
         }
@@ -223,8 +234,7 @@ export default function Index() {
           <View style={styles.mainContainer}>
             <View style={styles.propertyContainer}>
               <View style={styles.imageWrapper}>
-                {/* <Link href={`/(screens)/PropertyInfo/${item._id}`}> */}
-                <Link href={`/(screens)/PropertyInfo/${item._id}` as Route}>
+                <Link href={`/(screens)/property-info/${item._id}` as Route}>
                   <Image
                     style={styles.imageContainer}
                     source={{
@@ -278,11 +288,13 @@ export default function Index() {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => {
-                const isSelected = selectedCountry.includes(item.id);
+                const isSelected = selectedCountry.includes(item.name);
                 return (
                   <TouchableOpacity
                     style={styles.countryItem}
-                    onPress={() => handleSelectCountry(item.id)}
+                    onPress={() =>
+                      handleSelect(SelectedType.COUNTRY, item.name)
+                    }
                   >
                     <Image
                       source={{
@@ -295,9 +307,7 @@ export default function Index() {
                         isSelected && styles.selectedcountryimage,
                       ]}
                     />
-                    <Text style={[isSelected && styles.selectedcountrytext]}>
-                      {item.name}
-                    </Text>
+                    <Text>{item.name}</Text>
                   </TouchableOpacity>
                 );
               }}
@@ -309,16 +319,37 @@ export default function Index() {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.propertyTypeContainer}
-              renderItem={({ item }) => (
-                <View style={styles.propertyTypeItem}>
-                  {item.icon}
-                  <Text style={styles.propertyTypeText}>{item.name}</Text>
-                </View>
-              )}
+              renderItem={({ item }) => {
+                const isSelected = propertyType.includes(item.name);
+                return (
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleSelect(SelectedType.PROPERTY_TYPE, item.name)
+                    }
+                  >
+                    <View
+                      style={[
+                        styles.propertyTypeItem,
+                        isSelected && styles.selectedPropertyTypeItem,
+                      ]}
+                    >
+                      {item.icon}
+                      <Text
+                        style={[
+                          styles.propertyTypeText,
+                          isSelected && styles.selectedPropertyTypeText,
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
             />
           </View>
         }
-        ListFooterComponent={<View>{loading && skeleton()}</View>}
+        // ListFooterComponent={<View>{loading && skeleton()}</View>}
       />
     </SafeAreaView>
   );
@@ -434,7 +465,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     flexWrap: "wrap",
-    maxWidth: "90%",
+    maxWidth: "80%",
     color: "gray",
     padding: 2,
   },
@@ -443,12 +474,15 @@ const styles = StyleSheet.create({
     height: 100,
     marginBottom: 4,
     borderRadius: 100,
-    borderWidth: 2,
+    borderWidth: 4,
     borderColor: "orange",
   },
-  selectedcountrytext: {
+  selectedPropertyTypeItem: {
+    backgroundColor: "orange",
+    fontWeight: 700,
+  },
+  selectedPropertyTypeText: {
+    color: "white",
     fontWeight: 500,
-    fontSize: 15,
-    color: "orange",
   },
 });

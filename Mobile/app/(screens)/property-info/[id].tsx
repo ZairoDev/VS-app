@@ -62,18 +62,18 @@ export default function PropertyInfo() {
           <Text numberOfLines={1}>Hosted by {property?.email}</Text>
         </View>
         {/* beds and Bathrooms */}
-        <View style={{ display: "flex", flexDirection: "row", gap: 7 }}>
+        <View style={{ display: "flex", flexDirection: "row", gap: 15 }}>
           <View style={styles.detailBox}>
             <Ionicons name="person" size={20} />
             <Text>{property?.guests}</Text>
           </View>
           <View style={styles.detailBox}>
             <Ionicons name="bed" size={20} />
-            <Text>{property?.bedrooms} Bedrooms</Text>
+            <Text>{property?.bedrooms} </Text>
           </View>
           <View style={styles.detailBox}>
             <FontAwesome name="bath" size={20} />
-            <Text>{property?.bathroom} Bathrooms</Text>
+            <Text>{property?.bathroom} </Text>
           </View>
           <View style={styles.detailBox}>
             <MaterialCommunityIcons name="floor-plan" size={20} />

@@ -11,6 +11,7 @@
     "noImplicitAny": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
+    "typeRoots": ["node_modules/@types"],
     "noImplicitThis": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -27,7 +28,7 @@
       "@controllers/*": ["controllers/*"],
       "@routes/*": ["routes/*"],
       "@models/*": ["models/*"],
-      "@helper/*": ["helper/*"]
+      "@helper/*": ["config/*"]
     }
   },
   "ts-node": {
@@ -35,10 +36,10 @@
   },
   "include": [
     "./src/**/*.ts",
-    "./controllers/**/*.ts",
+    "controllers/**/*.ts",
     "./models/**/*.ts",
     "./routes/**/*.ts",
-    "./helper/**/*.ts"
+    "config/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }
