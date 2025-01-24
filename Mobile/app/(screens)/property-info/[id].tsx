@@ -1,8 +1,9 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Carousel from "react-native-reanimated-carousel";
+
 import {
   Text,
   View,
@@ -11,20 +12,30 @@ import {
   StatusBar,
   StyleSheet,
   Dimensions,
+  Pressable,
+  Alert,
+  Modal,
+  TouchableOpacity,
+  
 } from "react-native";
+
 import {
   Ionicons,
   MaterialIcons,
   MaterialCommunityIcons,
+  Entypo,
 } from "@expo/vector-icons";
+
 import { PropertyInterface } from "@/types";
 import { FontAwesome } from "@expo/vector-icons";
 import { globalStyles } from "@/Constants/Styles";
+import { ScrollView } from "react-native";
 
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams();
 
   const [property, setProperty] = useState<PropertyInterface>();
+  const [modalVisible, setModalVisible] = useState(false);
 
   const getproperty = async () => {
     try {
@@ -41,13 +52,66 @@ export default function PropertyInfo() {
     getproperty();
   }, []);
 
+  const renderAllPhotos = () => {
+    return (
+      <View style={{backgroundColor:"white",minWidth:"100%",minHeight:"100%"}} >
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => { 
+            setModalVisible(!modalVisible);
+          }}
+        >
+          
+          <View style={{ flex: 1, backgroundColor: "white"}}>
+              {/* <Pressable style={styles.button} onPress={() => setModalVisible(!modalVisible)}>
+                <Text style={styles.textStyle}>Xyz</Text>
+              </Pressable> */}
+              <ScrollView contentContainerStyle={{ alignItems: "center", paddingVertical: 0 ,paddingHorizontal:0}}>
+                  {property?.propertyImages.map((item,index)=>(
+                  <Image key={index} source={{uri:item}} style={{height:300,width:300,borderRadius:10, margin:10}}/>
+                 ))}
+
+
+
+              </ScrollView>
+              <Pressable
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 30,
+              backgroundColor: "rgba(0,0,0,0.6)",
+              padding: 10,
+
+              borderRadius: 30,
+            }}
+            onPress={() => setModalVisible(!modalVisible)}
+          >
+            <Text style={{ color: "white", fontSize: 16 }}>close</Text>
+          </Pressable>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
+
   const renderPropertyInfo = () => {
     return (
       <View style={styles.detailsContainer}>
         {/* property type */}
-        <View style={styles.propertyTypeTag}>
-          <Ionicons name="home-outline" color={"black"} size={12} />
-          <Text>{property?.propertyType}</Text>
+        <View
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={styles.propertyTypeTag}>
+            <Ionicons name="home-outline" color={"black"} size={12} />
+            <Text>{property?.propertyType}</Text>
+          </View>
+          <Entypo name="images" color={"white"} size={24} />
         </View>
         {/* VSID */}
         <Text style={styles.infoContainer}>VS ID - {property?.VSID}</Text>
@@ -126,7 +190,6 @@ export default function PropertyInfo() {
       </View>
     );
   };
-
   const renderPricingCard = () => {
     return (
       <View>
@@ -162,7 +225,6 @@ export default function PropertyInfo() {
       </View>
     );
   };
-
   const renderHostInfo = () => {
     return (
       <View>
@@ -208,7 +270,6 @@ export default function PropertyInfo() {
       </View>
     );
   };
-
   const renderThingsToKnow = () => {
     return (
       <View>
@@ -273,7 +334,7 @@ export default function PropertyInfo() {
       edges={["left", "right", "bottom"]}
       style={styles.safeAreaView}
     >
-      <StatusBar hidden={true} />
+      {/* <StatusBar hidden={true} /> */}
 
       <FlatList
         data={[1]}
@@ -281,19 +342,13 @@ export default function PropertyInfo() {
         keyExtractor={(item, index) => index.toString()}
         ListHeaderComponent={
           <View style={styles.imageContainer}>
-            {/* <Image
-          source={{
-            uri: property?.propertyCoverFileUrl,
-          }}
-          style={styles.image}
-        /> */}
             {property?.propertyImages && property?.propertyImages.length > 0 ? (
               <Carousel
                 loop
                 height={300}
                 width={Dimensions.get("window").width}
-                autoPlay
-                autoPlayInterval={3000}
+                // autoPlay
+                // autoPlayInterval={3000}
                 data={property.propertyImages}
                 renderItem={({ item, index }) => (
                   <View key={index}>
@@ -309,10 +364,19 @@ export default function PropertyInfo() {
               <Text>No images available</Text>
             )}
 
-            <View style={styles.allPhotosTextContainer}>
-              <Ionicons name="albums-outline" color={"white"} size={24} />
-              <Text style={styles.allPhotosText}> All Photos</Text>
-            </View>
+            <TouchableOpacity
+              onPress={(e) => {
+                console.log("clicked");
+                setModalVisible(true);
+                e.stopPropagation();
+              }}
+              style={{ zIndex: 10 }}
+            >
+              <View style={styles.allPhotosTextContainer}>
+                <Entypo name="images" color={"white"} size={24} />
+                {/* <Text style={styles.allPhotosText}> All Photos</Text> */}
+              </View>
+            </TouchableOpacity>
           </View>
         }
         renderItem={() => (
@@ -329,13 +393,14 @@ export default function PropertyInfo() {
           </View>
         )}
       />
+      {modalVisible && renderAllPhotos()}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeAreaView: { flex: 1 },
-  imageContainer: { position: "relative" },
+  imageContainer: {},
   image: { height: 300, width: "100%" },
   allPhotosTextContainer: {
     display: "flex",
@@ -343,11 +408,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     height: 35,
-    width: "30%",
+    width: "15%",
     gap: 4,
-    position: "absolute",
-    bottom: 0,
-    margin: 10,
+    // position: "absolute",
+    top: 20,
+    right: 20,
     backgroundColor: "black",
     borderColor: "white",
     borderWidth: 1,
@@ -447,8 +512,11 @@ const styles = StyleSheet.create({
   },
   specialnote: {
     fontSize: 20,
-
     fontWeight: "400",
     marginTop: 15,
   },
+  
+ 
+  
+  
 });

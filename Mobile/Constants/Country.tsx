@@ -1,8 +1,8 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from "@expo/vector-icons";
 
-import { FontAwesome } from '@expo/vector-icons';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { Fontisto } from '@expo/vector-icons';
+import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { Fontisto } from "@expo/vector-icons";
 
 type FeaturedPropertyTypes = {
   id: number;
@@ -63,55 +63,45 @@ export const Countries = [
 ];
 
 export const propertyTypes: FeaturedPropertyTypes[] = [
-  // {
-  //   id: 0,
-  //   name: "All",
-  //   icon:<FontAwesome name="globe" size={24} color="gray" /> ,
-  // },
   {
     id: 1,
     name: "Apartment",
-    icon:<MaterialIcons name="apartment" size={24} color="gray" /> ,
+    icon: <MaterialIcons name="apartment" size={24} color="gray" />,
   },
   {
     id: 2,
     name: "Villa",
-    icon:<MaterialIcons name="villa" size={24} color="gray" /> ,
+    icon: <MaterialIcons name="villa" size={24} color="gray" />,
   },
   {
     id: 3,
     name: "Holiday Homes",
-    icon:<Fontisto name="holiday-village" size={24} color="gray" /> ,
+    icon: <Fontisto name="holiday-village" size={24} color="gray" />,
   },
   {
     id: 4,
     name: "Hotel",
-    icon:<FontAwesome5 name="hotel" size={20} color="gray" /> ,
+    icon: <FontAwesome5 name="hotel" size={20} color="gray" />,
   },
   {
     id: 5,
     name: "Detached House",
-    icon:<MaterialIcons name="house" size={24} color="gray" /> ,
+    icon: <MaterialIcons name="house" size={24} color="gray" />,
   },
   {
     id: 6,
     name: "Studio",
-    icon:<FontAwesome5 name="camera-retro" size={19} color="gray" /> ,
+    icon: <FontAwesome5 name="camera-retro" size={19} color="gray" />,
   },
   {
     id: 7,
-    name: "Cottage",
-    icon:<MaterialIcons name="cottage" size={24} color="gray" /> ,
+    name: "Farmhouse",
+    icon: <MaterialIcons name="forest" size={24} color="gray" />,
   },
   {
     id: 8,
-    name: "Farmhouse",
-    icon:<MaterialIcons name="forest" size={24} color="gray" /> ,
-  },
-  {
-    id: 10,
     name: "Cottage",
-    icon:<MaterialIcons name="cottage" size={24} color="gray" /> ,
+    icon: <MaterialIcons name="cottage" size={24} color="gray" />,
   },
 ];
 
