@@ -1,41 +1,46 @@
 import axios from "axios";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Carousel from "react-native-reanimated-carousel";
+import ImageViewer from "react-native-image-zoom-viewer";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Modalize } from "react-native-modalize";
 
 import {
   Text,
   View,
+  Modal,
   Image,
   FlatList,
   StatusBar,
+  Pressable,
   StyleSheet,
   Dimensions,
-  Pressable,
-  Alert,
-  Modal,
+  ScrollView,
   TouchableOpacity,
-  
 } from "react-native";
 
+import { PropertyInterface } from "@/types";
+import { globalStyles } from "@/Constants/Styles";
 import {
   Ionicons,
+  FontAwesome,
   MaterialIcons,
   MaterialCommunityIcons,
-  Entypo,
 } from "@expo/vector-icons";
-
-import { PropertyInterface } from "@/types";
-import { FontAwesome } from "@expo/vector-icons";
-import { globalStyles } from "@/Constants/Styles";
-import { ScrollView } from "react-native";
 
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams();
 
-  const [property, setProperty] = useState<PropertyInterface>();
+  const [imagesModal, setImagesModal] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [property, setProperty] = useState<PropertyInterface>();
+
+  const modalizeRef = useRef<Modalize>(null);
+
+  const openBottomsheet = () => {
+    modalizeRef.current?.open();
+  };
 
   const getproperty = async () => {
     try {
@@ -52,46 +57,100 @@ export default function PropertyInfo() {
     getproperty();
   }, []);
 
+  const bentoStyle = (index: number) => {
+    const styles = [
+      { width: Dimensions.get("window").width, height: 200 },
+      { width: (Dimensions.get("window").width / 100) * 49, height: 200 },
+      { width: (Dimensions.get("window").width / 100) * 49, height: 200 },
+      { width: Dimensions.get("window").width, height: 300 },
+      { width: (Dimensions.get("window").width / 100) * 49, height: 150 },
+      { width: (Dimensions.get("window").width / 100) * 49, height: 150 },
+    ];
+    return styles[index % styles.length];
+  };
+
+  const imageGallery = () => {
+    const images =
+      property?.propertyImages.map((item, index) => {
+        return { url: item };
+      }) ?? [];
+    return (
+      <Modal
+        visible={imagesModal}
+        transparent={true}
+        onRequestClose={() => setImagesModal(false)}
+      >
+        <ImageViewer
+          enableSwipeDown={true}
+          onSwipeDown={() => setImagesModal(false)}
+          imageUrls={images}
+        />
+      </Modal>
+    );
+  };
   const renderAllPhotos = () => {
     return (
-      <View style={{backgroundColor:"white",minWidth:"100%",minHeight:"100%"}} >
+      <View
+        style={{
+          backgroundColor: "white",
+          minWidth: "100%",
+          minHeight: "100%",
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Modal
           animationType="slide"
           transparent={true}
           visible={modalVisible}
-          onRequestClose={() => { 
+          onRequestClose={() => {
             setModalVisible(!modalVisible);
           }}
         >
-          
-          <View style={{ flex: 1, backgroundColor: "white"}}>
-              {/* <Pressable style={styles.button} onPress={() => setModalVisible(!modalVisible)}>
-                <Text style={styles.textStyle}>Xyz</Text>
-              </Pressable> */}
-              <ScrollView contentContainerStyle={{ alignItems: "center", paddingVertical: 0 ,paddingHorizontal:0}}>
-                  {property?.propertyImages.map((item,index)=>(
-                  <Image key={index} source={{uri:item}} style={{height:300,width:300,borderRadius:10, margin:10}}/>
-                 ))}
+          <View style={{ display: "flex" }}>
+            <ScrollView
+              contentContainerStyle={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "space-between",
+              }}
+            >
+              {property?.propertyImages.map((item, index: number) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => setImagesModal(true)}
+                >
+                  <View
+                    key={index}
+                    style={[styles.gridItem, bentoStyle(index)]}
+                  >
+                    <Image
+                      source={{ uri: item }}
+                      style={{ height: "100%", width: "100%" }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <Pressable
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 30,
+                backgroundColor: "rgba(0,0,0,0.6)",
+                padding: 10,
 
-
-
-              </ScrollView>
-              <Pressable
-            style={{
-              position: "absolute",
-              top: 10,
-              right: 30,
-              backgroundColor: "rgba(0,0,0,0.6)",
-              padding: 10,
-
-              borderRadius: 30,
-            }}
-            onPress={() => setModalVisible(!modalVisible)}
-          >
-            <Text style={{ color: "white", fontSize: 16 }}>close</Text>
-          </Pressable>
+                borderRadius: 30,
+              }}
+              onPress={() => setModalVisible(!modalVisible)}
+            >
+              <Text style={{ color: "white", fontSize: 16 }}>close</Text>
+            </Pressable>
           </View>
         </Modal>
+        {imagesModal && imageGallery()}
       </View>
     );
   };
@@ -99,7 +158,6 @@ export default function PropertyInfo() {
   const renderPropertyInfo = () => {
     return (
       <View style={styles.detailsContainer}>
-        {/* property type */}
         <View
           style={{
             display: "flex",
@@ -111,7 +169,6 @@ export default function PropertyInfo() {
             <Ionicons name="home-outline" color={"black"} size={12} />
             <Text>{property?.propertyType}</Text>
           </View>
-          <Entypo name="images" color={"white"} size={24} />
         </View>
         {/* VSID */}
         <Text style={styles.infoContainer}>VS ID - {property?.VSID}</Text>
@@ -179,12 +236,16 @@ export default function PropertyInfo() {
             ))}
           <View
             style={{
-              backgroundColor: "#7393B3",
+              backgroundColor: "#c1c2c3",
               borderRadius: 20,
+              borderColor: "black",
               padding: 5,
+              borderWidth: 1,
             }}
           >
-            <Text>View All</Text>
+            <Pressable onPress={openBottomsheet}>
+              <Text>View All..</Text>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -273,47 +334,37 @@ export default function PropertyInfo() {
   const renderThingsToKnow = () => {
     return (
       <View>
-        <View
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 10,
-            borderRadius: 10,
-            padding: 5,
-          }}
-        >
+        <View>
           <View
             style={{
               display: "flex",
-              gap: 10,
-              shadowColor: "black",
-              elevation: 10,
-              padding: 5,
-              borderRadius: 10,
-              backgroundColor: "#e0e0e0",
-              width: "40%",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              backgroundColor: "#c1c2c3",
+              padding: 8,
+              borderTopLeftRadius: 5,
+              borderTopRightRadius: 5,
             }}
           >
-            <Text style={{ fontSize: 20 }}>Check-in</Text>
-            <Text style={{ fontSize: 15 }}>15:00</Text>
+            <Text style={{ fontSize: 17 }}>Check-in</Text>
+            <Text style={{ fontSize: 17 }}>Check-out</Text>
           </View>
           <View
             style={{
               display: "flex",
-              gap: 10,
-              shadowColor: "black",
-              elevation: 10,
-              padding: 5,
-              borderRadius: 10,
-              backgroundColor: "#e0e0e0",
-              width: "40%",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              backgroundColor: "#d3d3d3",
+              padding: 8,
+              borderBottomLeftRadius: 5,
+              borderBottomRightRadius: 5,
             }}
           >
-            <Text style={{ fontSize: 20, textAlign: "right" }}>Check-out</Text>
-            <Text style={{ textAlign: "right", fontSize: 15 }}>11:00</Text>
+            <Text>11:00</Text>
+            <Text style={{ textAlign: "center" }}>15:00</Text>
           </View>
         </View>
+
         <View style={styles.container}>
           {property?.additionalRules?.map((item, index) => (
             <View
@@ -334,7 +385,7 @@ export default function PropertyInfo() {
       edges={["left", "right", "bottom"]}
       style={styles.safeAreaView}
     >
-      {/* <StatusBar hidden={true} /> */}
+      <StatusBar hidden={true} />
 
       <FlatList
         data={[1]}
@@ -343,40 +394,26 @@ export default function PropertyInfo() {
         ListHeaderComponent={
           <View style={styles.imageContainer}>
             {property?.propertyImages && property?.propertyImages.length > 0 ? (
-              <Carousel
-                loop
-                height={300}
-                width={Dimensions.get("window").width}
-                // autoPlay
-                // autoPlayInterval={3000}
-                data={property.propertyImages}
-                renderItem={({ item, index }) => (
-                  <View key={index}>
-                    <Image
-                      source={{ uri: item }}
-                      resizeMode="cover"
-                      style={styles.image}
-                    />
-                  </View>
-                )}
-              />
+              <Pressable onPress={() => setModalVisible(true)}>
+                <Carousel
+                  loop
+                  height={300}
+                  width={Dimensions.get("window").width}
+                  data={property.propertyImages}
+                  renderItem={({ item, index }) => (
+                    <View key={index}>
+                      <Image
+                        source={{ uri: item }}
+                        resizeMode="cover"
+                        style={styles.image}
+                      />
+                    </View>
+                  )}
+                />
+              </Pressable>
             ) : (
               <Text>No images available</Text>
             )}
-
-            <TouchableOpacity
-              onPress={(e) => {
-                console.log("clicked");
-                setModalVisible(true);
-                e.stopPropagation();
-              }}
-              style={{ zIndex: 10 }}
-            >
-              <View style={styles.allPhotosTextContainer}>
-                <Entypo name="images" color={"white"} size={24} />
-                {/* <Text style={styles.allPhotosText}> All Photos</Text> */}
-              </View>
-            </TouchableOpacity>
           </View>
         }
         renderItem={() => (
@@ -394,10 +431,33 @@ export default function PropertyInfo() {
         )}
       />
       {modalVisible && renderAllPhotos()}
+      <Modalize ref={modalizeRef} modalHeight={500}>
+        <View style={{ padding: 20 }}>
+          <View style={styles.amenitiesContainer}>
+            {Object.keys({
+              ...property?.generalAmenities,
+              ...property?.safeAmenities,
+              ...property?.otherAmenities,
+            })
+              ?.filter(
+                (item, index) =>
+                  (
+                    property?.generalAmenities as {
+                      [key: string]: boolean;
+                    }
+                  )[item] == true
+              )
+              ?.map((amenity, ind) => (
+                <View style={styles.amenityItem} key={ind}>
+                  <Text>{amenity}</Text>
+                </View>
+              ))}
+          </View>
+        </View>
+      </Modalize>
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   safeAreaView: { flex: 1 },
   imageContainer: {},
@@ -410,7 +470,6 @@ const styles = StyleSheet.create({
     height: 35,
     width: "15%",
     gap: 4,
-    // position: "absolute",
     top: 20,
     right: 20,
     backgroundColor: "black",
@@ -515,8 +574,8 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginTop: 15,
   },
-  
- 
-  
-  
+  gridItem: {
+    marginBottom: 7,
+    borderRadius: 8,
+  },
 });
