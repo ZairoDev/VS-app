@@ -33,6 +33,7 @@ export default function PropertyInfo() {
   const { id } = useLocalSearchParams();
 
   const [imagesModal, setImagesModal] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [property, setProperty] = useState<PropertyInterface>();
 
@@ -56,6 +57,11 @@ export default function PropertyInfo() {
   useEffect(() => {
     getproperty();
   }, []);
+
+  const openImageViewer=(index:number)=>{
+    setImageIndex(index)
+    setImagesModal(true)
+  }
 
   const bentoStyle = (index: number) => {
     const styles = [
@@ -84,6 +90,7 @@ export default function PropertyInfo() {
           enableSwipeDown={true}
           onSwipeDown={() => setImagesModal(false)}
           imageUrls={images}
+          index={imageIndex}
         />
       </Modal>
     );
@@ -119,7 +126,7 @@ export default function PropertyInfo() {
               {property?.propertyImages.map((item, index: number) => (
                 <TouchableOpacity
                   key={index}
-                  onPress={() => setImagesModal(true)}
+                  onPress={() => openImageViewer(index)}
                 >
                   <View
                     key={index}
@@ -141,7 +148,6 @@ export default function PropertyInfo() {
                 right: 30,
                 backgroundColor: "rgba(0,0,0,0.6)",
                 padding: 10,
-
                 borderRadius: 30,
               }}
               onPress={() => setModalVisible(!modalVisible)}
