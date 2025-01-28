@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocalSearchParams } from "expo-router";
 import Carousel from "react-native-reanimated-carousel";
 import ImageViewer from "react-native-image-zoom-viewer";
@@ -31,17 +31,21 @@ import {
 
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams();
-
+  
   const [imagesModal, setImagesModal] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
+  const [bottomsheetVisible, setBottomsheetVisible] = useState(false);
   const [property, setProperty] = useState<PropertyInterface>();
 
   const modalizeRef = useRef<Modalize>(null);
 
-  const openBottomsheet = () => {
-    modalizeRef.current?.open();
-  };
+  const handleOpenBottomsheet = () => {
+    if (modalizeRef.current) {
+        modalizeRef.current.open();
+    }
+};
+
 
   const getproperty = async () => {
     try {
@@ -108,7 +112,7 @@ export default function PropertyInfo() {
         }}
       >
         <Modal
-          animationType="slide"
+          animationType="fade"
           transparent={true}
           visible={modalVisible}
           onRequestClose={() => {
@@ -249,9 +253,9 @@ export default function PropertyInfo() {
               borderWidth: 1,
             }}
           >
-            <Pressable onPress={openBottomsheet}>
+            <TouchableOpacity onPress={handleOpenBottomsheet}>
               <Text>View All..</Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -399,7 +403,7 @@ export default function PropertyInfo() {
         keyExtractor={(item, index) => index.toString()}
         ListHeaderComponent={
           <View style={styles.imageContainer}>
-            {property?.propertyImages && property?.propertyImages.length > 0 ? (
+            {property?.propertyImages && property?.propertyImages?.length > 0 ? (
               <Pressable onPress={() => setModalVisible(true)}>
                 <Carousel
                   loop
@@ -437,7 +441,7 @@ export default function PropertyInfo() {
         )}
       />
       {modalVisible && renderAllPhotos()}
-      <Modalize ref={modalizeRef} modalHeight={500}>
+      <Modalize ref={modalizeRef} adjustToContentHeight childrenStyle={{height:500}} onClose={() => setBottomsheetVisible(false) } onOpen={() => setBottomsheetVisible(true)}>
         <View style={{ padding: 20 }}>
           <View style={styles.amenitiesContainer}>
             {Object.keys({

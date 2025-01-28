@@ -7,7 +7,7 @@ import { Fontisto } from "@expo/vector-icons";
 type FeaturedPropertyTypes = {
   id: number;
   name: string;
-  icon: JSX.Element;
+  icon: (color:string)=>JSX.Element;
 };
 
 export const Countries = [
@@ -66,42 +66,42 @@ export const propertyTypes: FeaturedPropertyTypes[] = [
   {
     id: 1,
     name: "Apartment",
-    icon: <MaterialIcons name="apartment" size={24} color="gray" />,
+    icon:(color:string)=> <MaterialIcons name="apartment" size={24} color={color} />,
   },
   {
     id: 2,
     name: "Villa",
-    icon: <MaterialIcons name="villa" size={24} color="gray" />,
+    icon:(color:string)=> <MaterialIcons name="villa" size={24} color={color} />,
   },
   {
     id: 3,
     name: "Holiday Homes",
-    icon: <Fontisto name="holiday-village" size={24} color="gray" />,
+    icon:(color:string)=> <Fontisto name="holiday-village" size={24} color={color} />,
   },
   {
     id: 4,
     name: "Hotel",
-    icon: <FontAwesome5 name="hotel" size={20} color="gray" />,
+    icon:(color:string)=> <FontAwesome5 name="hotel" size={20} color={color} />,
   },
   {
     id: 5,
     name: "Detached House",
-    icon: <MaterialIcons name="house" size={24} color="gray" />,
+    icon:(color:string)=> <MaterialIcons name="house" size={24} color={color} />,
   },
   {
     id: 6,
     name: "Studio",
-    icon: <FontAwesome5 name="camera-retro" size={19} color="gray" />,
+    icon:(color:string)=> <FontAwesome5 name="camera-retro" size={19} color={color} />,
   },
   {
     id: 7,
     name: "Farmhouse",
-    icon: <MaterialIcons name="forest" size={24} color="gray" />,
+    icon:(color:string)=> <MaterialIcons name="forest" size={24} color={color} />,
   },
   {
     id: 8,
     name: "Cottage",
-    icon: <MaterialIcons name="cottage" size={24} color="gray" />,
+    icon:(color:string)=> <MaterialIcons name="cottage" size={24} color={color} />,
   },
 ];
 

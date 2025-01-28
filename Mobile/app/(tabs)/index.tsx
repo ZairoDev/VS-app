@@ -333,7 +333,7 @@ export default function Index() {
                         isSelected && styles.selectedPropertyTypeItem,
                       ]}
                     >
-                      {item.icon}
+                      {item.icon(isSelected?"white":"gray")}
                       <Text
                         style={[
                           styles.propertyTypeText,
@@ -348,8 +348,7 @@ export default function Index() {
               }}
             />
           </View>
-        }
-        // ListFooterComponent={<View>{loading && skeleton()}</View>}
+        }    
       />
     </SafeAreaView>
   );
@@ -479,10 +478,13 @@ const styles = StyleSheet.create({
   },
   selectedPropertyTypeItem: {
     backgroundColor: "orange",
+    // backgroundColor: "white", 
+    borderColor:"orange",  
     fontWeight: 700,
+    borderWidth: 2,
   },
   selectedPropertyTypeText: {
     color: "white",
-    fontWeight: 500,
+    // fontWeight: 500,
   },
 });
