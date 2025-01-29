@@ -6,9 +6,12 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
+  Modal,
+  Linking,
 } from "react-native";
 import axios from "axios";
-import { Link, Route } from "expo-router";
+import { Link, Route, router } from "expo-router";
 import { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -16,6 +19,14 @@ import { Countries } from "@/Constants/Country";
 import { PropertyInterface } from "@/data/types";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { propertyTypes } from "@/Constants/Country";
+
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
+import { AnimatedView } from "react-native-reanimated/lib/typescript/component/View";
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -38,11 +49,15 @@ enum SelectedType {
 export default function Index() {
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(10);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [properties, setProperties] = useState<PropertyInterface[]>([]);
-
+  const [isModalVisible, setModalVisible] = useState(false);
   const [propertyType, setPropertyType] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
+  const [properties, setProperties] = useState<PropertyInterface[]>([]);
+
+  const height = useSharedValue(60);
+  const opacity = useSharedValue(0);
 
   const fetchProperties = async () => {
     try {
@@ -95,6 +110,29 @@ export default function Index() {
     console.log("property array: ", properties.length);
   }, [properties]);
 
+  const animatedStyles = useAnimatedStyle(() => {
+    return {
+      height: height.value,
+      overflow: "hidden",
+    };
+  });
+
+  const filterOpacity = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    };
+  });
+
+  const toggleExpand = () => {
+    if (expanded) {
+      height.value = withTiming(60, { duration: 300, easing: Easing.ease });
+      opacity.value = withTiming(0, { duration: 200 });
+    } else {
+      height.value = withTiming(200, { duration: 300, easing: Easing.ease });
+      opacity.value = withTiming(1, { duration: 200 });
+    }
+    setExpanded(!expanded);
+  };
   // const skeleton = () => (
   //   <View
   //     style={{
@@ -223,6 +261,40 @@ export default function Index() {
   //   </View>
   // );
 
+  // const searchModal = () => {
+  //   return (
+  //     <View
+  //     style={{flex: 1,
+  //       justifyContent: 'center',
+  //       alignItems: 'center',}}
+
+  //     >
+  //       <Modal
+  //         animationType="slide"
+  //         transparent={true}
+  //         onRequestClose={() => setModalVisible(false)}
+  //         visible={isModalVisible}
+  //       >
+  //         <View style={{
+  //         marginTop:"20%",
+  //         marginHorizontal:30,
+  //         backgroundColor: "white",
+  //         borderRadius: 20,
+  //         padding: 35,
+  //         alignItems: "center",
+  //         shadowColor: "#000",
+
+  //         shadowOpacity: 0.25,
+  //         shadowRadius: 4,
+  //         elevation: 5,
+  //       }}>
+  //           <Text>This is your frieend aniket</Text>
+  //         </View>
+  //       </Modal>
+  //     </View>
+  //   );
+  // };
+
   return (
     <SafeAreaView style={styles.mainContainer}>
       <FlatList
@@ -271,14 +343,61 @@ export default function Index() {
         onEndReachedThreshold={0.7}
         ListHeaderComponent={
           <View style={styles.mainContainer}>
-            <View style={styles.inputDiv}>
-              <Ionicons name="search" size={24} color={"gray"} />
-              <TextInput
-                style={styles.input}
-                placeholder="Start Search"
-                placeholderTextColor={"gray"}
-              />
-              <Ionicons name="options" size={24} color={"gray"} />
+            {/* <View style={styles.inputDiv}> */}
+            {/* <Animated.View style={[styles.accordion, animatedStyles]}>
+              <Pressable
+                style={{
+                  width: "80%",
+                  height: 50,
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+                onPress={() => router.push("/(screens)/search-page")}
+              >
+                <Ionicons name="search" size={24} color={"gray"} />
+                <Text style={styles.input}>Start Search</Text>
+              </Pressable>
+              <TouchableOpacity onPress={toggleExpand}>
+                <Ionicons name="options" size={24} color={"gray"} />
+              </TouchableOpacity>
+
+              <Animated.View style={[styles.filtersContainer, filterOpacity]}>
+                <Text style={styles.filterText}>Filter 1</Text>
+                <Text style={styles.filterText}>Filter 2</Text>
+                <Text style={styles.filterText}>Filter 3</Text>
+              </Animated.View>
+            </Animated.View>
+            </View> */}
+            <View style={styles.container}>
+              <View style={{display:"flex",flexDirection:"row"}}>
+                <Animated.View style={[styles.accordion, animatedStyles]}>
+                  
+                  <View
+                    
+                    style={styles.header}
+                  >
+                    <TouchableOpacity onPress={toggleExpand}>
+                    <Ionicons name="options" size={24} color={"black"} />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity>
+                    <Ionicons name="search" size={24} color={"black"} />
+                  </TouchableOpacity>
+                  </View>
+                  
+
+                  <Animated.View
+                    style={[styles.filtersContainer, filterOpacity]}
+                  >
+                    <Text style={styles.filterText}>Filter 1</Text>
+                    <Text style={styles.filterText}>Filter 2</Text>
+                    <Text style={styles.filterText}>Filter 3</Text>
+                  </Animated.View>
+                </Animated.View>
+                
+              </View>
             </View>
 
             <FlatList
@@ -333,7 +452,7 @@ export default function Index() {
                         isSelected && styles.selectedPropertyTypeItem,
                       ]}
                     >
-                      {item.icon(isSelected?"white":"gray")}
+                      {item.icon(isSelected ? "white" : "gray")}
                       <Text
                         style={[
                           styles.propertyTypeText,
@@ -348,8 +467,9 @@ export default function Index() {
               }}
             />
           </View>
-        }    
+        }
       />
+      {/* {isModalVisible && searchModal()} */}
     </SafeAreaView>
   );
 }
@@ -361,38 +481,12 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  inputDiv: {
-    textAlign: "left",
-    width: "90%",
-    height: 50,
-    backgroundColor: "#e5e4e2",
-    borderRadius: 15,
-    margin: 16,
-    fontSize: 15,
-    paddingHorizontal: 10,
-    shadowColor: "#000",
-    elevation: 10,
-    shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 0.2,
-    flexShrink: 1,
-    maxWidth: "88%",
-    overflow: "hidden",
-    flexDirection: "row",
-    alignItems: "center",
-    columnGap: 2,
-  },
   input: {
-    textAlign: "left",
-    width: "75%",
-    height: 50,
-    backgroundColor: "#e5e4e2",
-    borderRadius: 15,
-    margin: 16,
-    paddingLeft: 20,
-    fontSize: 15,
-    flexShrink: 1,
-    maxWidth: "100%",
-    overflow: "hidden",
+    fontSize: 18,
+    fontWeight: "500", // Corrected font weight
+    color: "gray",
+    flex: 1, // Allow text to take available space
+    textAlign: "center",
   },
   horizontalList: {
     padding: 8,
@@ -478,8 +572,8 @@ const styles = StyleSheet.create({
   },
   selectedPropertyTypeItem: {
     backgroundColor: "orange",
-    // backgroundColor: "white", 
-    borderColor:"orange",  
+    // backgroundColor: "white",
+    borderColor: "orange",
     fontWeight: 700,
     borderWidth: 2,
   },
@@ -487,4 +581,61 @@ const styles = StyleSheet.create({
     color: "white",
     // fontWeight: 500,
   },
+  filtersContainer: {
+    padding: 10,
+    borderWidth: 4,
+    borderColor: "pink",
+  },
+  filterText: {
+    fontSize: 16,
+    marginVertical: 5,
+  },
+  accordion: {
+    width:"90%",
+    backgroundColor: "#f0f0f0",
+    height: "auto",
+    display: "flex",
+    borderWidth:1,
+    // flexDirection:"row"
+  },
+  header: {
+    width:"100%",
+    height: 50,
+    display:"flex",
+
+    justifyContent: "space-between",
+    flexDirection:"row",
+    // alignItems: "center",
+    borderWidth: 1,
+    borderColor: "blue",
+  },
+  container:{
+    width:"100%",
+    margin:16,
+    // backgroundColor: "#f0f0f0",
+    paddingHorizontal:10, 
+    
+    display:"flex",
+    alignItems:"center",     
+    justifyContent:"center",
+  },
+  inputDiv: {
+    
+    height: 50,
+    backgroundColor: "#f0f0f0", // Softer background color
+    borderRadius: 15,
+    margin: 16,
+    paddingHorizontal: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "lightgray",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 2, height: 2 },
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  
 });
