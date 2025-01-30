@@ -12,21 +12,14 @@ import {
 } from "react-native";
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { Switch } from "react-native-paper";
 import { Countries } from "@/Constants/Country";
 import { PropertyInterface } from "@/data/types";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { propertyTypes } from "@/Constants/Country";
-
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from "react-native-reanimated";
-import { AnimatedView } from "react-native-reanimated/lib/typescript/component/View";
+import { Modalize } from "react-native-modalize";
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -49,15 +42,14 @@ enum SelectedType {
 export default function Index() {
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(10);
-  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isModalVisible, setModalVisible] = useState(false);
+  const [isBottomsheetVisible, setBottomsheetVisible] = useState(false);
   const [propertyType, setPropertyType] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
+  const [isEnabled, setIsEnabled] = useState(false);
 
-  const height = useSharedValue(60);
-  const opacity = useSharedValue(0);
+  const modalizeRef = useRef<Modalize>(null);
 
   const fetchProperties = async () => {
     try {
@@ -110,29 +102,12 @@ export default function Index() {
     console.log("property array: ", properties.length);
   }, [properties]);
 
-  const animatedStyles = useAnimatedStyle(() => {
-    return {
-      height: height.value,
-      overflow: "hidden",
-    };
-  });
-
-  const filterOpacity = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-    };
-  });
-
-  const toggleExpand = () => {
-    if (expanded) {
-      height.value = withTiming(60, { duration: 300, easing: Easing.ease });
-      opacity.value = withTiming(0, { duration: 200 });
-    } else {
-      height.value = withTiming(200, { duration: 300, easing: Easing.ease });
-      opacity.value = withTiming(1, { duration: 200 });
-    }
-    setExpanded(!expanded);
+  const openBottomSheet = () => {
+    modalizeRef.current?.open();
   };
+
+  const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
+
   // const skeleton = () => (
   //   <View
   //     style={{
@@ -343,12 +318,11 @@ export default function Index() {
         onEndReachedThreshold={0.7}
         ListHeaderComponent={
           <View style={styles.mainContainer}>
-            {/* <View style={styles.inputDiv}> */}
-            {/* <Animated.View style={[styles.accordion, animatedStyles]}>
+            <View style={styles.inputDiv}>
               <Pressable
                 style={{
                   width: "80%",
-                  height: 50,
+                  height:50,
                   display: "flex",
                   flexDirection: "row",
                   alignItems: "center",
@@ -359,47 +333,10 @@ export default function Index() {
                 <Ionicons name="search" size={24} color={"gray"} />
                 <Text style={styles.input}>Start Search</Text>
               </Pressable>
-              <TouchableOpacity onPress={toggleExpand}>
+              <TouchableOpacity onPress={openBottomSheet}>
                 <Ionicons name="options" size={24} color={"gray"} />
               </TouchableOpacity>
-
-              <Animated.View style={[styles.filtersContainer, filterOpacity]}>
-                <Text style={styles.filterText}>Filter 1</Text>
-                <Text style={styles.filterText}>Filter 2</Text>
-                <Text style={styles.filterText}>Filter 3</Text>
-              </Animated.View>
-            </Animated.View>
-            </View> */}
-            <View style={styles.container}>
-              <View style={{display:"flex",flexDirection:"row"}}>
-                <Animated.View style={[styles.accordion, animatedStyles]}>
-                  
-                  <View
-                    
-                    style={styles.header}
-                  >
-                    <TouchableOpacity onPress={toggleExpand}>
-                    <Ionicons name="options" size={24} color={"black"} />
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity>
-                    <Ionicons name="search" size={24} color={"black"} />
-                  </TouchableOpacity>
-                  </View>
-                  
-
-                  <Animated.View
-                    style={[styles.filtersContainer, filterOpacity]}
-                  >
-                    <Text style={styles.filterText}>Filter 1</Text>
-                    <Text style={styles.filterText}>Filter 2</Text>
-                    <Text style={styles.filterText}>Filter 3</Text>
-                  </Animated.View>
-                </Animated.View>
-                
-              </View>
             </View>
-
             <FlatList
               style={styles.horizontalList}
               data={Countries}
@@ -413,8 +350,7 @@ export default function Index() {
                     style={styles.countryItem}
                     onPress={() =>
                       handleSelect(SelectedType.COUNTRY, item.name)
-                    }
-                  >
+                    }>
                     <Image
                       source={{
                         uri:
@@ -469,7 +405,32 @@ export default function Index() {
           </View>
         }
       />
-      {/* {isModalVisible && searchModal()} */}
+      <Modalize
+        ref={modalizeRef}
+        adjustToContentHeight
+        childrenStyle={{ height: 200 }}
+        onClose={() => setBottomsheetVisible(false)}
+        onOpen={() => setBottomsheetVisible(true)}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-around",
+            alignItems: "center",
+            margin: 20,
+          }}
+        >
+          <Text style={{ fontSize: 20, fontWeight: "400" }}>
+            {isEnabled ? "Slide for Short term" : "Slide for Long term"}
+          </Text>
+          <Switch
+            trackColor={{ false: "orange", true: "orange" }}
+            thumbColor={isEnabled ? "#f4f3f4" : "#f4f3f4"}
+            onChange={toggleSwitch}
+            value={isEnabled}
+          />
+        </View>
+      </Modalize>
     </SafeAreaView>
   );
 }
@@ -591,36 +552,39 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   accordion: {
-    width:"90%",
-    backgroundColor: "#f0f0f0",
-    height: "auto",
+    width: "90%",
+    backgroundColor: "blue",
+    // maxHeight: 50,
     display: "flex",
-    borderWidth:1,
+    borderRadius: 20,
     // flexDirection:"row"
+    borderWidth: 2,
+    // backgroundColor:"yellow",
   },
   header: {
-    width:"100%",
+    width: "100%",
     height: 50,
-    display:"flex",
-
+    display: "flex",
+    padding: 10,
     justifyContent: "space-between",
-    flexDirection:"row",
+    flexDirection: "row",
+    borderRadius: 10,
+    backgroundColor: "orange",
+
     // alignItems: "center",
-    borderWidth: 1,
-    borderColor: "blue",
   },
-  container:{
-    width:"100%",
-    margin:16,
+  container: {
+    width: "100%",
+
+    margin: 16,
     // backgroundColor: "#f0f0f0",
-    paddingHorizontal:10, 
-    
-    display:"flex",
-    alignItems:"center",     
-    justifyContent:"center",
+    paddingHorizontal: 10,
+    // borderWidth:3,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   inputDiv: {
-    
     height: 50,
     backgroundColor: "#f0f0f0", // Softer background color
     borderRadius: 15,
@@ -637,5 +601,4 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  
 });

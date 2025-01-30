@@ -45,8 +45,6 @@ export default function PropertyInfo() {
         modalizeRef.current.open();
     }
 };
-
-
   const getproperty = async () => {
     try {
       const response = await axios.post(
