@@ -44,5 +44,36 @@ export const globalStyles = StyleSheet.create({
     textAlign: "justify",
     color: "#4D4C5C",
   },
+  btn: {
+    backgroundColor: "#FC941E",
+    height: 50,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  btnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "mon-b",
+    textAlign: "center",
+  },
+  btnIcon: {
+    position: "absolute",
+    left: 16,
+  },
+  footer: {
+    position: "absolute",
+    height: 80,
+    bottom:-50,
+    left: 0,
+    width: "100%",  
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderTopColor: "gray",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    zIndex: 10,
+    elevation:5
+  },
 });
  

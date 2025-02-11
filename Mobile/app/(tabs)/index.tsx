@@ -108,168 +108,7 @@ export default function Index() {
 
   const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
 
-  // const skeleton = () => (
-  //   <View
-  //     style={{
-  //       display: "flex",
-  //       marginTop: 10,
-  //       backgroundColor: "#fff",
-  //       alignItems: "center",
-  //       width: "100%",
-  //       height: "100%",
-  //     }}
-  //   >
-  //     <View
-  //       style={{
-  //         width: 300,
-  //         height: 300,
-  //         backgroundColor: "#e0e0e0",
-  //         borderRadius: 10,
-  //         marginRight: 10,
-  //       }}
-  //     />
-  //     <View style={{ width: 300, height: 300 }}>
-  //       <View
-  //         style={{
-  //           width: 100,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //       <View
-  //         style={{
-  //           width: 150,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //       <View
-  //         style={{
-  //           width: 200,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //     </View>
-  //     <View
-  //       style={{
-  //         width: 300,
-  //         height: 300,
-  //         backgroundColor: "#e0e0e0",
-  //         borderRadius: 10,
-  //         marginRight: 10,
-  //       }}
-  //     />
-  //     <View style={{ width: 300, height: 300 }}>
-  //       <View
-  //         style={{
-  //           width: 100,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //       <View
-  //         style={{
-  //           width: 150,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //       <View
-  //         style={{
-  //           width: 200,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //     </View>
-  //     <View
-  //       style={{
-  //         width: 300,
-  //         height: 300,
-  //         backgroundColor: "#e0e0e0",
-  //         borderRadius: 10,
-  //         marginRight: 10,
-  //       }}
-  //     />
-  //     <View style={{ width: 300, height: 300 }}>
-  //       <View
-  //         style={{
-  //           width: 100,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //       <View
-  //         style={{
-  //           width: 150,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //       <View
-  //         style={{
-  //           width: 200,
-  //           height: 15,
-  //           backgroundColor: "#e0e0e0",
-  //           borderRadius: 5,
-  //           marginTop: 10,
-  //         }}
-  //       />
-  //     </View>
-  //   </View>
-  // );
-
-  // const searchModal = () => {
-  //   return (
-  //     <View
-  //     style={{flex: 1,
-  //       justifyContent: 'center',
-  //       alignItems: 'center',}}
-
-  //     >
-  //       <Modal
-  //         animationType="slide"
-  //         transparent={true}
-  //         onRequestClose={() => setModalVisible(false)}
-  //         visible={isModalVisible}
-  //       >
-  //         <View style={{
-  //         marginTop:"20%",
-  //         marginHorizontal:30,
-  //         backgroundColor: "white",
-  //         borderRadius: 20,
-  //         padding: 35,
-  //         alignItems: "center",
-  //         shadowColor: "#000",
-
-  //         shadowOpacity: 0.25,
-  //         shadowRadius: 4,
-  //         elevation: 5,
-  //       }}>
-  //           <Text>This is your frieend aniket</Text>
-  //         </View>
-  //       </Modal>
-  //     </View>
-  //   );
-  // };
-
+  
   return (
     <SafeAreaView style={styles.mainContainer}>
       <FlatList
@@ -328,12 +167,12 @@ export default function Index() {
                   alignItems: "center",
                   justifyContent: "space-between",
                 }}
-                onPress={() => router.push("/(screens)/search-page")}
+                onPress={() => router.push("/(screens)/pages/search-page")}
               >
                 <Ionicons name="search" size={24} color={"gray"} />
                 <Text style={styles.input}>Start Search</Text>
               </Pressable>
-              <TouchableOpacity onPress={openBottomSheet}>
+              <TouchableOpacity onPress={()=>router.push("/(screens)/pages/filter-page")}>
                 <Ionicons name="options" size={24} color={"gray"} />
               </TouchableOpacity>
             </View>

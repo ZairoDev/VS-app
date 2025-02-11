@@ -5,6 +5,7 @@ import Carousel from "react-native-reanimated-carousel";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Modalize } from "react-native-modalize";
+import Animated,{SlideInDown} from "react-native-reanimated";
 
 import {
   Text,
@@ -463,6 +464,29 @@ export default function PropertyInfo() {
           </View>
         </View>
       </Modalize>
+      <Animated.View
+        entering={SlideInDown}  
+        style={globalStyles.footer}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <TouchableOpacity style={styles.footerText}>
+            <Text style={styles.footerPrice}>€{property?.basePrice}</Text>
+            <Text>/night</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[globalStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}
+          >
+            <Text style={globalStyles.btnText}>Reserve</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -585,5 +609,16 @@ const styles = StyleSheet.create({
   gridItem: {
     marginBottom: 7,
     borderRadius: 8,
+  },
+  footerPrice: {
+    fontSize: 18,
+    fontFamily: "mon-sb",
+  },
+  footerText: {
+    height: "100%",
+    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    // gap: 4,
   },
 });
