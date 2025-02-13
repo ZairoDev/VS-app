@@ -10,6 +10,10 @@ export interface FetchPropertiesRequest {
   limit: number;
   selectedCountry: string[];
   propertyType: string[];
+  beds:number;
+  bedrooms:number;
+  bathroom:number;
+
 }
 
 const getAllProperties: RequestHandler = async (
@@ -17,10 +21,10 @@ const getAllProperties: RequestHandler = async (
   res: Response
 ) => {
   try {
-    const { skip, limit, propertyType, selectedCountry } =
+    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom} =
       (await req.body) as FetchPropertiesRequest;
 
-    console.log("request body: ", skip, limit, propertyType, selectedCountry);
+    console.log("request body: ", skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom);
 
     //! created query to filter properties based on propertyType and selectedCountry
     const query: FilterQuery<Document> = {};
@@ -30,6 +34,16 @@ const getAllProperties: RequestHandler = async (
     if (selectedCountry.length) {
       query["country"] = { $in: selectedCountry };
     }
+    if(beds !== undefined && beds !== null && beds>0){
+      query["beds"] = { $gte: beds };
+    }
+    if(bathroom !== undefined && bathroom !== null && bathroom>0){
+      query["bathroom"] = { $gte: bathroom } ;
+    }
+    if(bedrooms !== undefined && bedrooms !== null && bedrooms>0){
+      query["bedrooms"] =  { $gte: bedrooms }  ;
+    }
+ 
 
     console.log("query: ", query);
 

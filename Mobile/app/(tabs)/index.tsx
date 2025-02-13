@@ -28,6 +28,9 @@ export interface FetchPropertiesRequest {
   limit: number;
   selectedCountry: string[];
   propertyType: string[];
+  beds:number
+  bedrooms:number
+  bathroom:number
 }
 
 export interface FetchPropertiesResponse {
@@ -39,30 +42,37 @@ export interface FetchPropertiesResponse {
 enum SelectedType {
   COUNTRY = "country",
   PROPERTY_TYPE = "propertyType",
+  BEDS="beds",
+  BEDROOMS="bedrooms",
+  BATHROOMS="bathroom"
 }
 
 export default function Index() {
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(false);
-  const [isBottomsheetVisible, setBottomsheetVisible] = useState(false);
+;
   const [propertyType, setPropertyType] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
-  const [isEnabled, setIsEnabled] = useState(false);
 
-  const {beds,bathrooms,bedrooms,priceRange} = useStore();
+  const {beds,bathroom,bedrooms,minPrice,maxPrice,handleCount} = useStore();
 
   const fetchProperties = async () => {
     try {
-      setLoading(true);
+      setLoading(true); 
+      // setProperties([]);
       console.log("process: ", process.env.EXPO_PUBLIC_BASE_URL);
-      console.log("store se aate hue beds",{beds})
+      console.log("store se aate hue beds,bathrooms aur bedrooms",{beds,bathroom,bedrooms})
       const requestBody: FetchPropertiesRequest = {
         skip,
         limit,
         selectedCountry,
         propertyType,
+        beds,
+        bedrooms,
+        bathroom
+
       };
 
       const response = await axios.post<FetchPropertiesResponse>(
@@ -70,6 +80,7 @@ export default function Index() {
         requestBody
       );
       console.log("response", response.data.data.length);
+      // setProperties(response.data.data);
       setProperties((prev) => [...prev, ...response.data.data]);
     } catch (err) {
       console.log("err in explore page: ", err);
@@ -78,6 +89,7 @@ export default function Index() {
     }
   };
 
+ 
   const handleSelect = (type: string, value: string) => {
     setProperties([]);
     setSkip(0);
@@ -96,9 +108,19 @@ export default function Index() {
     }
   };
 
+  
+
+
+  useEffect(()=>{
+    setProperties([]);
+    setSkip(0);
+  },[beds,bedrooms,bathroom]);
+
+
+
   useEffect(() => {
     fetchProperties();
-  }, [skip, propertyType, selectedCountry]);
+  }, [skip, propertyType, selectedCountry,beds,bathroom,bedrooms]);
 
   useEffect(() => {
     console.log("property array: ", properties.length);
@@ -106,7 +128,7 @@ export default function Index() {
 
 
 
-  const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
+  
 
   
   return (

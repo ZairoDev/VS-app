@@ -12,8 +12,9 @@ import Slider from "@react-native-community/slider";
 import { useNavigation ,router} from "expo-router";
 
 import useStore from "@/store/filter-store";
+import { TextInput } from "react-native-gesture-handler";
 
-type CountType = "BEDROOMS" | "BATHROOMS" | "BEDS";
+type CountType = "BEDROOMS" | "BATHROOM" | "BEDS";
 type OperationType = "INCREMENT" | "DECREMENT";
 
 export default function FilterPage() {
@@ -21,8 +22,9 @@ export default function FilterPage() {
     isEnabled, 
     bedrooms, 
     beds, 
-    bathrooms, 
-    priceRange, 
+    bathroom, 
+    minPrice,
+    maxPrice,
     isFilterChanged, 
     modalVisible, 
     allowCooking, 
@@ -35,7 +37,8 @@ export default function FilterPage() {
     handleAllowPets,
     applyFilters,
     clearFilters,
-    updatePriceRange,
+    updateMinPrice,
+    updateMaxPrice,
     setModalVisible
   } = useStore();
   
@@ -85,10 +88,10 @@ export default function FilterPage() {
   const getAppliedFiltersCount = () => {
     let count = 0;
     
-    if (bedrooms !== 1) count++;
-    if (beds !== 1) count++;
-    if (bathrooms !== 1) count++;
-    if (priceRange !== 10) count++;
+    if (bedrooms !== 0) count++;
+    if (beds !== 0) count++;
+    if (bathroom !== 0) count++;
+    
     if (allowCooking) count++;
     if (allowParty) count++;
     if (allowPets) count++;
@@ -101,7 +104,7 @@ export default function FilterPage() {
     if (isFilterChanged) {
       setModalVisible(true);
     }
-  }, [isEnabled, allowCooking, allowParty, allowPets, priceRange, bedrooms, beds, bathrooms]);
+  }, [isEnabled, allowCooking, allowParty, allowPets, minPrice, maxPrice, bedrooms, beds, bathroom]);
 
   return (
     <View
@@ -130,22 +133,32 @@ export default function FilterPage() {
       </View>
 
       <View style={styles.priceRangeContainer}>
-        <Text style={{ fontSize: 15 }}>Price Range: €{priceRange}</Text>
-        <Slider
-          style={{ width: "100%", height: 40 }}
-          value={priceRange}
-          onValueChange={updatePriceRange}
-          minimumValue={10}
-          maximumValue={500}
-          step={10}
-          minimumTrackTintColor="#000000"
-          maximumTrackTintColor="#000000"
-          thumbTintColor="orange"
+        <Text style={{ fontSize: 15 }}>Price Range in €</Text>
+        <View style={styles.inputContainer}>
+        {/* Minimum Price Input */}
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          placeholder="Min Price"
+          value={minPrice.toString()}
+          onChangeText={(text) => updateMinPrice(text)}
         />
+
+        <Text style={{ fontSize: 18, marginHorizontal: 10 }}> - </Text>
+
+        {/* Maximum Price Input */}
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          placeholder="Max Price"
+          value={maxPrice.toString()}
+          onChangeText={(text) => updateMaxPrice(text)}
+        />
+      </View>
       </View>
 
       <View style={styles.amenitiesFiltersContainer}>
-        {["BEDS", "BEDROOMS", "BATHROOMS"].map((type) => (
+        {["BEDS", "BEDROOMS", "BATHROOM"].map((type) => (
           <View key={type} style={styles.amenitiesContainer}>
             <Text style={{ fontSize: 18 }}>{type}</Text>
             <View style={styles.counterContainer}>
@@ -160,7 +173,7 @@ export default function FilterPage() {
                   ? beds
                   : type === "BEDROOMS"
                   ? bedrooms
-                  : bathrooms}
+                  : bathroom}
               </Text>
               <TouchableOpacity
                 style={styles.button}
@@ -355,5 +368,20 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 8,
+    width: "40%",
+    borderRadius: 5,
+    textAlign: "center",
   },
 });
