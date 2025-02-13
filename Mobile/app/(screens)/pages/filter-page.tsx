@@ -9,62 +9,78 @@ import {
 } from "react-native";
 
 import Slider from "@react-native-community/slider";
+import { useNavigation ,router} from "expo-router";
+
+import useStore from "@/store/filter-store";
 
 type CountType = "BEDROOMS" | "BATHROOMS" | "BEDS";
 type OperationType = "INCREMENT" | "DECREMENT";
 
 export default function FilterPage() {
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [bedrooms, setBedrooms] = useState(1);
-  const [beds, setBeds] = useState(1);
-  const [bathrooms, setBathrooms] = useState(1);
-  const [priceRange, setPriceRange] = useState(10);
-  const [isFilterChanged, setIsFilterChanged] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [allowCooking, setAllowCooking] = useState(false);
-  const [allowParty, setAllowParty] = useState(false);
-  const [allowPets, setAllowPets] = useState(false);
+  const {
+    isEnabled, 
+    bedrooms, 
+    beds, 
+    bathrooms, 
+    priceRange, 
+    isFilterChanged, 
+    modalVisible, 
+    allowCooking, 
+    allowParty, 
+    allowPets,
+    toggleSwitch,
+    handleCount,
+    handleAllowCooking,
+    handleAllowParty,
+    handleAllowPets,
+    applyFilters,
+    clearFilters,
+    updatePriceRange,
+    setModalVisible
+  } = useStore();
+  
+  const navigation=useNavigation()
 
-  const toggleSwitch = () =>{ setIsEnabled((prev) => !prev); setIsFilterChanged(true)};
-  const handleAllowCooking = () =>{ setAllowCooking((prev) => !prev); setIsFilterChanged(true)};
-  const handleAllowParty = () =>{ setAllowParty((prev) => !prev); setIsFilterChanged(true)};
-  const handleAllowPets = () =>{ setAllowPets((prev) => !prev); setIsFilterChanged(true)};
+  // const handleCount = (type: CountType, operation: OperationType) => {
+  //   setIsFilterChanged(true);
+  //   switch (type) {
+  //     case "BEDROOMS":
+  //       setBedrooms((prev) =>
+  //         Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
+  //       );
+  //       break;
+  //     case "BATHROOMS":
+  //       setBathrooms((prev) =>
+  //         Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
+  //       );
+  //       break;
+  //     case "BEDS":
+  //       setBeds((prev) =>
+  //         Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
+  //       );
+  //       break;
+  //   }
+  // };
 
+  // const applyFilters = () => {
+  //   setModalVisible(false);
+  //   const filters = { isEnabled, bedrooms, beds, bathrooms, priceRange, allowCooking, allowParty, allowPets };
+  //   // const queryString = new URLSearchParams(filters).toString();
+  //   router.push("/(screens)/pages/search-page");
+  // };
 
-  const handleCount = (type: CountType, operation: OperationType) => {
-    setIsFilterChanged(true);
-    switch (type) {
-      case "BEDROOMS":
-        setBedrooms((prev) =>
-          Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
-        );
-        break;
-      case "BATHROOMS":
-        setBathrooms((prev) =>
-          Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
-        );
-        break;
-      case "BEDS":
-        setBeds((prev) =>
-          Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
-        );
-        break;
-    }
-  };
-
-  const applyFilters = () => {
-    setModalVisible(false);
-  };
-
-  const clearFilters = () => {
-    setBedrooms(1);
-    setBeds(1);
-    setBathrooms(1);
-    setPriceRange(10);
-    setIsEnabled(false);
-    setIsFilterChanged(false);
-    setModalVisible(false);
-  };
+  // const clearFilters = () => {
+  //   setBedrooms(1);
+  //   setBeds(1);
+  //   setBathrooms(1);
+  //   setPriceRange(10);
+  //   setIsEnabled(false);
+  //   setIsFilterChanged(false);
+  //   setModalVisible(false);
+  //   setAllowCooking(false);
+  //   setAllowParty(false);
+  //   setAllowPets(false);
+  // };
 
   const getAppliedFiltersCount = () => {
     let count = 0;
@@ -85,7 +101,7 @@ export default function FilterPage() {
     if (isFilterChanged) {
       setModalVisible(true);
     }
-  }, [bedrooms, beds, bathrooms, priceRange, isEnabled,allowCooking,allowParty,allowPets]);
+  }, [isEnabled, allowCooking, allowParty, allowPets, priceRange, bedrooms, beds, bathrooms]);
 
   return (
     <View
@@ -96,6 +112,12 @@ export default function FilterPage() {
         gap: 30,
       }}
     >
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Filters</Text>
+      </View>
       <View style={styles.switchContainer}>
         <Text>Tap to Long term</Text>
         <Switch
@@ -112,13 +134,10 @@ export default function FilterPage() {
         <Slider
           style={{ width: "100%", height: 40 }}
           value={priceRange}
-          onValueChange={(value) => {
-            setPriceRange(value);
-            setIsFilterChanged(true);
-          }}
+          onValueChange={updatePriceRange}
           minimumValue={10}
-          maximumValue={11}
-          step={1}
+          maximumValue={500}
+          step={10}
           minimumTrackTintColor="#000000"
           maximumTrackTintColor="#000000"
           thumbTintColor="orange"
@@ -161,15 +180,16 @@ export default function FilterPage() {
               borderWidth: 1,
               padding: 8,
               borderRadius: 10,
-              borderColor: allowCooking?"orange":"black"
+              borderColor: allowCooking?"orange":"#c1c2c3"
             }}
           >
             <Image
               style={styles.iconImageStyle}
-              source={allowCooking?require("@/assets/images/cooking.png"):require("@/assets/images/cooking raw.png")}
+              // source={allowCooking?require("@/assets/images/cooking.png"):require("@/assets/images/cooking raw.png")}
+              source={require("@/assets/images/cooking.png")}
             />
           </View>
-          <Text style={{color:allowCooking?"orange":"black"}}>Cooking</Text>
+          <Text style={{color:allowCooking?"orange":"black",fontWeight:allowCooking?500:300}}>Cooking</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleAllowParty} style={{ display: "flex", alignItems: "center" }}>
           <View
@@ -194,15 +214,16 @@ export default function FilterPage() {
               borderWidth: 1,
               padding: 8,
               borderRadius: 10,
-              borderColor: allowPets?"orange":"black"
+              borderColor: allowPets?"orange":"#c1c2c3"
             }}
           >
             <Image
               style={styles.iconImageStyle}
-              source={allowPets?require("@/assets/images/pets.png"):require("@/assets/images/paws-raw1.png")}
+              // source={allowPets?require("@/assets/images/pets.png"):require("@/assets/images/paws-raw1.png")}
+              source={require("@/assets/images/pets.png")}
             />
           </View>
-          <Text style={{color:allowPets?"orange":"black"}}>Pets</Text>
+          <Text style={{color:allowPets?"orange":"black",fontWeight:allowPets?500:300}}>Pets</Text>
         </TouchableOpacity>
       </View>
 
@@ -225,12 +246,11 @@ export default function FilterPage() {
 const styles = StyleSheet.create({
   switchContainer: {
     padding: 10,
-    marginTop: 25,
+    marginTop: 10,
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    // borderWidth:1,
     elevation: 8,
     backgroundColor: "#fff",
     borderRadius: 20,
@@ -256,11 +276,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 15,
     elevation: 8,
-    // borderWidth:1,
     backgroundColor: "#fff",
   },
   priceRangeContainer: {
-    // borderWidth:1,
     padding: 10,
     elevation: 8,
     backgroundColor: "#fff",
@@ -298,7 +316,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 15,
     elevation: 12,
-
     flexDirection: "row",
     justifyContent: "space-between",
   },
@@ -313,5 +330,30 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontSize: 16,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 5,
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
+    elevation: 5,
+  },
+  backButton: {
+    marginRight: 10,
+    borderRadius:50,
+  },
+  backText: {
+    fontSize: 20, 
+    borderRadius: 50,
+    width: 30,
+    height: 30,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  content: {
+    padding: 20,
   },
 });

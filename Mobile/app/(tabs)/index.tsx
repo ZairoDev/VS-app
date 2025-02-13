@@ -13,13 +13,15 @@ import {
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
+import { Modalize } from "react-native-modalize";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Switch } from "react-native-paper";
+
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 import { Countries } from "@/Constants/Country";
 import { PropertyInterface } from "@/data/types";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { propertyTypes } from "@/Constants/Country";
-import { Modalize } from "react-native-modalize";
+import  useStore  from "@/store/filter-store";
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -49,13 +51,13 @@ export default function Index() {
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
   const [isEnabled, setIsEnabled] = useState(false);
 
-  const modalizeRef = useRef<Modalize>(null);
+  const {beds,bathrooms,bedrooms,priceRange} = useStore();
 
   const fetchProperties = async () => {
     try {
       setLoading(true);
       console.log("process: ", process.env.EXPO_PUBLIC_BASE_URL);
-
+      console.log("store se aate hue beds",{beds})
       const requestBody: FetchPropertiesRequest = {
         skip,
         limit,
@@ -102,9 +104,7 @@ export default function Index() {
     console.log("property array: ", properties.length);
   }, [properties]);
 
-  const openBottomSheet = () => {
-    modalizeRef.current?.open();
-  };
+
 
   const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
 
@@ -244,32 +244,7 @@ export default function Index() {
           </View>
         }
       />
-      <Modalize
-        ref={modalizeRef}
-        adjustToContentHeight
-        childrenStyle={{ height: 200 }}
-        onClose={() => setBottomsheetVisible(false)}
-        onOpen={() => setBottomsheetVisible(true)}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-around",
-            alignItems: "center",
-            margin: 20,
-          }}
-        >
-          <Text style={{ fontSize: 20, fontWeight: "400" }}>
-            {isEnabled ? "Slide for Short term" : "Slide for Long term"}
-          </Text>
-          <Switch
-            trackColor={{ false: "orange", true: "orange" }}
-            thumbColor={isEnabled ? "#f4f3f4" : "#f4f3f4"}
-            onChange={toggleSwitch}
-            value={isEnabled}
-          />
-        </View>
-      </Modalize>
+      
     </SafeAreaView>
   );
 }
