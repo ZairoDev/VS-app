@@ -13,7 +13,6 @@ import {
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
-import { Modalize } from "react-native-modalize";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -31,6 +30,10 @@ export interface FetchPropertiesRequest {
   beds:number
   bedrooms:number
   bathroom:number
+  allowCooking:boolean
+  isEnabled:boolean
+  allowParty:boolean
+  allowPets:boolean
 }
 
 export interface FetchPropertiesResponse {
@@ -40,8 +43,8 @@ export interface FetchPropertiesResponse {
 }
 
 enum SelectedType {
-  COUNTRY = "country",
-  PROPERTY_TYPE = "propertyType",
+  COUNTRY="country",
+  PROPERTY_TYPE="propertyType",
   BEDS="beds",
   BEDROOMS="bedrooms",
   BATHROOMS="bathroom"
@@ -56,12 +59,11 @@ export default function Index() {
   const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
 
-  const {beds,bathroom,bedrooms,minPrice,maxPrice,handleCount} = useStore();
+  const {beds,bathroom,bedrooms,allowCooking,allowParty,allowPets,isEnabled,minPrice,maxPrice,handleCount} = useStore();
 
   const fetchProperties = async () => {
     try {
-      setLoading(true); 
-      // setProperties([]);
+      setLoading(true);    
       console.log("process: ", process.env.EXPO_PUBLIC_BASE_URL);
       console.log("store se aate hue beds,bathrooms aur bedrooms",{beds,bathroom,bedrooms})
       const requestBody: FetchPropertiesRequest = {
@@ -71,8 +73,12 @@ export default function Index() {
         propertyType,
         beds,
         bedrooms,
-        bathroom
-
+        bathroom,
+        isEnabled,
+        allowCooking,
+        allowParty,
+        allowPets
+       
       };
 
       const response = await axios.post<FetchPropertiesResponse>(
@@ -80,7 +86,6 @@ export default function Index() {
         requestBody
       );
       console.log("response", response.data.data.length);
-      // setProperties(response.data.data);
       setProperties((prev) => [...prev, ...response.data.data]);
     } catch (err) {
       console.log("err in explore page: ", err);
@@ -114,13 +119,13 @@ export default function Index() {
   useEffect(()=>{
     setProperties([]);
     setSkip(0);
-  },[beds,bedrooms,bathroom]);
+  },[beds,bedrooms,bathroom,isEnabled]);
 
 
 
   useEffect(() => {
     fetchProperties();
-  }, [skip, propertyType, selectedCountry,beds,bathroom,bedrooms]);
+  }, [skip, propertyType, selectedCountry,beds,bathroom,bedrooms,isEnabled]);
 
   useEffect(() => {
     console.log("property array: ", properties.length);
@@ -170,6 +175,7 @@ export default function Index() {
                 <Ionicons name="location-outline" size={15} color="gray" />
                 {item.postalCode}, {item.city}, {item.state}
               </Text>
+              <Text>{item.basePrice}</Text>
             </View>
           </View>
         )}
@@ -280,9 +286,9 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: 18,
-    fontWeight: "500", // Corrected font weight
+    fontWeight: "500", 
     color: "gray",
-    flex: 1, // Allow text to take available space
+    flex: 1, 
     textAlign: "center",
   },
   horizontalList: {
@@ -369,14 +375,13 @@ const styles = StyleSheet.create({
   },
   selectedPropertyTypeItem: {
     backgroundColor: "orange",
-    // backgroundColor: "white",
     borderColor: "orange",
     fontWeight: 700,
     borderWidth: 2,
   },
   selectedPropertyTypeText: {
     color: "white",
-    // fontWeight: 500,
+    
   },
   filtersContainer: {
     padding: 10,
@@ -390,12 +395,10 @@ const styles = StyleSheet.create({
   accordion: {
     width: "90%",
     backgroundColor: "blue",
-    // maxHeight: 50,
     display: "flex",
     borderRadius: 20,
-    // flexDirection:"row"
     borderWidth: 2,
-    // backgroundColor:"yellow",
+
   },
   header: {
     width: "100%",
@@ -405,24 +408,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     flexDirection: "row",
     borderRadius: 10,
-    backgroundColor: "orange",
-
-    // alignItems: "center",
+    backgroundColor: "orange"
   },
   container: {
     width: "100%",
-
     margin: 16,
-    // backgroundColor: "#f0f0f0",
     paddingHorizontal: 10,
-    // borderWidth:3,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
   },
   inputDiv: {
     height: 50,
-    backgroundColor: "#f0f0f0", // Softer background color
+    backgroundColor: "#f0f0f0", 
     borderRadius: 15,
     margin: 16,
     paddingHorizontal: 15,

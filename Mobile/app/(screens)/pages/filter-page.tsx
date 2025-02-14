@@ -44,47 +44,6 @@ export default function FilterPage() {
   
   const navigation=useNavigation()
 
-  // const handleCount = (type: CountType, operation: OperationType) => {
-  //   setIsFilterChanged(true);
-  //   switch (type) {
-  //     case "BEDROOMS":
-  //       setBedrooms((prev) =>
-  //         Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
-  //       );
-  //       break;
-  //     case "BATHROOMS":
-  //       setBathrooms((prev) =>
-  //         Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
-  //       );
-  //       break;
-  //     case "BEDS":
-  //       setBeds((prev) =>
-  //         Math.max(1, prev + (operation === "INCREMENT" ? 1 : -1))
-  //       );
-  //       break;
-  //   }
-  // };
-
-  // const applyFilters = () => {
-  //   setModalVisible(false);
-  //   const filters = { isEnabled, bedrooms, beds, bathrooms, priceRange, allowCooking, allowParty, allowPets };
-  //   // const queryString = new URLSearchParams(filters).toString();
-  //   router.push("/(screens)/pages/search-page");
-  // };
-
-  // const clearFilters = () => {
-  //   setBedrooms(1);
-  //   setBeds(1);
-  //   setBathrooms(1);
-  //   setPriceRange(10);
-  //   setIsEnabled(false);
-  //   setIsFilterChanged(false);
-  //   setModalVisible(false);
-  //   setAllowCooking(false);
-  //   setAllowParty(false);
-  //   setAllowPets(false);
-  // };
-
   const getAppliedFiltersCount = () => {
     let count = 0;
     
@@ -104,7 +63,7 @@ export default function FilterPage() {
     if (isFilterChanged) {
       setModalVisible(true);
     }
-  }, [isEnabled, allowCooking, allowParty, allowPets, minPrice, maxPrice, bedrooms, beds, bathroom]);
+  },[isEnabled, allowCooking, allowParty, allowPets, minPrice, maxPrice, bedrooms, beds, bathroom]);
 
   return (
     <View
@@ -292,7 +251,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   priceRangeContainer: {
-    padding: 10,
+    paddingVertical: 20,
     elevation: 8,
     backgroundColor: "#fff",
     borderRadius: 20,

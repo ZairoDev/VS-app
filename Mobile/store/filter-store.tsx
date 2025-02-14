@@ -18,9 +18,7 @@ export interface FilterStore {
   handleAllowCooking: () => void;
   handleAllowParty: () => void;
   handleAllowPets: () => void;
-
   applyFilters: () => void;
-
   clearFilters: () => void;
   updateMinPrice: (value: string)=> void;
   updateMaxPrice: (value: string)=> void;

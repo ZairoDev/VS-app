@@ -1,5 +1,5 @@
 import React from 'react';
-import {SafeAreaView, View,Image , Text} from "react-native";
+import {SafeAreaView,View,Image ,Text} from "react-native";
 import { Tabs } from 'expo-router';
 
 import Wishlist from './Wishlist'

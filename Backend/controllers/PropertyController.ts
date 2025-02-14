@@ -13,6 +13,7 @@ export interface FetchPropertiesRequest {
   beds:number;
   bedrooms:number;
   bathroom:number;
+  isEnabled: boolean;
 
 }
 
@@ -21,10 +22,10 @@ const getAllProperties: RequestHandler = async (
   res: Response
 ) => {
   try {
-    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom} =
+    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled} =
       (await req.body) as FetchPropertiesRequest;
 
-    console.log("request body: ", skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom);
+    console.log("request body: ", skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled);
 
     //! created query to filter properties based on propertyType and selectedCountry
     const query: FilterQuery<Document> = {};
@@ -42,6 +43,9 @@ const getAllProperties: RequestHandler = async (
     }
     if(bedrooms !== undefined && bedrooms !== null && bedrooms>0){
       query["bedrooms"] =  { $gte: bedrooms }  ;
+    }
+    if(isEnabled){
+      query['rentalType']="Long Term";
     }
  
 
