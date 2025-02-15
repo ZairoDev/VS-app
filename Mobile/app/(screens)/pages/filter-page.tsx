@@ -13,6 +13,7 @@ import { useNavigation ,router} from "expo-router";
 
 import useStore from "@/store/filter-store";
 import { TextInput } from "react-native-gesture-handler";
+import { Ionicons } from "@expo/vector-icons";
 
 type CountType = "BEDROOMS" | "BATHROOM" | "BEDS";
 type OperationType = "INCREMENT" | "DECREMENT";
@@ -75,8 +76,10 @@ export default function FilterPage() {
       }}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>←</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Filters</Text>
       </View>
@@ -308,20 +311,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 5,
     paddingHorizontal: 20,
+    height: "7%",
     backgroundColor: "#fff",
     elevation: 5,
+    
   },
-  backButton: {
-    marginRight: 10,
-    borderRadius:50,
-  },
-  backText: {
-    fontSize: 20, 
-    borderRadius: 50,
-    width: 30,
-    height: 30,
-  },
+  
   headerTitle: {
+    paddingLeft:10,
     fontSize: 18,
     fontWeight: "bold",
   },

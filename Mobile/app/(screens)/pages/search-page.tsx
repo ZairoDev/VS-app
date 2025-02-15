@@ -1,88 +1,203 @@
+
 import "react-native-get-random-values";
-import { View, Text, StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import { AntDesign } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
-
 
 export default function SearchPage() {
   const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-  console.log("API Key:", API_KEY);
-  
-  return (
-    <View style={styles.container}>
-     <View style={{height:200,position:"relative"}}>
-      <GooglePlacesAutocomplete
-        placeholder="Search"
-        onPress={(data, details = null) => {
-          console.log("google maps pe aata hua data", data);
-          console.log("google maps pe aata hui details", data);
-        }}
-        query={{
-          key: API_KEY,
-          language: "en",
-        }}
-        styles={{
-          container: {
-            flex: 1,
-            maxHeight: 200,
-          },
-          textInputContainer: {
-            borderRadius: 5,
-            borderWidth: 1,
-            borderColor: "gray",
-            paddingHorizontal: 10,
-          },
-          textInput: {
-            height: 45,
-            color: "#333",
-            fontSize: 16,
-          },
-          listView: {
-            zIndex:10,
-            maxHeight:200,
-            backgroundColor: "yellow",
-            borderRadius: 5,
-            elevation: 3, 
-            marginTop: 5,
-          },
-          row: {
-            padding: 10,
-            height: 50,
-            flexDirection: "row",
-            alignItems: "center",
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-          },
-        
-          description: {
-            color: "black",
-            fontSize: 14,
-          },
-          poweredContainer: {
-            display: "none",
-          },
-        }}
+  const RECENT_SEARCHES_KEY = "recentsearch";
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    loadRecentSearch();
+  }, []);
+  const loadRecentSearch = async () => {
+    try {
+      const searches = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+      if (searches) {
+        setRecentSearches(JSON.parse(searches));
+      }
+    } catch (err) {
+      console.log("error in loading searches", err);
+    }
+  };
+
+  const saveSearch = async (query: string) => {
+    try {
+      let searches = [...recentSearches];
+
+      searches = searches.filter((search) => search !== query);
+
+      searches.unshift(query);
+
+      if (searches.length > 5) {
+        searches.pop();
+      }
+
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+      setRecentSearches(searches);
+    } catch (err) {
+      console.log("error in saving searches", err);
+    }
+  };
+
+  const removeSearch = async (query: string) => {
+    try {
+      const filteredSearches = recentSearches.filter(
+        (search) => search !== query
+      );
+      await AsyncStorage.setItem(
+        RECENT_SEARCHES_KEY,
+        JSON.stringify(filteredSearches)
+      );
+      setRecentSearches(filteredSearches);
+    } catch (err) {
+      console.log("error in recent Searches", err);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+         <TouchableOpacity onPress={() => navigation.goBack()}>
+           <Ionicons name="chevron-back" size={24} color="black" />
+         </TouchableOpacity>
+         <Text style={styles.headerTitle}>Search</Text>
+       </View>
+       <View style={styles.searchContainer}>
+         <GooglePlacesAutocomplete
+          placeholder="Search for a place"
+          onPress={(data) => {
+            saveSearch(data.description);
+          }}
+          query={{
+            key: API_KEY, 
+            language: 'en',
+          }}
+          styles={{
+            container: styles.autocompleteContainer,
+            textInput: styles.searchInput,
+            listView: styles.listView,
+          }}
+          enablePoweredByContainer={false}
+          fetchDetails={true}
+          debounce={300}
         />
-        <Text style={{position:"absolute",top:70,left:10,zIndex:1,fontSize:17,fontWeight:300}}>Recent Searches</Text>
       </View>
 
-    </View>
+      <Text style={styles.recentSearches}>Recent Searches</Text>
+
+      <FlatList
+          data={recentSearches}
+          keyExtractor={(item, index) => index.toString()}
+          contentContainerStyle={styles.recentSearchesContainer}
+          renderItem={({ item }) => (
+            <View style={styles.searchItem}>
+              <Text style={styles.searchText}>{item}</Text>
+              <TouchableOpacity onPress={() => removeSearch(item)}>
+                <AntDesign name="delete" size={15} color="gray" />
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+    </SafeAreaView>
   );
 }
 
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "white",
-  },
-  searchBar: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    backgroundColor: "#fff",
-    elevation: 5,
-  },
-});
+    container: {
+      flex: 1,
+      backgroundColor: '#fff',
+    },
+    searchContainer: {
+      marginTop: 20,
+      padding: 16,
+    
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+    },
+    autocompleteContainer: {
+      flex: 0,
+    },
+    searchInput: {
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: '#f5f5f5',
+      paddingHorizontal: 20,
+      fontSize: 16,
+
+    },
+    listView: {
+      borderWidth: 0,
+      backgroundColor: '#fff',
+      marginTop: 8,
+      borderRadius: 8,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    recentSearchesContainer: {
+      flex: 1,
+      paddingHorizontal: 16,
+      
+    },
+
+    recentSearches:{
+      fontSize: 18,
+     
+      marginTop:10,
+      marginHorizontal:16
+    },
+    
+    searchText: {
+      fontSize: 16,
+      color: '#333',
+      flex: 1,
+    },
+    searchItem: {
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          
+         
+          borderRadius: 5,
+          marginTop: 5,
+          overflow: "hidden",
+        },
+        header: {
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 5,
+              paddingHorizontal: 20,
+              height: "7%",
+              backgroundColor: "#fff",
+              elevation: 5,
+            },
+            headerTitle: {
+              paddingLeft: 10,
+              fontSize: 18,
+              fontWeight: "bold",
+            },
+  });

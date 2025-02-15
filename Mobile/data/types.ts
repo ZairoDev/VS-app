@@ -19,6 +19,10 @@ export interface PropertyInterface {
   beds: number;
   bathroom: number;
   kitchen: number;
+  smoking: string;
+  pet: string;
+  party: string;
+  cooking: string;
   basePrice: number;
   propertyImages: string[];
   propertyCoverFileUrl: string;

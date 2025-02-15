@@ -3,12 +3,9 @@ import {
   Text,
   Image,
   FlatList,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
   Pressable,
-  Modal,
-  Linking,
 } from "react-native";
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
@@ -59,7 +56,7 @@ export default function Index() {
   const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
 
-  const {beds,bathroom,bedrooms,allowCooking,allowParty,allowPets,isEnabled,minPrice,maxPrice,handleCount} = useStore();
+  const {beds,bathroom,bedrooms,allowCooking,allowParty,allowPets,isEnabled,minPrice,maxPrice,handleCount,applyFilters} = useStore();
 
   const fetchProperties = async () => {
     try {
@@ -119,7 +116,8 @@ export default function Index() {
   useEffect(()=>{
     setProperties([]);
     setSkip(0);
-  },[beds,bedrooms,bathroom,isEnabled]);
+  },[applyFilters]);
+  // },[beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets]);
 
 
 
@@ -175,7 +173,7 @@ export default function Index() {
                 <Ionicons name="location-outline" size={15} color="gray" />
                 {item.postalCode}, {item.city}, {item.state}
               </Text>
-              <Text>{item.basePrice}</Text>
+              <Text style={{ color: "black" ,fontWeight:400 ,fontSize:14 ,borderTopWidth:1,borderTopColor:"gray",  }}>€{item.basePrice}/night {item.cooking},{item.party},{item.pet}</Text>
             </View>
           </View>
         )}

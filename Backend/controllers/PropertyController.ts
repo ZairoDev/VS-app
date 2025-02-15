@@ -14,7 +14,9 @@ export interface FetchPropertiesRequest {
   bedrooms:number;
   bathroom:number;
   isEnabled: boolean;
-
+  allowCooking: boolean;
+  allowParty: boolean;
+  allowPets: boolean; 
 }
 
 const getAllProperties: RequestHandler = async (
@@ -22,10 +24,10 @@ const getAllProperties: RequestHandler = async (
   res: Response
 ) => {
   try {
-    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled} =
+    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets} =
       (await req.body) as FetchPropertiesRequest;
 
-    console.log("request body: ", skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled);
+    console.log("request body: ", skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets);
 
     //! created query to filter properties based on propertyType and selectedCountry
     const query: FilterQuery<Document> = {};
@@ -46,6 +48,15 @@ const getAllProperties: RequestHandler = async (
     }
     if(isEnabled){
       query['rentalType']="Long Term";
+    }
+    if(allowCooking){
+      query['cooking']="Allow";
+    }
+    if(allowParty){
+      query['party']="Allow";
+    }
+    if(allowPets){
+      query['pet']="Allow";
     }
  
 

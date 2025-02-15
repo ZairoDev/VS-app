@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { create } from "zustand";
 
 export interface FilterStore {
@@ -60,14 +61,14 @@ const useStore = create<FilterStore>((set) => ({
   updateMinPrice: (value: string) => {
     const numValue = parseInt(value);
     if (!isNaN(numValue)) {
-      set({ minPrice: Math.max(10, numValue) }); // Ensure minPrice is at least 10
+      set({ minPrice: Math.max(10, numValue) }); 
     }
   },
 
   updateMaxPrice: (value: string) =>{
     const numValue = parseInt(value);
     if (!isNaN(numValue)) {
-      set({ maxPrice: Math.min(5000, numValue) }); // Ensure maxPrice is at most 5000
+      set({ maxPrice: Math.min(5000, numValue) });
     } 
   },  
 
@@ -87,10 +88,12 @@ const useStore = create<FilterStore>((set) => ({
   })),
 
 
-  applyFilters: () => set((state) => {
-    return { modalVisible: false, isFilterChanged: false };
-  }),
+  applyFilters: () => {
+    set((state) => ({
+      modalVisible: false,
+      isFilterChanged: false,
+    }));
+    router.push("/(tabs)");
+  },
 }));
-
-
-export default useStore;
+export default useStore;  
