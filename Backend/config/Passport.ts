@@ -1,41 +1,66 @@
 import passport from "passport";
-import {Strategy as GoogleStrategy} from "passport-google-oauth20";
-import User from "../models/User";
 import dotenv from "dotenv";
-import Users from "../models/User";
+import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import User from "../models/User";
 
-dotenv.config()
+dotenv.config();
 
 passport.use(
-    new GoogleStrategy({
-        clientID: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        callbackURL:"/api/auth/google/callback",
+  new JwtStrategy(
+    {
+      
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: process.env.JWT_SECRET!,
     },
-    async (accessToken,refreshToken,profile,done)=>{
-        try{
-            let user=await Users.findOne({googleId:profile.id});
+    async (payload, done) => {
+      try {
+        const user = await User.findById(payload.id);
+        if (user) return done(null, user);
+        return done(null, false);
+      } catch (err) {
+        return done(err, false);
+      }
+    }
+  )
+);
 
-            if(!user){
-                user= await Users.create({
-                    googleId:profile.id,
-                    name:profile.displayName,
-                    email:profile.emails?.[0]?.value,
-                    profilePic:profile.photos?.[0]?.value,
-                    isVerified:true
-                });
-            }
-            done(null,user);
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL!,
+    },
+    async (_accessToken, _refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ googleId: profile.id });
 
-
-
-        }catch(err){
-            done(err,null);
+        if (!user) {
+          user = await User.create({
+            name: profile.displayName,
+            email: profile.emails?.[0]?.value,
+            googleId: profile.id,
+          });
         }
 
+        return done(null, user);
+      } catch (err) {
+        return done(err, false);
+      }
     }
-)
-)
+  )
+);
 
-passport.serializeUser((user,done)=>done(null, user));
-passport.deserializeUser(async(id,done)=>done(null,await Users.findById(id)));
+passport.serializeUser((user: any, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
+});
