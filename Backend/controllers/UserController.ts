@@ -43,4 +43,3 @@ export const loginUser = async (req: Request, res: Response) => {
       .json({ message: "Some error occurred", error: err.message });
   }
 };
-

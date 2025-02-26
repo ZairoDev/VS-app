@@ -95,4 +95,19 @@ const getParticularProperty = async (req: Request, res: Response) => {
   }
 };
 
-export { getAllProperties, getParticularProperty };
+
+const getProperties = async (req: Request, res: Response) => {
+  try {
+    const property = await Properties.find({},{center:1});
+    
+    if (!property) {
+       res.status(404).json({ error: "No property found", status: 404 });
+    }
+
+    res.json({ data:property, status: 200 });
+  } catch (err) {
+    res.status(500).json({ error: "Unable to fetch property", status: 500 });
+  }
+};
+
+export { getAllProperties, getParticularProperty ,getProperties};

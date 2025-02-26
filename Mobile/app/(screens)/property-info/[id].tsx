@@ -38,7 +38,6 @@ export default function PropertyInfo() {
   const [modalVisible, setModalVisible] = useState(false);
   const [bottomsheetVisible, setBottomsheetVisible] = useState(false);
   const [property, setProperty] = useState<PropertyInterface>();
-
   const modalizeRef = useRef<Modalize>(null);
 
   const handleOpenBottomsheet = () => {

@@ -1,0 +1,36 @@
+{
+    "cli": {
+      "version": ">= 3.16.0"
+    },
+    "build": {
+      "development": {
+        "distribution": "internal",
+        "android": {
+          "gradleCommand": ":app:assembleDebug"
+        },
+        "ios": {
+          "buildConfiguration": "Debug"
+        }
+      },
+      "preview": {
+        "distribution": "internal",
+        "android": {
+          "gradleCommand": ":app:assembleRelease"
+        },
+        "ios": {
+          "buildConfiguration": "Release"
+        }
+      },
+      "production": {
+        "android": {
+          "gradleCommand": ":app:assembleRelease"
+        },
+        "ios": {
+          "buildConfiguration": "Release"
+        }
+      }
+    },
+    "submit": {
+      "production": {}
+    }
+  }

@@ -61,8 +61,7 @@ export default function Index() {
   const fetchProperties = async () => {
     try {
       setLoading(true);    
-      console.log("process: ", process.env.EXPO_PUBLIC_BASE_URL);
-      console.log("store se aate hue beds,bathrooms aur bedrooms",{beds,bathroom,bedrooms})
+     
       const requestBody: FetchPropertiesRequest = {
         skip,
         limit,
