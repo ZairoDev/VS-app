@@ -1,7 +1,7 @@
 
 import "react-native-get-random-values";
 import { useEffect, useState } from "react";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, FontAwesome } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 
 import {
@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+import { router } from "expo-router";
 
 export default function SearchPage() {
   const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -102,6 +103,10 @@ export default function SearchPage() {
           fetchDetails={true}
           debounce={300}
         />
+        <TouchableOpacity style={styles.mapIcon} onPress={()=>router.push("/(screens)/pages/map")}>
+      <FontAwesome name="map" size={20} color="black" />
+    </TouchableOpacity>
+
       </View>
 
       <Text style={styles.recentSearches}>Recent Searches</Text>
@@ -119,33 +124,38 @@ export default function SearchPage() {
             </View>
           )}
         />
+        
+        
+        
     </SafeAreaView>
   );
 }
 
-
 const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#fff',
+      backgroundColor: 'white',
     },
     searchContainer: {
       marginTop: 20,
       padding: 16,
-    
+      width:"100%",
+      display:"flex",
+      justifyContent:"center",
       borderBottomWidth: 1,
+      flexDirection: 'row',
       borderBottomColor: '#eee',
     },
     autocompleteContainer: {
-      flex: 0,
+      flex: 1,
     },
     searchInput: {
       height: 50,
-      borderRadius: 25,
+      maxWidth: '90%',
+      borderRadius: 30,
       backgroundColor: '#f5f5f5',
       paddingHorizontal: 20,
       fontSize: 16,
-
     },
     listView: {
       borderWidth: 0,
@@ -161,14 +171,24 @@ const styles = StyleSheet.create({
     recentSearchesContainer: {
       flex: 1,
       paddingHorizontal: 16,
-      
+      maxHeight:"50%",
     },
-
     recentSearches:{
       fontSize: 18,
-     
       marginTop:10,
-      marginHorizontal:16
+      marginHorizontal:16,
+    },
+    mapIcon: {
+    padding: 15,
+    height: 50,
+    width: 50,
+    backgroundColor: "white",
+    borderRadius: 50,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
     },
     
     searchText: {
@@ -192,7 +212,7 @@ const styles = StyleSheet.create({
               paddingVertical: 5,
               paddingHorizontal: 20,
               height: "7%",
-              backgroundColor: "#fff",
+              backgroundColor: "white",
               elevation: 5,
             },
             headerTitle: {

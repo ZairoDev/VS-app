@@ -5,7 +5,6 @@ import {
   getParticularProperty,
   getProperties,
 } from "@/controllers/PropertyController";
-
 const router = express.Router();
 
 router.post("/getAllProperties", getAllProperties);
