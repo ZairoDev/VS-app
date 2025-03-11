@@ -1,11 +1,12 @@
 import axios from "axios";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import Carousel from "react-native-reanimated-carousel";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Modalize } from "react-native-modalize";
-import Animated,{SlideInDown} from "react-native-reanimated";
+import Animated, { SlideInDown, SlideInUp, SlideOutDown } from "react-native-reanimated";
+
 
 import {
   Text,
@@ -32,7 +33,7 @@ import {
 
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams();
-  
+
   const [imagesModal, setImagesModal] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
@@ -42,9 +43,9 @@ export default function PropertyInfo() {
 
   const handleOpenBottomsheet = () => {
     if (modalizeRef.current) {
-        modalizeRef.current.open();
+      modalizeRef.current.open();
     }
-};
+  };
   const getproperty = async () => {
     try {
       const response = await axios.post(
@@ -60,10 +61,10 @@ export default function PropertyInfo() {
     getproperty();
   }, []);
 
-  const openImageViewer=(index:number)=>{
-    setImageIndex(index)
-    setImagesModal(true)
-  }
+  const openImageViewer = (index: number) => {
+    setImageIndex(index);
+    setImagesModal(true);
+  };
 
   const bentoStyle = (index: number) => {
     const styles = [
@@ -123,6 +124,7 @@ export default function PropertyInfo() {
                 flexDirection: "row",
                 flexWrap: "wrap",
                 justifyContent: "space-between",
+                backgroundColor: "white",
               }}
             >
               {property?.propertyImages.map((item, index: number) => (
@@ -401,7 +403,8 @@ export default function PropertyInfo() {
         keyExtractor={(item, index) => index.toString()}
         ListHeaderComponent={
           <View style={styles.imageContainer}>
-            {property?.propertyImages && property?.propertyImages?.length > 0 ? (
+            {property?.propertyImages &&
+            property?.propertyImages?.length > 0 ? (
               <Pressable onPress={() => setModalVisible(true)}>
                 <Carousel
                   loop
@@ -439,7 +442,13 @@ export default function PropertyInfo() {
         )}
       />
       {modalVisible && renderAllPhotos()}
-      <Modalize ref={modalizeRef} adjustToContentHeight childrenStyle={{height:500}} onClose={() => setBottomsheetVisible(false) } onOpen={() => setBottomsheetVisible(true)}>
+      <Modalize
+        ref={modalizeRef}
+        adjustToContentHeight
+        childrenStyle={{ height: 500 }}
+        onClose={() => setBottomsheetVisible(false)}
+        onOpen={() => setBottomsheetVisible(true)}
+      >
         <View style={{ padding: 20 }}>
           <View style={styles.amenitiesContainer}>
             {Object.keys({
@@ -463,10 +472,7 @@ export default function PropertyInfo() {
           </View>
         </View>
       </Modalize>
-      <Animated.View
-        entering={SlideInDown}  
-        style={globalStyles.footer}
-      >
+      <Animated.View entering={SlideInDown} exiting={SlideOutDown} style={globalStyles.footer}>
         <View
           style={{
             flexDirection: "row",
@@ -481,6 +487,7 @@ export default function PropertyInfo() {
 
           <TouchableOpacity
             style={[globalStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}
+            onPress={()=>router.push("/(screens)/pages/reserve-page")}
           >
             <Text style={globalStyles.btnText}>Reserve</Text>
           </TouchableOpacity>
@@ -573,7 +580,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   flatListContainer: {
-    paddingBottom: 20,
+    paddingBottom: "20%",
   },
   rateItem: {
     display: "flex",

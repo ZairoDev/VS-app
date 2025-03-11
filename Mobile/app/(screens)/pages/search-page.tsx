@@ -124,9 +124,6 @@ export default function SearchPage() {
             </View>
           )}
         />
-        
-        
-        
     </SafeAreaView>
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Modal, Text } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region} from "react-native-maps";
 import axios from "axios";
+     
 import { Ionicons } from "@expo/vector-icons";
 
 interface Property {
@@ -167,11 +168,10 @@ const MapScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
-
   const [region, setRegion] = useState<Region>({
     latitude: 37.9838,
     longitude: 23.7275,
-    latitudeDelta: 0.04, 
+    latitudeDelta: 0.04,  
     longitudeDelta: 0.04,
   });
 
@@ -196,8 +196,8 @@ const MapScreen = () => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = newRegion;
     const minLat = latitude - latitudeDelta / 2;
     const maxLat = latitude + latitudeDelta / 2;
-    const minLng = longitude - longitudeDelta / 2;
-    const maxLng = longitude + longitudeDelta / 2;
+    const minLng = longitude- longitudeDelta / 2;
+    const maxLng = longitude+ longitudeDelta / 2;
 
     let zoomLevel = Math.log2(360 / latitudeDelta); 
     let densityFactor = zoomLevel < 5 ? 10 : zoomLevel < 8 ? 5 : zoomLevel < 10 ? 2 : 1;
@@ -222,7 +222,6 @@ const MapScreen = () => {
     console.log("select markers se aati hui info",selectedProperty)
     setModalVisible(true);
   };
-
 
   return (
     <View style={{ flex: 1 }}>

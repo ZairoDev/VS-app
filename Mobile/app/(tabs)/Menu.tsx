@@ -13,9 +13,9 @@ interface AppProps {}
 
 const App: React.FC<AppProps> = () => {
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: '360635271354-alregk7srqb6s410kr9de76f6n19bt5a.apps.googleusercontent.com', // Replace with your actual Android client ID
+    clientId: '360635271354-alregk7srqb6s410kr9de76f6n19bt5a.apps.googleusercontent.com', 
     androidClientId: '360635271354-alregk7srqb6s410kr9de76f6n19bt5a.apps.googleusercontent.com',
-    // iosClientId: 'YOUR_IOS_CLIENT_ID', // Add if you're building for iOS
+  
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
