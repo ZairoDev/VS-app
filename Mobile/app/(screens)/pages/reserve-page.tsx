@@ -1,10 +1,18 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useRef, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { Modalize } from 'react-native-modalize';
 import { Calendar } from 'react-native-calendars';
-import { Ionicons } from '@expo/vector-icons';
+import { CalendarDays } from 'lucide-react-native';
 
 const { height } = Dimensions.get('window');
+
+
+const BLOCKED_DATES:{ [key: string]: boolean }  = {
+  '2025-04-14': true,
+  '2025-04-15': true,
+  '2025-04-20': true,
+  '2025-04-21': true,
+};
 
 export default function ReservationScreen() {
   const modalizeRef = useRef<Modalize>(null);
@@ -13,30 +21,90 @@ export default function ReservationScreen() {
     endDate: '',
   });
 
+  
+ const calendarConfig = useMemo(()=>{
+    const today=new Date();
+    const futureDate= new Date();
+    futureDate.setMonth(futureDate.getMonth()+12);
+
+    return{
+      minDate:today.toISOString().split('T')[0],
+      maxDate:futureDate.toISOString().split('T')[0]
+    }
+ },[])
+
   const onDayPress = (day: any) => {
+    
+    if(BLOCKED_DATES[day.dateString]){
+      return;
+    }
+    
+    if(day.dateString === selectedDates.startDate){
+      setSelectedDates({
+        startDate:'',
+        endDate:''
+      })
+      return
+    }
+
+    if(day.dateString === selectedDates.endDate){
+      setSelectedDates((prev)=>({
+        ...prev,
+        endDate:'',
+      }))
+      return
+    }
+
+    // Normal date selection logic
     if (!selectedDates.startDate || (selectedDates.startDate && selectedDates.endDate)) {
+      // Check if any dates between start and potential end date are blocked
       setSelectedDates({
         startDate: day.dateString,
         endDate: '',
       });
     } else {
       if (new Date(day.dateString) >= new Date(selectedDates.startDate)) {
-        setSelectedDates(prev => ({
-          ...prev,
-          endDate: day.dateString,
-        }));
-        modalizeRef.current?.close();
+        // Check if any dates in the range are blocked
+        const start = new Date(selectedDates.startDate);
+        const end = new Date(day.dateString);
+        let hasBlockedDates = false;
+
+        for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+          const dateString = d.toISOString().split('T')[0];
+          if (BLOCKED_DATES[dateString]) {
+            hasBlockedDates = true;
+            break;
+          }
+        }
+
+        if (!hasBlockedDates) {
+          setSelectedDates(prev => ({
+            ...prev,
+            endDate: day.dateString,
+          }));
+          modalizeRef.current?.close();
+        }
       }
     }
   };
 
-  const getMarkedDates = () => {
-    const markedDates: any = {};
+  const getMarkedDates = useMemo(() => {
+    const markedDates: any = {
+      ...BLOCKED_DATES && Object.keys(BLOCKED_DATES).reduce((acc, date) => ({
+        ...acc,
+        [date]: {
+          disabled: true,
+          disableTouchEvent: true,
+          selectedColor: '#FF6B6B',
+          selectedTextColor: 'white',
+        }
+      }), {})
+    };
     
     if (selectedDates.startDate) {
       markedDates[selectedDates.startDate] = {
         startingDay: true,
-        color: '#4F46E5',
+        color: '#ff7900',
         textColor: 'white',
       };
     }
@@ -44,7 +112,7 @@ export default function ReservationScreen() {
     if (selectedDates.endDate) {
       markedDates[selectedDates.endDate] = {
         endingDay: true,
-        color: '#4F46E5',
+        color: '#ff7900',
         textColor: 'white',
       };
 
@@ -55,25 +123,38 @@ export default function ReservationScreen() {
         currentDate.setDate(currentDate.getDate() + 1);
 
         while (currentDate < endDate) {
-          markedDates[currentDate.toISOString().split('T')[0]] = {
-            color: '#4F46E5',
-            textColor: 'white',
-          };
+          const dateString = currentDate.toISOString().split('T')[0];
+          if (!BLOCKED_DATES[dateString]) {
+            markedDates[dateString] = {
+              color: '#FFA53F',
+              textColor: 'white',
+            };
+          }
           currentDate.setDate(currentDate.getDate() + 1);
         }
       }
     }
 
     return markedDates;
-  };
+  }, [selectedDates.startDate, selectedDates.endDate]);
 
   const formatDate = (date: string) => {
     if (!date) return '';
     return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
       day: 'numeric',
+      month: 'short',
       year: 'numeric',
     });
+  };
+
+  const getHelperText = () => {
+    if (!selectedDates.startDate) {
+      return 'Select your check-in date';
+    }
+    if (!selectedDates.endDate) {
+      return 'Now select your check-out date (or tap check-in date to unselect)';
+    }
+    return 'Tap a selected date to unselect it';
   };
 
   return (
@@ -86,7 +167,7 @@ export default function ReservationScreen() {
           onPress={() => modalizeRef.current?.open()}
         >
           <View style={styles.dateDisplay}>
-            <Ionicons name="calendar-outline" size={24} color="black" />
+            <CalendarDays size={24} color="#000000" />
             <View style={styles.dateTextContainer}>
               <Text style={styles.dateLabel}>Select Dates</Text>
               <Text style={styles.selectedDates}>
@@ -101,35 +182,58 @@ export default function ReservationScreen() {
             </View>
           </View>
         </TouchableOpacity>
-
-        {/* Add more reservation form fields here */}
       </View>
 
       <Modalize
         ref={modalizeRef}
         adjustToContentHeight
         modalStyle={styles.modalContent}
+        scrollViewProps={{
+          showsVerticalScrollIndicator: false,
+          scrollEventThrottle: 16,
+        }}
       >
         <View style={styles.calendarContainer}>
           <Text style={styles.modalTitle}>Select Dates</Text>
           <Calendar
             markingType="period"
-            markedDates={getMarkedDates()}
+            markedDates={getMarkedDates}
             onDayPress={onDayPress}
-            minDate={new Date().toISOString().split('T')[0]}
+            minDate={calendarConfig.minDate}
+            maxDate={calendarConfig.maxDate}
+            enableSwipeMonths={true}
+            scrollEnabled={true}
+            pastSwipeRange={0}
+            futureSwipeRange={12}
             theme={{
-              todayTextColor: '#4F46E5',
-              selectedDayBackgroundColor: '#4F46E5',
+              // todayTextColor: '#FF7900',
+              // selectedDayBackgroundColor: '#FF7900',
               selectedDayTextColor: '#ffffff',
+              textDayFontSize: 16,
+              textMonthFontSize: 18,
+              arrowColor:"#ff7900",
+              textDayHeaderFontSize: 14,
+              'stylesheet.calendar.main': {
+                week: {
+                  marginTop: 4,
+                  marginBottom: 4,
+                  flexDirection: 'row',
+                  justifyContent: 'space-around',
+                },
+              },
             }}
           />
-          <Text style={styles.helperText}>
-            {!selectedDates.startDate
-              ? 'Select your check-in date'
-              : !selectedDates.endDate
-              ? 'Now select your check-out date'
-              : 'Dates selected!'}
-          </Text>
+          <View style={styles.legend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#4F46E5' }]} />
+              <Text style={styles.legendText}>Selected</Text>
+            </View>
+            {/* <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} />
+              <Text style={styles.legendText}>Unavailable</Text>
+            </View> */}
+          </View>
+          <Text style={styles.helperText}>{getHelperText()}</Text>
         </View>
       </Modalize>
     </View>
@@ -198,5 +302,26 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     marginTop: 16,
+  },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingHorizontal: 20,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 14,
+    color: '#6b7280',
   },
 });
