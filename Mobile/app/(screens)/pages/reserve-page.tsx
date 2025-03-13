@@ -10,6 +10,10 @@ import {
 import { Modalize } from "react-native-modalize";
 import { Calendar } from "react-native-calendars";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { StatusBar } from "react-native";
+import { Image } from "react-native";
+import {  Plus, Minus } from 'lucide-react-native';
 
 const { height } = Dimensions.get("window");
 
@@ -22,9 +26,20 @@ const BLOCKED_DATES: { [key: string]: boolean } = {
 
 export default function ReservationScreen() {
   const modalizeRef = useRef<Modalize>(null);
+  const guestModalizeRef = useRef<Modalize>(null);
   const [selectedDates, setSelectedDates] = useState({
     startDate: "",
     endDate: "",
+  });
+  const [guests, setGuests] = useState({
+    adults: 1,
+    children: 0,
+    infants: 0,
+  });
+  const [tempGuests, setTempGuests] = useState({
+    adults: 1,
+    children: 0,
+    infants: 0,
   });
 
   const calendarConfig = useMemo(() => {
@@ -37,6 +52,37 @@ export default function ReservationScreen() {
       maxDate: futureDate.toISOString().split("T")[0],
     };
   }, []);
+
+  const handleGuestModalOpen = () => {
+    // Set temporary state to current guest values when opening modal
+    setTempGuests({ ...guests });
+    guestModalizeRef.current?.open();
+  };
+
+  const handleConfirmGuests = () => {
+    // Update main guest state with temporary values
+    setGuests({ ...tempGuests });
+    guestModalizeRef.current?.close();
+  };
+
+  const updateGuestCount = (type: "adults" | "children" | "infants" , increment: boolean)=>{
+    setGuests(prev=>{
+      const newCount = increment? prev[type]+1 : prev[type]-1;
+
+      if(newCount<0)return prev;
+      if(type === "adults" && newCount===0)return prev;
+
+      const totalGuests = (type === "adults" ? newCount : prev.adults)+(type === "children"? newCount :prev.children);
+
+
+      return {
+        ...prev,
+        [type]: newCount,
+        
+      }
+
+    })
+  }
 
   const onDayPress = (day: any) => {
     if (BLOCKED_DATES[day.dateString]) {
@@ -168,17 +214,81 @@ export default function ReservationScreen() {
     return "Tap a selected date to unselect it";
   };
 
+  const getGuestSummary = () => {
+    const parts = [];
+    if (guests.adults) parts.push(`${guests.adults} adult${guests.adults !== 1 ? 's' : ''}`);
+    if (guests.children) parts.push(`${guests.children} child${guests.children !== 1 ? 'ren' : ''}`);
+    if (guests.infants) parts.push(`${guests.infants} infant${guests.infants !== 1 ? 's' : ''}`);
+    return parts.join(', ');
+  };
+
+  const GuestTypeSelector = ({ 
+    type, 
+    title, 
+    subtitle,
+    value,
+  }: { 
+    type: 'adults' | 'children' | 'infants';
+    title: string;
+    subtitle: string;
+    value: number;
+  }) => (
+    <View style={styles.guestTypeContainer}>
+      <View style={styles.guestTypeInfo}>
+        <Text style={styles.guestTypeTitle}>{title}</Text>
+        <Text style={styles.guestTypeSubtitle}>{subtitle}</Text>
+      </View>
+      <View style={styles.guestTypeControls}>
+        <TouchableOpacity
+          style={[
+            styles.guestTypeButton,
+            value === (type === 'adults' ? 1 : 0) && styles.guestTypeButtonDisabled
+          ]}
+          onPress={() => updateGuestCount(type, false)}
+          disabled={type === 'adults' ? value <= 1 : value <= 0}
+        >
+          <Minus size={20} color={value === (type === 'adults' ? 1 : 0) ? '#A1A1AA' : '#4F46E5'} />
+        </TouchableOpacity>
+        <Text style={styles.guestTypeValue}>{value}</Text>
+        <TouchableOpacity
+          style={styles.guestTypeButton}
+          onPress={() => updateGuestCount(type, true)}
+        >
+          <Plus size={20} color="#4F46E5" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar hidden={false} />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={24} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Reserve</Text>
+      </View>
       <View style={styles.content}>
-        <Text style={styles.title}>Make a Reservation</Text>
+        <View>
+          <Image
+            style={{ width: 200, height: 100, borderRadius: 10 }}
+            resizeMode="cover"
+            source={{
+              uri: "https://images.pexels.com/photos/2724749/pexels-photo-2724749.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+            }}
+          />
+          <Text>Property ka naam</Text>
+          <Text>Property ka thoda sa description</Text>
+        </View>
 
         <View style={styles.reservationInfo}>
           <View style={styles.dateSelector}>
             <View style={styles.dateDisplay}>
-              <View >
-                <Text style={styles.dateLabel}>Dates</Text>
-                <Text style={styles.selectedDates}>
+              <View>
+                <Text style={styles.label}>Dates</Text>
+                <Text style={styles.selectedText}>
                   {selectedDates.startDate
                     ? `${formatDate(selectedDates.startDate)}${
                         selectedDates.endDate
@@ -193,8 +303,17 @@ export default function ReservationScreen() {
               <Ionicons name="calendar-outline" size={32} color="#111111" />
             </TouchableOpacity>
           </View>
-          <View>
-            <Text>Hello world</Text>
+          <View style={styles.guestSelector}>
+            <View style={styles.dateDisplay}>
+              <View>
+                <Text style={styles.label}>Guests</Text>
+                <Text style={styles.selectedText}>{getGuestSummary()}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity onPress={() => guestModalizeRef.current?.open()}>
+              <Ionicons name="person-add-outline" size={32} color="#111111" />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -253,6 +372,48 @@ export default function ReservationScreen() {
           <Text style={styles.helperText}>{getHelperText()}</Text>
         </View>
       </Modalize>
+      <Modalize
+        ref={guestModalizeRef}
+        adjustToContentHeight
+        modalStyle={styles.modalContent}
+        scrollViewProps={{
+          showsVerticalScrollIndicator: false,
+          scrollEventThrottle: 16,
+        }}
+      >
+       <View style={styles.guestContainer}>
+          <Text style={styles.modalTitle}>Who's coming?</Text>
+          
+          <GuestTypeSelector
+            type="adults"
+            title="Adults"
+            subtitle="Age 13+"
+            value={tempGuests.adults}
+          />
+          
+          <GuestTypeSelector
+            type="children"
+            title="Children"
+            subtitle="Ages 2-12"
+            value={tempGuests.children}
+          />
+          
+          <GuestTypeSelector
+            type="infants"
+            title="Infants"
+            subtitle="Under 2"
+            value={tempGuests.infants}
+          />
+
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirmGuests}
+          >
+            <Text style={styles.confirmButtonText}>Confirm</Text>
+          </TouchableOpacity>
+        </View>
+
+      </Modalize>
     </SafeAreaView>
   );
 }
@@ -264,6 +425,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+    backgroundColor: "maroon",
   },
   title: {
     fontSize: 24,
@@ -275,10 +437,17 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
     justifyContent: "space-between",
-     
   },
-  reservationInfo:{
+  guestSelector: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    justifyContent: "space-between",
+  },
+  reservationInfo: {
     backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
@@ -296,16 +465,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  
-  selectedDates: {
+
+  selectedText: {
     fontSize: 14,
     color: "#6b7280",
     marginBottom: 4,
   },
-  dateLabel: {
+  label: {
     fontSize: 16,
     color: "#1a1a1a",
-    fontWeight: "500",   
+    fontWeight: "500",
   },
   modalContent: {
     padding: 20,
@@ -346,5 +515,85 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 14,
     color: "#6b7280",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 5,
+    paddingHorizontal: 20,
+    height: "7%",
+    backgroundColor: "white",
+    elevation: 5,
+  },
+  headerTitle: {
+    paddingLeft: 10,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  guestContainer: {
+    paddingBottom: 24,
+  },
+  guestTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  guestTypeInfo: {
+    flex: 1,
+  },
+  guestTypeTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1a1a1a',
+  },
+  guestTypeSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  guestTypeControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  guestTypeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  guestTypeButtonDisabled: {
+    backgroundColor: '#f3f4f6',
+    opacity: 0.5,
+  },
+  guestTypeValue: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginHorizontal: 16,
+    minWidth: 24,
+    textAlign: 'center',
+  },
+  guestHelperText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  confirmButton: {
+    backgroundColor: '#4F46E5',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 24,
+    marginHorizontal: 16,
+  },
+  confirmButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
