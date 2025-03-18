@@ -9,15 +9,14 @@ import {
 } from "react-native";
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState, useEffect, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import Ionicons from "@expo/vector-icons/Ionicons";
-
+import  useStore  from "@/store/filter-store";
 import { Countries } from "@/Constants/Country";
 import { PropertyInterface } from "@/data/types";
 import { propertyTypes } from "@/Constants/Country";
-import  useStore  from "@/store/filter-store";
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -172,7 +171,7 @@ export default function Index() {
                 <Ionicons name="location-outline" size={15} color="gray" />
                 {item.postalCode}, {item.city}, {item.state}
               </Text>
-              <Text style={{ color: "black" ,fontWeight:400 ,fontSize:14 ,borderTopWidth:1,borderTopColor:"gray",  }}>€{item.basePrice}/night {item.cooking},{item.party},{item.pet}</Text>
+              <Text style={{color:"gray",fontWeight:400,fontSize:14,}}><Text style={{color:"black",fontWeight:600,fontSize:18,}}>€{item.basePrice}</Text>/night</Text>
             </View>
           </View>
         )}

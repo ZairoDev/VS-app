@@ -472,7 +472,7 @@ export default function PropertyInfo() {
           </View>
         </View>
       </Modalize>
-      <Animated.View entering={SlideInDown} exiting={SlideOutDown} style={globalStyles.footer}>
+      <View style={globalStyles.footer}>
         <View
           style={{
             flexDirection: "row",
@@ -492,7 +492,7 @@ export default function PropertyInfo() {
             <Text style={globalStyles.btnText}>Reserve</Text>
           </TouchableOpacity>
         </View>
-      </Animated.View>
+      </View>
     </SafeAreaView>
   );
 }

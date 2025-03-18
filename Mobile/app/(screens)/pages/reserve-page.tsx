@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
+  Switch,
 } from "react-native";
 import { Modalize } from "react-native-modalize";
 import { Calendar } from "react-native-calendars";
@@ -13,9 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StatusBar } from "react-native";
 import { Image } from "react-native";
-import {  Plus, Minus } from 'lucide-react-native';
-
-const { height } = Dimensions.get("window");
+import {  Plus, Minus,Receipt } from 'lucide-react-native';
+const {height,width} = Dimensions.get("window");
 
 const BLOCKED_DATES: { [key: string]: boolean } = {
   "2025-04-14": true,
@@ -24,6 +24,26 @@ const BLOCKED_DATES: { [key: string]: boolean } = {
   "2025-04-21": true,
 };
 
+const PRICE_PER_NIGHT = 150; // Base price per night
+const DISCOUNT_PERCENTAGE = 10; // 10% discount
+
+const ZigzagPattern = () => {
+  const zigzagWidth = 12; // Width of each zigzag
+  const zigzagHeight = 8; // Height of each zigzag
+  const numberOfZigzags = Math.ceil(width / zigzagWidth);
+  
+  return (
+    <View style={styles.zigzagContainer}>
+      {Array.from({ length: numberOfZigzags }).map((_, index) => (
+        <View key={index} style={styles.zigzagItem}>
+          <View style={styles.zigzagTriangle} />
+        </View>
+      ))}
+    </View>
+  );
+};
+
+
 export default function ReservationScreen() {
   const modalizeRef = useRef<Modalize>(null);
   const guestModalizeRef = useRef<Modalize>(null);
@@ -31,6 +51,7 @@ export default function ReservationScreen() {
     startDate: "",
     endDate: "",
   });
+  const [includePlatformFee, setIncludePlatformFee] = useState(true);
   const [guests, setGuests] = useState({
     adults: 1,
     children: 0,
@@ -41,6 +62,38 @@ export default function ReservationScreen() {
     children: 0,
     infants: 0,
   });
+
+  const billDetails = useMemo(() => {
+    if (!selectedDates.startDate || !selectedDates.endDate) {
+      return {
+        totalNights: 0,
+        basePrice: 0,
+        discountedPrice: 0,
+        platformFee: 0,
+        total: 0,
+      };
+    }
+
+    const start = new Date(selectedDates.startDate);
+    const end = new Date(selectedDates.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const basePrice = totalNights * PRICE_PER_NIGHT;
+    const discount = (basePrice * DISCOUNT_PERCENTAGE) / 100;
+    const discountedPrice = basePrice - discount;
+    const platformFee = 6;
+    const total = discountedPrice + platformFee;
+
+    return {
+      totalNights,
+      basePrice,
+      discountedPrice,
+      platformFee,
+      total,
+    };
+  }, [selectedDates.startDate, selectedDates.endDate, includePlatformFee]);
+
 
   const calendarConfig = useMemo(() => {
     const today = new Date();
@@ -66,21 +119,14 @@ export default function ReservationScreen() {
   };
 
   const updateGuestCount = (type: "adults" | "children" | "infants" , increment: boolean)=>{
-    setGuests(prev=>{
+    setTempGuests(prev=>{
       const newCount = increment? prev[type]+1 : prev[type]-1;
-
       if(newCount<0)return prev;
       if(type === "adults" && newCount===0)return prev;
-
-      const totalGuests = (type === "adults" ? newCount : prev.adults)+(type === "children"? newCount :prev.children);
-
-
       return {
         ...prev,
-        [type]: newCount,
-        
+        [type]: newCount, 
       }
-
     })
   }
 
@@ -88,7 +134,6 @@ export default function ReservationScreen() {
     if (BLOCKED_DATES[day.dateString]) {
       return;
     }
-
     if (day.dateString === selectedDates.startDate) {
       setSelectedDates({
         startDate: "",
@@ -96,7 +141,6 @@ export default function ReservationScreen() {
       });
       return;
     }
-
     if (day.dateString === selectedDates.endDate) {
       setSelectedDates((prev) => ({
         ...prev,
@@ -104,8 +148,6 @@ export default function ReservationScreen() {
       }));
       return;
     }
-
-    // Normal date selection logic
     if (
       !selectedDates.startDate ||
       (selectedDates.startDate && selectedDates.endDate)
@@ -129,7 +171,6 @@ export default function ReservationScreen() {
             break;
           }
         }
-
         if (!hasBlockedDates) {
           setSelectedDates((prev) => ({
             ...prev,
@@ -260,6 +301,55 @@ export default function ReservationScreen() {
     </View>
   );
 
+  const renderBillDetails = () => {
+    if (billDetails.totalNights === 0) return null;
+
+    return (
+      <View style={styles.billWrapper}>
+        <View style={styles.billContainer}>
+          <View style={styles.billHeader}>
+            
+            <Text style={styles.billTitle}>Bill Details</Text>
+          </View>
+
+          <View style={styles.billContent}>
+            <View style={styles.billRow}>
+              <Text style={styles.billLabel}>
+              €{PRICE_PER_NIGHT} × {billDetails.totalNights} nights
+              </Text>
+              <Text style={styles.billAmount}>€{billDetails.basePrice}</Text>
+            </View>
+
+            <View style={styles.billRow}>
+              <Text style={styles.billLabel}>Discount</Text>
+              <Text style={[styles.billAmount, styles.discountText]}>
+                -€{(billDetails.basePrice * DISCOUNT_PERCENTAGE) / 100}
+              </Text>
+            </View>
+
+            <View style={styles.billRow}>
+              <View style={styles.platformFeeContainer}>
+                <Text style={styles.billLabel}>Platform fee </Text>
+      
+              </View>
+              <Text style={styles.billAmount}>
+              €{billDetails.platformFee.toFixed(2)}
+              </Text>
+            </View>
+
+            <View style={styles.dashedLine} />
+
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalAmount}>€{billDetails.total.toFixed(2)}</Text>
+            </View>
+          </View>
+        </View>
+        <ZigzagPattern />
+      </View>
+    );
+  };
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -271,16 +361,16 @@ export default function ReservationScreen() {
         <Text style={styles.headerTitle}>Reserve</Text>
       </View>
       <View style={styles.content}>
-        <View>
+        <View style={{marginBottom:20,maxHeight:height*0.5}}>
           <Image
-            style={{ width: 200, height: 100, borderRadius: 10 }}
+            style={{ width: "100%", height:height*0.20, borderRadius: 10 }}
             resizeMode="cover"
             source={{
               uri: "https://images.pexels.com/photos/2724749/pexels-photo-2724749.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
             }}
           />
-          <Text>Property ka naam</Text>
-          <Text>Property ka thoda sa description</Text>
+          <Text style={{textAlign:"center"}}>Property ka naam</Text>
+          <Text style={{textAlign:"center"}}>Property ka thoda sa description</Text>
         </View>
 
         <View style={styles.reservationInfo}>
@@ -311,12 +401,16 @@ export default function ReservationScreen() {
               </View>
             </View>
 
-            <TouchableOpacity onPress={() => guestModalizeRef.current?.open()}>
+            <TouchableOpacity onPress={handleGuestModalOpen}>
               <Ionicons name="person-add-outline" size={32} color="#111111" />
             </TouchableOpacity>
           </View>
         </View>
+        {renderBillDetails()}
       </View>
+      <TouchableOpacity style={styles.checkout}>
+        <Text style={{color:"white", textAlign:"center",fontWeight:"600", fontSize:18}}>Proceed to Checkout </Text>
+      </TouchableOpacity>
 
       <Modalize
         ref={modalizeRef}
@@ -376,12 +470,8 @@ export default function ReservationScreen() {
         ref={guestModalizeRef}
         adjustToContentHeight
         modalStyle={styles.modalContent}
-        scrollViewProps={{
-          showsVerticalScrollIndicator: false,
-          scrollEventThrottle: 16,
-        }}
       >
-       <View style={styles.guestContainer}>
+        <View style={styles.guestContainer}>
           <Text style={styles.modalTitle}>Who's coming?</Text>
           
           <GuestTypeSelector
@@ -412,7 +502,6 @@ export default function ReservationScreen() {
             <Text style={styles.confirmButtonText}>Confirm</Text>
           </TouchableOpacity>
         </View>
-
       </Modalize>
     </SafeAreaView>
   );
@@ -421,11 +510,12 @@ export default function ReservationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    maxHeight:"100%",
+    backgroundColor: "white",
   },
   content: {
     padding: 20,
-    backgroundColor: "maroon",
+  
   },
   title: {
     fontSize: 24,
@@ -437,14 +527,13 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
+   
     justifyContent: "space-between",
   },
   guestSelector: {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
     justifyContent: "space-between",
   },
   reservationInfo: {
@@ -596,4 +685,120 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  billWrapper: {
+    marginTop: 24,
+    // overflow: 'hidden',
+  },
+  billContainer: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  billContent: {
+    paddingBottom: 16,
+  },
+  billHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  billTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginLeft: 8,
+  },
+  billRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  billLabel: {
+    fontSize: 16,
+    color: '#4b5563',
+  },
+  billAmount: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '500',
+  },
+  discountText: {
+    color: '#10b981',
+  },
+  platformFeeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dashedLine: {
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginVertical: 16,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  totalAmount: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  zigzagContainer: {
+    flexDirection: 'row',
+    height: 8,
+    overflow:"hidden",
+    backgroundColor: 'transparent',
+  },
+  zigzagItem: {
+    width: 12,
+    height: 8,
+    overflow: 'hidden',
+  },
+  zigzagTriangle: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#ffffff',
+    transform: [{ rotate: '180deg' }],
+  },
+  checkout:{
+    position:"absolute",
+    bottom:0,
+    display:"flex",
+    flexDirection:"row",
+    justifyContent:"center",
+    alignItems:"center",
+    backgroundColor:"orange",
+    width:"100%",
+    height:"7%",
+    textAlign:"center"
+  }
 });
