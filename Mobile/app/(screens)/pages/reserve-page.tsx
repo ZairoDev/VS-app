@@ -7,15 +7,16 @@ import {
   Dimensions,
   SafeAreaView,
   Switch,
+  Pressable,
 } from "react-native";
 import { Modalize } from "react-native-modalize";
 import { Calendar } from "react-native-calendars";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StatusBar } from "react-native";
 import { Image } from "react-native";
-import {  Plus, Minus,Receipt } from 'lucide-react-native';
-const {height,width} = Dimensions.get("window");
+import { Plus, Minus, Receipt } from "lucide-react-native";
+const { height, width } = Dimensions.get("window");
 
 const BLOCKED_DATES: { [key: string]: boolean } = {
   "2025-04-14": true,
@@ -31,7 +32,7 @@ const ZigzagPattern = () => {
   const zigzagWidth = 12; // Width of each zigzag
   const zigzagHeight = 8; // Height of each zigzag
   const numberOfZigzags = Math.ceil(width / zigzagWidth);
-  
+
   return (
     <View style={styles.zigzagContainer}>
       {Array.from({ length: numberOfZigzags }).map((_, index) => (
@@ -42,7 +43,6 @@ const ZigzagPattern = () => {
     </View>
   );
 };
-
 
 export default function ReservationScreen() {
   const modalizeRef = useRef<Modalize>(null);
@@ -94,7 +94,6 @@ export default function ReservationScreen() {
     };
   }, [selectedDates.startDate, selectedDates.endDate, includePlatformFee]);
 
-
   const calendarConfig = useMemo(() => {
     const today = new Date();
     const futureDate = new Date();
@@ -118,17 +117,20 @@ export default function ReservationScreen() {
     guestModalizeRef.current?.close();
   };
 
-  const updateGuestCount = (type: "adults" | "children" | "infants" , increment: boolean)=>{
-    setTempGuests(prev=>{
-      const newCount = increment? prev[type]+1 : prev[type]-1;
-      if(newCount<0)return prev;
-      if(type === "adults" && newCount===0)return prev;
+  const updateGuestCount = (
+    type: "adults" | "children" | "infants",
+    increment: boolean
+  ) => {
+    setTempGuests((prev) => {
+      const newCount = increment ? prev[type] + 1 : prev[type] - 1;
+      if (newCount < 0) return prev;
+      if (type === "adults" && newCount === 0) return prev;
       return {
         ...prev,
-        [type]: newCount, 
-      }
-    })
-  }
+        [type]: newCount,
+      };
+    });
+  };
 
   const onDayPress = (day: any) => {
     if (BLOCKED_DATES[day.dateString]) {
@@ -257,19 +259,24 @@ export default function ReservationScreen() {
 
   const getGuestSummary = () => {
     const parts = [];
-    if (guests.adults) parts.push(`${guests.adults} adult${guests.adults !== 1 ? 's' : ''}`);
-    if (guests.children) parts.push(`${guests.children} child${guests.children !== 1 ? 'ren' : ''}`);
-    if (guests.infants) parts.push(`${guests.infants} infant${guests.infants !== 1 ? 's' : ''}`);
-    return parts.join(', ');
+    if (guests.adults)
+      parts.push(`${guests.adults} adult${guests.adults !== 1 ? "s" : ""}`);
+    if (guests.children)
+      parts.push(
+        `${guests.children} child${guests.children !== 1 ? "ren" : ""}`
+      );
+    if (guests.infants)
+      parts.push(`${guests.infants} infant${guests.infants !== 1 ? "s" : ""}`);
+    return parts.join(", ");
   };
 
-  const GuestTypeSelector = ({ 
-    type, 
-    title, 
+  const GuestTypeSelector = ({
+    type,
+    title,
     subtitle,
     value,
-  }: { 
-    type: 'adults' | 'children' | 'infants';
+  }: {
+    type: "adults" | "children" | "infants";
     title: string;
     subtitle: string;
     value: number;
@@ -283,12 +290,18 @@ export default function ReservationScreen() {
         <TouchableOpacity
           style={[
             styles.guestTypeButton,
-            value === (type === 'adults' ? 1 : 0) && styles.guestTypeButtonDisabled
+            value === (type === "adults" ? 1 : 0) &&
+              styles.guestTypeButtonDisabled,
           ]}
           onPress={() => updateGuestCount(type, false)}
-          disabled={type === 'adults' ? value <= 1 : value <= 0}
+          disabled={type === "adults" ? value <= 1 : value <= 0}
         >
-          <Minus size={20} color={value === (type === 'adults' ? 1 : 0) ? '#A1A1AA' : '#4F46E5'} />
+          <Minus
+            size={20}
+            color={
+              value === (type === "adults" ? 1 : 0) ? "#A1A1AA" : "#4F46E5"
+            }
+          />
         </TouchableOpacity>
         <Text style={styles.guestTypeValue}>{value}</Text>
         <TouchableOpacity
@@ -301,6 +314,40 @@ export default function ReservationScreen() {
     </View>
   );
 
+  const renderApplyCouponModal = () => {
+    return (
+      <Pressable
+        style={{
+          marginVertical: 16,
+          height: height * 0.07,
+          borderRadius: 10,
+          elevation:3
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor: "white",
+            borderRadius: 10,
+            height: "100%",
+            paddingHorizontal: 10,
+          }}
+        >
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <MaterialIcons name="discount" size={24} color="orange" />
+            <Text style={{ fontSize: 16, fontWeight: 500 }}>Apply Coupon</Text>
+          </View>
+          <Ionicons
+            name="arrow-forward-circle-outline"
+            size={24}
+            color="gray"
+          />
+        </View>
+      </Pressable>
+    );
+  };
   const renderBillDetails = () => {
     if (billDetails.totalNights === 0) return null;
 
@@ -308,14 +355,13 @@ export default function ReservationScreen() {
       <View style={styles.billWrapper}>
         <View style={styles.billContainer}>
           <View style={styles.billHeader}>
-            
             <Text style={styles.billTitle}>Bill Details</Text>
           </View>
 
           <View style={styles.billContent}>
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>
-              €{PRICE_PER_NIGHT} × {billDetails.totalNights} nights
+                €{PRICE_PER_NIGHT} × {billDetails.totalNights} nights
               </Text>
               <Text style={styles.billAmount}>€{billDetails.basePrice}</Text>
             </View>
@@ -330,10 +376,9 @@ export default function ReservationScreen() {
             <View style={styles.billRow}>
               <View style={styles.platformFeeContainer}>
                 <Text style={styles.billLabel}>Platform fee </Text>
-      
               </View>
               <Text style={styles.billAmount}>
-              €{billDetails.platformFee.toFixed(2)}
+                €{billDetails.platformFee.toFixed(2)}
               </Text>
             </View>
 
@@ -341,7 +386,9 @@ export default function ReservationScreen() {
 
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalAmount}>€{billDetails.total.toFixed(2)}</Text>
+              <Text style={styles.totalAmount}>
+                €{billDetails.total.toFixed(2)}
+              </Text>
             </View>
           </View>
         </View>
@@ -349,7 +396,6 @@ export default function ReservationScreen() {
       </View>
     );
   };
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -361,16 +407,23 @@ export default function ReservationScreen() {
         <Text style={styles.headerTitle}>Reserve</Text>
       </View>
       <View style={styles.content}>
-        <View style={{marginBottom:20,maxHeight:height*0.5}}>
+        <View style={{ marginBottom: 20, maxHeight: height * 0.5 }}>
           <Image
-            style={{ width: "100%", height:height*0.20, borderRadius: 10 }}
+            style={{
+              width: "80%",
+              height: height * 0.14,
+              borderRadius: 10,
+              alignSelf: "center",
+            }}
             resizeMode="cover"
             source={{
               uri: "https://images.pexels.com/photos/2724749/pexels-photo-2724749.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
             }}
           />
-          <Text style={{textAlign:"center"}}>Property ka naam</Text>
-          <Text style={{textAlign:"center"}}>Property ka thoda sa description</Text>
+          <Text style={{ textAlign: "center" }}>Property ka naam</Text>
+          <Text style={{ textAlign: "center" }}>
+            Property ka thoda sa description
+          </Text>
         </View>
 
         <View style={styles.reservationInfo}>
@@ -406,10 +459,20 @@ export default function ReservationScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        {renderApplyCouponModal()}
         {renderBillDetails()}
       </View>
       <TouchableOpacity style={styles.checkout}>
-        <Text style={{color:"white", textAlign:"center",fontWeight:"600", fontSize:18}}>Proceed to Checkout </Text>
+        <Text
+          style={{
+            color: "white",
+            textAlign: "center",
+            fontWeight: "600",
+            fontSize: 18,
+          }}
+        >
+          Proceed to Checkout{" "}
+        </Text>
       </TouchableOpacity>
 
       <Modalize
@@ -473,21 +536,21 @@ export default function ReservationScreen() {
       >
         <View style={styles.guestContainer}>
           <Text style={styles.modalTitle}>Who's coming?</Text>
-          
+
           <GuestTypeSelector
             type="adults"
             title="Adults"
             subtitle="Age 13+"
             value={tempGuests.adults}
           />
-          
+
           <GuestTypeSelector
             type="children"
             title="Children"
             subtitle="Ages 2-12"
             value={tempGuests.children}
           />
-          
+
           <GuestTypeSelector
             type="infants"
             title="Infants"
@@ -510,12 +573,11 @@ export default function ReservationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    maxHeight:"100%",
+    maxHeight: "100%",
     backgroundColor: "white",
   },
   content: {
     padding: 20,
-  
   },
   title: {
     fontSize: 24,
@@ -527,7 +589,6 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-   
     justifyContent: "space-between",
   },
   guestSelector: {
@@ -539,7 +600,8 @@ const styles = StyleSheet.create({
   reservationInfo: {
     backgroundColor: "#ffffff",
     borderRadius: 12,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -623,79 +685,79 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   guestTypeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: "#f3f4f6",
   },
   guestTypeInfo: {
     flex: 1,
   },
   guestTypeTitle: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#1a1a1a',
+    fontWeight: "500",
+    color: "#1a1a1a",
   },
   guestTypeSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: "#6b7280",
     marginTop: 2,
   },
   guestTypeControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   guestTypeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f3f4f6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   guestTypeButtonDisabled: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: "#f3f4f6",
     opacity: 0.5,
   },
   guestTypeValue: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "500",
     marginHorizontal: 16,
     minWidth: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   guestHelperText: {
     fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
+    color: "#6b7280",
+    textAlign: "center",
     marginTop: 16,
   },
   confirmButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: "#4F46E5",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 24,
     marginHorizontal: 16,
   },
   confirmButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   billWrapper: {
-    marginTop: 24,
+    // marginTop: 10,
     // overflow: 'hidden',
   },
   billContainer: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 10,
+    paddingTop: 10,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -705,100 +767,100 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   billContent: {
-    paddingBottom: 16,
+    paddingBottom: 10,
   },
   billHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: "#f3f4f6",
   },
   billTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontWeight: "600",
+    color: "#1a1a1a",
     marginLeft: 8,
   },
   billRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   billLabel: {
     fontSize: 16,
-    color: '#4b5563',
+    color: "#4b5563",
   },
   billAmount: {
     fontSize: 16,
-    color: '#1a1a1a',
-    fontWeight: '500',
+    color: "#1a1a1a",
+    fontWeight: "500",
   },
   discountText: {
-    color: '#10b981',
+    color: "#10b981",
   },
   platformFeeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   dashedLine: {
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     marginVertical: 16,
   },
   totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   totalLabel: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontWeight: "600",
+    color: "#1a1a1a",
   },
   totalAmount: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontWeight: "600",
+    color: "#1a1a1a",
   },
   zigzagContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: 8,
-    overflow:"hidden",
-    backgroundColor: 'transparent',
+    overflow: "hidden",
+    backgroundColor: "transparent",
   },
   zigzagItem: {
     width: 12,
     height: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   zigzagTriangle: {
     width: 0,
     height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
+    backgroundColor: "transparent",
+    borderStyle: "solid",
     borderLeftWidth: 6,
     borderRightWidth: 6,
     borderBottomWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: '#ffffff',
-    transform: [{ rotate: '180deg' }],
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: "#ffffff",
+    transform: [{ rotate: "180deg" }],
   },
-  checkout:{
-    position:"absolute",
-    bottom:0,
-    display:"flex",
-    flexDirection:"row",
-    justifyContent:"center",
-    alignItems:"center",
-    backgroundColor:"orange",
-    width:"100%",
-    height:"7%",
-    textAlign:"center"
-  }
+  checkout: {
+    position: "absolute",
+    bottom: 0,
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "orange",
+    width: "100%",
+    height: "7%",
+    textAlign: "center",
+  },
 });

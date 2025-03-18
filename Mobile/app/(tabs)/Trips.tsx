@@ -160,7 +160,7 @@ const mapStyle = [
       ]
   }
 ]
-
+    
 const MapScreen = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
