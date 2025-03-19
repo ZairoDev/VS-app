@@ -9,11 +9,11 @@ import session from "express-session";
 import connectMongoDB from "@/config/Connection";
 import propertyRoutes from "@/routes/property-route";
 import userRoutes from "@/routes/user-route";
+import couponRoutes from "@/routes/discount-coupon-route";
 import "@/config/passport";
 
 
 dotenv.config();
-
 connectMongoDB();
 
 const app: Application = express();
@@ -41,7 +41,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 app.use("/properties", propertyRoutes);
 app.use("/auth", userRoutes);
-
+app.use("coupon", couponRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

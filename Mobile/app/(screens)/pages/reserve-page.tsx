@@ -25,8 +25,8 @@ const BLOCKED_DATES: { [key: string]: boolean } = {
   "2025-04-21": true,
 };
 
-const PRICE_PER_NIGHT = 150; // Base price per night
-const DISCOUNT_PERCENTAGE = 10; // 10% discount
+const PRICE_PER_NIGHT = 150; 
+const DISCOUNT_PERCENTAGE = 10; 
 
 const ZigzagPattern = () => {
   const zigzagWidth = 12; // Width of each zigzag
@@ -82,7 +82,7 @@ export default function ReservationScreen() {
     const basePrice = totalNights * PRICE_PER_NIGHT;
     const discount = (basePrice * DISCOUNT_PERCENTAGE) / 100;
     const discountedPrice = basePrice - discount;
-    const platformFee = 6;
+    const platformFee = 75;
     const total = discountedPrice + platformFee;
 
     return {
@@ -315,8 +315,10 @@ export default function ReservationScreen() {
   );
 
   const renderApplyCouponModal = () => {
+    if (billDetails.totalNights === 0) return null;
     return (
       <Pressable
+        onPress={()=>router.push("/(screens)/pages/apply-coupon")}
         style={{
           marginVertical: 16,
           height: height * 0.07,
@@ -396,7 +398,6 @@ export default function ReservationScreen() {
       </View>
     );
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar hidden={false} />
@@ -442,7 +443,7 @@ export default function ReservationScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity onPress={() => modalizeRef.current?.open()}>
+            <TouchableOpacity onPress={() => modalizeRef.current?.open()}>       
               <Ionicons name="calendar-outline" size={32} color="#111111" />
             </TouchableOpacity>
           </View>
@@ -462,18 +463,20 @@ export default function ReservationScreen() {
         {renderApplyCouponModal()}
         {renderBillDetails()}
       </View>
-      <TouchableOpacity style={styles.checkout}>
-        <Text
-          style={{
-            color: "white",
-            textAlign: "center",
-            fontWeight: "600",
-            fontSize: 18,
-          }}
-        >
-          Proceed to Checkout{" "}
-        </Text>
-      </TouchableOpacity>
+      {billDetails.totalNights !== 0 && (
+  <TouchableOpacity style={styles.checkout}>
+    <Text
+      style={{
+        color: "white",
+        textAlign: "center",
+        fontWeight: "600",
+        fontSize: 18,
+      }}
+    >
+      Proceed to Checkout
+    </Text>
+  </TouchableOpacity>
+)}
 
       <Modalize
         ref={modalizeRef}
