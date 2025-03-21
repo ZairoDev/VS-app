@@ -32,7 +32,6 @@ app.use(
 );
 
 app.use(passport.initialize());
-
 app.use(passport.session());
 
 
@@ -41,7 +40,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 app.use("/properties", propertyRoutes);
 app.use("/auth", userRoutes);
-app.use("coupon", couponRoutes);
+app.use("/coupon", couponRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
