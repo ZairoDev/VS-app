@@ -10,6 +10,7 @@ import {
   Alert,
   StyleSheet,
 } from "react-native";
+import { useCouponStore } from "@/store/coupon-store";
 
 // Define the Coupon interface
 interface Coupon {
@@ -25,8 +26,10 @@ interface Coupon {
 
 const ApplyCoupon = () => {
   const [couponCode, setCouponCode] = useState<string>("");
-  const [isApplied, setIsApplied] = useState<boolean>(false);
   const [coupon, setCoupon] = useState<Coupon[]>([]);
+
+  // Zustand store actions
+  const {appliedCoupon,applyCoupon} = useCouponStore();
 
   // Fetch coupons on component load
   useEffect(() => {
@@ -39,24 +42,25 @@ const ApplyCoupon = () => {
       const response = await axios.get<{ coupons: Coupon[] }>(
         `${process.env.EXPO_PUBLIC_BASE_URL}/coupon/get-all`
       );
-      setCoupon(response.data.coupons); // Correctly set the entire array
+      setCoupon(response.data.coupons); // Set the entire array
       console.log("Coupons fetched:", response.data.coupons);
     } catch (error) {
       console.log("Error in fetching coupons", error);
     }
   };
 
-  // Apply coupon logic
   const handleApplyCoupon = () => {
     if (couponCode.trim() === "") {
       Alert.alert("Error", "Please enter a valid coupon code.");
       return;
     }
-
     const foundCoupon = coupon.find((c) => c.code === couponCode.trim());
-
     if (foundCoupon) {
-      setIsApplied(true);
+      if (appliedCoupon?._id === foundCoupon._id) {
+        Alert.alert("Info", "This coupon is already applied.");
+        return;
+      }
+      applyCoupon(foundCoupon);
       Alert.alert(
         "Success",
         `🎉 Coupon "${foundCoupon.code}" applied successfully!`
@@ -65,7 +69,6 @@ const ApplyCoupon = () => {
       Alert.alert("Error", "Invalid coupon code.");
     }
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -74,11 +77,8 @@ const ApplyCoupon = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Apply Coupon</Text>
       </View>
-      
 
       <View style={styles.card}>
-       
-
         <TextInput
           style={styles.input}
           placeholder="Enter your coupon code"
@@ -87,68 +87,74 @@ const ApplyCoupon = () => {
         />
 
         <TouchableOpacity
-          style={[styles.button, isApplied && styles.buttonDisabled]}
+          style={[
+            styles.button,
+            appliedCoupon ? styles.button : null,
+          ]}
           onPress={handleApplyCoupon}
-          disabled={isApplied}
+          // disabled={!!appliedCoupon}
         >
           <Text style={styles.buttonText}>
-            {isApplied ? "Coupon Applied" : "Apply Coupon"}
+            {appliedCoupon ? "Coupon Applied" : "Apply Coupon"}
           </Text>
         </TouchableOpacity>
 
-        {isApplied && (
+        {appliedCoupon && (
           <Text style={styles.successMessage}>
-            🎉 Coupon successfully applied!
+            🎉 Coupon "{appliedCoupon.code}" successfully applied!
           </Text>
         )}
       </View>
 
       <View style={styles.couponList}>
-  <Text style={styles.listTitle}>Available Coupons</Text>
-  {coupon.length > 0 ? (
-    coupon.map((c: Coupon) => (
-      <TouchableOpacity
-        key={c._id}
-        style={styles.couponCard}
-        onPress={() => setCouponCode(c.code)}
-      >
-        <View style={styles.couponHeader}>
-          <View style={styles.checkbox}>
-            {couponCode === c.code && <View style={styles.checked} />}
-          </View>
+        <Text style={styles.listTitle}>Available Coupons</Text>
+        {coupon.length > 0 ? (
+          coupon.map((c: Coupon) => (
+            <TouchableOpacity
+              key={c._id}
+              style={styles.couponCard}
+              onPress={() => setCouponCode(c.code)}
+            >
+              <View style={styles.couponHeader}>
+                <View style={styles.checkbox}>
+                  {couponCode === c.code && <View style={styles.checked} />}
+                </View>
 
-          <View style={styles.codeBox}>
-            <Text style={styles.couponCode}>{c.code}</Text>
-          </View>
-        </View>
+                <View style={styles.codeBox}>
+                  <Text style={styles.couponCode}>{c.code}</Text>
+                </View>
+              </View>
 
-        <Text style={styles.saveText}>
-          Save{" "}
-          {c.discountType === "percentage"
-            ? `₹${((c.discountValue / 100) * c.minOrderValue).toFixed(2)}`
-            : `₹${c.discountValue}`}
-        </Text>
+              <Text style={styles.saveText}>
+                Save{" "}
+                {c.discountType === "percentage"
+                  ? `₹${(
+                      (c.discountValue / 100) *
+                      c.minOrderValue
+                    ).toFixed(2)}`
+                  : `₹${c.discountValue}`}
+              </Text>
 
-        <Text style={styles.discountText}>
-          {c.discountType === "percentage"
-            ? `${c.discountValue}% off on minimum purchase of ₹${c.minOrderValue}`
-            : `Flat ₹${c.discountValue} off on minimum purchase of ₹${c.minOrderValue}`}
-        </Text>
+              <Text style={styles.discountText}>
+                {c.discountType === "percentage"
+                  ? `${c.discountValue}% off on minimum purchase of ₹${c.minOrderValue}`
+                  : `Flat ₹${c.discountValue} off on minimum purchase of ₹${c.minOrderValue}`}
+              </Text>
 
-        <Text style={styles.expiryText}>
-          Expires on: {new Date(c.expiryDate).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",             
-          })}{" "}
-       
-        </Text>
-      </TouchableOpacity>
-    ))
-  ) : (
-    <Text style={styles.noCoupons}>No coupons available.</Text>
-  )}
-</View>
+              <Text style={styles.expiryText}>
+                Expires on:{" "}
+                {new Date(c.expiryDate).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={styles.noCoupons}>No coupons available.</Text>
+        )}
+      </View>
     </View>
   );
 };
@@ -157,14 +163,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f2f2f2",
-    
   },
-  title: {
-    fontSize: 24,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 5,
+    paddingHorizontal: 20,
+    height: "7%",
+    backgroundColor: "white",
+    elevation: 5,
+  },
+  headerTitle: {
+    paddingLeft: 10,
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-    color: "#333",
   },
   card: {
     backgroundColor: "#fff",
@@ -177,7 +189,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -284,20 +295,6 @@ const styles = StyleSheet.create({
     color: "#888",
     textAlign: "center",
     marginTop: 10,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal: 20,
-    height: "7%",
-    backgroundColor: "white",
-    elevation: 5,
-  },
-  headerTitle: {
-    paddingLeft: 10,
-    fontSize: 18,
-    fontWeight: "bold",
   },
 });
 

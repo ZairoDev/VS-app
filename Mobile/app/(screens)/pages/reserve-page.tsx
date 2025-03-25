@@ -16,6 +16,7 @@ import { router } from "expo-router";
 import { StatusBar } from "react-native";
 import { Image } from "react-native";
 import { Plus, Minus, Receipt } from "lucide-react-native";
+import { useCouponStore } from "@/store/coupon-store";
 const { height, width } = Dimensions.get("window");
 
 const BLOCKED_DATES: { [key: string]: boolean } = {
@@ -63,6 +64,9 @@ export default function ReservationScreen() {
     infants: 0,
   });
 
+  const { appliedCoupon } = useCouponStore();
+
+
   const billDetails = useMemo(() => {
     if (!selectedDates.startDate || !selectedDates.endDate) {
       return {
@@ -71,28 +75,41 @@ export default function ReservationScreen() {
         discountedPrice: 0,
         platformFee: 0,
         total: 0,
+        couponDiscount: 0, // ✅ Default to 0 if no coupon is applied
       };
     }
-
+  
     const start = new Date(selectedDates.startDate);
     const end = new Date(selectedDates.endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+  
     const basePrice = totalNights * PRICE_PER_NIGHT;
-    const discount = (basePrice * DISCOUNT_PERCENTAGE) / 100;
-    const discountedPrice = basePrice - discount;
+  
+    // Calculate Coupon Discount if Applied
+    let couponDiscount = 0; // ✅ Initialize with 0
+    if (appliedCoupon) {
+      if (appliedCoupon.discountType === "percentage") {
+        couponDiscount = (appliedCoupon.discountValue / 100) * basePrice;
+      } else {
+        couponDiscount = appliedCoupon.discountValue;
+      }
+    }
+  
+    // Apply discount if valid
+    const discountedPrice = basePrice - couponDiscount;
     const platformFee = 75;
     const total = discountedPrice + platformFee;
-
+  
     return {
       totalNights,
       basePrice,
       discountedPrice,
       platformFee,
       total,
+      couponDiscount,
     };
-  }, [selectedDates.startDate, selectedDates.endDate, includePlatformFee]);
+  }, [selectedDates.startDate, selectedDates.endDate, appliedCoupon]);
 
   const calendarConfig = useMemo(() => {
     const today = new Date();
@@ -327,7 +344,7 @@ export default function ReservationScreen() {
         }}
       >
         <View
-          style={{
+          style={{ 
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
@@ -351,53 +368,58 @@ export default function ReservationScreen() {
     );
   };
   const renderBillDetails = () => {
-    if (billDetails.totalNights === 0) return null;
+  if (billDetails.totalNights === 0) return null;
 
-    return (
-      <View style={styles.billWrapper}>
-        <View style={styles.billContainer}>
-          <View style={styles.billHeader}>
-            <Text style={styles.billTitle}>Bill Details</Text>
+  return (
+    <View style={styles.billWrapper}>
+      <View style={styles.billContainer}>
+        <View style={styles.billHeader}>
+          <Text style={styles.billTitle}>Bill Details</Text>
+        </View>
+
+        <View style={styles.billContent}>
+          {/* Base Price Row */}
+          <View style={styles.billRow}>
+            <Text style={styles.billLabel}>
+              €{PRICE_PER_NIGHT} × {billDetails.totalNights} nights
+            </Text>
+            <Text style={styles.billAmount}>€{billDetails.basePrice.toFixed(2)}</Text>
           </View>
 
-          <View style={styles.billContent}>
-            <View style={styles.billRow}>
-              <Text style={styles.billLabel}>
-                €{PRICE_PER_NIGHT} × {billDetails.totalNights} nights
-              </Text>
-              <Text style={styles.billAmount}>€{billDetails.basePrice}</Text>
+          {/* Platform Fee Row */}
+          <View style={styles.billRow}>
+            <View style={styles.platformFeeContainer}>
+              <Text style={styles.billLabel}>Platform fee</Text>
             </View>
+            <Text style={styles.billAmount}>€{billDetails.platformFee.toFixed(2)}</Text>
+          </View>
 
-            <View style={styles.billRow}>
-              <Text style={styles.billLabel}>Discount</Text>
-              <Text style={[styles.billAmount, styles.discountText]}>
-                -€{(billDetails.basePrice * DISCOUNT_PERCENTAGE) / 100}
-              </Text>
-            </View>
-
+          {/* Coupon Discount Row - Only Show if Coupon is Applied */}
+          {appliedCoupon && (
             <View style={styles.billRow}>
               <View style={styles.platformFeeContainer}>
-                <Text style={styles.billLabel}>Platform fee </Text>
+                <Text style={styles.couponDiscountLabel}>Coupon Discount</Text>
               </View>
-              <Text style={styles.billAmount}>
-                €{billDetails.platformFee.toFixed(2)}
+              <Text style={styles.couponDiscountAmount}>
+                - €{billDetails.couponDiscount.toFixed(2)}
               </Text>
             </View>
+          )}
 
-            <View style={styles.dashedLine} />
+          {/* Dashed Line */}
+          <View style={styles.dashedLine} />
 
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalAmount}>
-                €{billDetails.total.toFixed(2)}
-              </Text>
-            </View>
+          {/* Total Row */}
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalAmount}>€{billDetails.total.toFixed(2)}</Text>
           </View>
         </View>
-        <ZigzagPattern />
       </View>
-    );
-  };
+      <ZigzagPattern />
+    </View>
+  );
+};
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar hidden={false} />
@@ -571,7 +593,7 @@ export default function ReservationScreen() {
       </Modalize>
     </SafeAreaView>
   );
-}
+} 
 
 const styles = StyleSheet.create({
   container: {
@@ -796,9 +818,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#4b5563",
   },
+  couponDiscountLabel: {
+    fontSize: 16,
+    color: "#4b5",
+  },
   billAmount: {
     fontSize: 16,
     color: "#1a1a1a",
+    fontWeight: "500",
+  },
+  couponDiscountAmount: {
+    fontSize: 16,
+    color: "#1a1",
     fontWeight: "500",
   },
   discountText: {
