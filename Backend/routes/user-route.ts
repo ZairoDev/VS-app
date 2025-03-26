@@ -2,13 +2,14 @@
 
 import { OAuth2Client } from 'google-auth-library';
 import Users from '../models/User'; // Import your user model
-import {loginUser, registerUser} from "../controllers/UserController";
+import {loginUser, registerUser,getUser} from "../controllers/UserController";
 import express, { Request, Response } from 'express';
 
 const router = express.Router();
 
 router.post("/registerUser", registerUser);
 router.post("/loginUser",loginUser)
+router.post("/getUser",getUser)
 
 
 

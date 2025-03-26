@@ -92,7 +92,7 @@ const ApplyCoupon = () => {
             appliedCoupon ? styles.button : null,
           ]}
           onPress={handleApplyCoupon}
-          // disabled={!!appliedCoupon}
+          // disabled={!!appliedCoupon}   
         >
           <Text style={styles.buttonText}>
             {appliedCoupon ? "Coupon Applied" : "Apply Coupon"}
@@ -104,7 +104,7 @@ const ApplyCoupon = () => {
             🎉 Coupon "{appliedCoupon.code}" successfully applied!
           </Text>
         )}
-      </View>
+      </View> 
 
       <View style={styles.couponList}>
         <Text style={styles.listTitle}>Available Coupons</Text>

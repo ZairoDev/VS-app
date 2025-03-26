@@ -3,7 +3,7 @@ export interface PropertyInterface {
   VSID: string;
   commonId: string;
   email: string;
-  userID: string;
+  userId: string;
   portionNo: string;
   rentalType: string;
   isInstantBooking: boolean;
@@ -80,4 +80,26 @@ export interface nearbyLocationInterface {
   nearbyLocationDistance: number[];
   nearbyLocationTag: string[];
   nearbyLocationUrl?: string[];
+}
+
+export interface UserDataType {
+  _id: string;
+  name: string;
+  email: string;
+  profilePic: string;
+  nationality: string;
+  gender: string;
+  spokenLanguage: string;
+  bankDetails: object;
+  phone: string;
+  myRequests: string[];
+  myBookings?: string[];
+  myUpcommingRequests: string[];
+  declinedRequests: string[];
+  address: string;
+  role: string;
+  isVerified: boolean;
+  Payment?: object;
+  createdAt: string;
+  updatedAt: Date;
 }

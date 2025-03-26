@@ -1,12 +1,15 @@
 import axios from "axios";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import { Link, Route, router, useLocalSearchParams } from "expo-router";
 import Carousel from "react-native-reanimated-carousel";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Modalize } from "react-native-modalize";
-import Animated, { SlideInDown, SlideInUp, SlideOutDown } from "react-native-reanimated";
-
+import Animated, {
+  SlideInDown,
+  SlideInUp,
+  SlideOutDown,
+} from "react-native-reanimated";
 
 import {
   Text,
@@ -22,7 +25,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-import { PropertyInterface } from "@/types";
+import { PropertyInterface, UserDataType } from "@/types";
 import { globalStyles } from "@/Constants/Styles";
 import {
   Ionicons,
@@ -39,6 +42,7 @@ export default function PropertyInfo() {
   const [modalVisible, setModalVisible] = useState(false);
   const [bottomsheetVisible, setBottomsheetVisible] = useState(false);
   const [property, setProperty] = useState<PropertyInterface>();
+  const [user, setUser] = useState<UserDataType>();
   const modalizeRef = useRef<Modalize>(null);
 
   const handleOpenBottomsheet = () => {
@@ -60,6 +64,21 @@ export default function PropertyInfo() {
   useEffect(() => {
     getproperty();
   }, []);
+
+  const getUser = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_BASE_URL}/user/getUser`,
+        { userId: property?.userId }
+      );
+      setUser(response.data.data);
+    } catch (err) {
+      console.log("error in fetching user");
+    }
+  };
+  useEffect(() => {
+    getUser();
+  }, [property]);
 
   const openImageViewer = (index: number) => {
     setImageIndex(index);
@@ -190,7 +209,7 @@ export default function PropertyInfo() {
         {/* hosted by */}
         <View style={styles.infoContainer}>
           <Ionicons name="person-circle-outline" size={28} />
-          <Text numberOfLines={1}>Hosted by {property?.email}</Text>
+          <Text numberOfLines={1}>Hosted by {user?.name}</Text>
         </View>
         {/* beds and Bathrooms */}
         <View style={{ display: "flex", flexDirection: "row", gap: 15 }}>
@@ -306,17 +325,21 @@ export default function PropertyInfo() {
           <Image
             style={styles.hostImage}
             source={{
-              uri: "https://cdn.pixabay.com/photo/2015/01/27/09/58/man-613601_640.jpg",
+              uri: user?.profilePic
+                ? user.profilePic
+                : "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png",
             }}
           />
-          <Text>Hostname</Text>
+          <Text>{user?.name}</Text>
         </View>
 
         {/* host details */}
         <View style={styles.container}>
           <View style={styles.hostItem}>
             <MaterialIcons name="date-range" size={20} />
-            <Text style={globalStyles.MutedText}>Joined long time ago</Text>
+            <Text style={globalStyles.MutedText}>
+              Joined {user?.createdAt.slice(0, 4)}
+            </Text>
           </View>
 
           <View style={styles.hostItem}>
@@ -334,7 +357,7 @@ export default function PropertyInfo() {
           <View style={styles.hostItem}>
             <Ionicons name="language-outline" size={20} />
             <Text style={globalStyles.MutedText}>
-              Language Spoken - English , Greek
+              Language Spoken - {user?.spokenLanguage}
             </Text>
           </View>
         </View>
@@ -485,12 +508,13 @@ export default function PropertyInfo() {
             <Text>/night</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[globalStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}
-            onPress={()=>router.push("/(screens)/pages/reserve-page")}
-          >
-            <Text style={globalStyles.btnText}>Reserve</Text>
-          </TouchableOpacity>
+          <Link href={`/(screens)/reserve-page/${id}` as Route}>
+            <View
+              style={[globalStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}
+            >
+              <Text style={globalStyles.btnText}>Reserve</Text>
+            </View>
+          </Link>
         </View>
       </View>
     </SafeAreaView>

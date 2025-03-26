@@ -43,3 +43,13 @@ export const loginUser = async (req: Request, res: Response) => {
       .json({ message: "Some error occurred", error: err.message });
   }
 };
+
+export const getUser = async (req:Request, res:Response) => {
+  try{
+    const {userId} = req.body;
+    const user = await Users.findById(userId);
+    res.send({ data: user, status: 200 });
+  }catch(err){
+    res.json({ error: "Unable to fetch Particular Property", status: 400 });
+  }
+}

@@ -39,8 +39,9 @@ app.get("/", (req: Request, res: Response) => {
   res.json({ name: "Welcome to Vacationsaga Mobile App" });
 });
 app.use("/properties", propertyRoutes);
-app.use("/auth", userRoutes);
+app.use("/user", userRoutes);
 app.use("/coupon", couponRoutes);
+
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

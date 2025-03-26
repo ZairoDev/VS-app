@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from "react";
+import React, { useRef, useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,17 +6,19 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
-  Switch,
   Pressable,
 } from "react-native";
 import { Modalize } from "react-native-modalize";
 import { Calendar } from "react-native-calendars";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "react-native";
 import { Image } from "react-native";
-import { Plus, Minus, Receipt } from "lucide-react-native";
+import { Plus, Minus } from "lucide-react-native";
 import { useCouponStore } from "@/store/coupon-store";
+import { PropertyInterface } from "@/types";
+import axios from "axios";
+
 const { height, width } = Dimensions.get("window");
 
 const BLOCKED_DATES: { [key: string]: boolean } = {
@@ -26,8 +28,9 @@ const BLOCKED_DATES: { [key: string]: boolean } = {
   "2025-04-21": true,
 };
 
-const PRICE_PER_NIGHT = 150; 
+
 const DISCOUNT_PERCENTAGE = 10; 
+
 
 const ZigzagPattern = () => {
   const zigzagWidth = 12; // Width of each zigzag
@@ -46,6 +49,7 @@ const ZigzagPattern = () => {
 };
 
 export default function ReservationScreen() {
+  const {id} = useLocalSearchParams();
   const modalizeRef = useRef<Modalize>(null);
   const guestModalizeRef = useRef<Modalize>(null);
   const [selectedDates, setSelectedDates] = useState({
@@ -53,6 +57,7 @@ export default function ReservationScreen() {
     endDate: "",
   });
   const [includePlatformFee, setIncludePlatformFee] = useState(true);
+  const [property, setProperty] = useState<PropertyInterface>();
   const [guests, setGuests] = useState({
     adults: 1,
     children: 0,
@@ -66,6 +71,22 @@ export default function ReservationScreen() {
 
   const { appliedCoupon } = useCouponStore();
 
+  const getproperty = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_BASE_URL}/properties/getParticularProperty`,
+        { propertyId: id }
+      );
+      setProperty(response.data.data);
+    } catch (err) {
+      console.log("error in fetching particular property");
+    }
+  };
+  useEffect(() => {
+    getproperty();
+  }, []);
+
+  let PRICE_PER_NIGHT = property?.basePrice||0;
 
   const billDetails = useMemo(() => {
     if (!selectedDates.startDate || !selectedDates.endDate) {
@@ -75,19 +96,20 @@ export default function ReservationScreen() {
         discountedPrice: 0,
         platformFee: 0,
         total: 0,
-        couponDiscount: 0, // ✅ Default to 0 if no coupon is applied
+        couponDiscount: 0, 
       };
     }
-  
+    
     const start = new Date(selectedDates.startDate);
     const end = new Date(selectedDates.endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
+
     const basePrice = totalNights * PRICE_PER_NIGHT;
   
-    // Calculate Coupon Discount if Applied
-    let couponDiscount = 0; // ✅ Initialize with 0
+    
+    let couponDiscount = 0; 
     if (appliedCoupon) {
       if (appliedCoupon.discountType === "percentage") {
         couponDiscount = (appliedCoupon.discountValue / 100) * basePrice;
@@ -121,6 +143,8 @@ export default function ReservationScreen() {
       maxDate: futureDate.toISOString().split("T")[0],
     };
   }, []);
+
+ 
 
   const handleGuestModalOpen = () => {
     // Set temporary state to current guest values when opening modal
@@ -440,12 +464,12 @@ export default function ReservationScreen() {
             }}
             resizeMode="cover"
             source={{
-              uri: "https://images.pexels.com/photos/2724749/pexels-photo-2724749.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+              uri: property?.propertyCoverFileUrl,
             }}
           />
-          <Text style={{ textAlign: "center" }}>Property ka naam</Text>
+          <Text style={{ textAlign: "center" }}>VSID : {property?.VSID}</Text>
           <Text style={{ textAlign: "center" }}>
-            Property ka thoda sa description
+            {property?.propertyName}
           </Text>
         </View>
 
