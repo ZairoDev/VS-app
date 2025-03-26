@@ -30,6 +30,8 @@ export interface FetchPropertiesRequest {
   isEnabled:boolean
   allowParty:boolean
   allowPets:boolean
+  minPrice:number
+  maxPrice:number
 }
 
 export interface FetchPropertiesResponse {
@@ -72,7 +74,9 @@ export default function Index() {
         isEnabled,
         allowCooking,
         allowParty,
-        allowPets
+        allowPets,
+        maxPrice,
+        minPrice,
        
       };
 
@@ -121,7 +125,7 @@ export default function Index() {
 
   useEffect(() => {
     fetchProperties();
-  }, [skip, propertyType, selectedCountry,beds,bathroom,bedrooms,isEnabled]);
+  }, [skip, propertyType, selectedCountry]);
 
   useEffect(() => {
     console.log("property array: ", properties.length);

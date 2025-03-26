@@ -54,21 +54,23 @@ const useStore = create<FilterStore>((set) => ({
     return { [type.toLowerCase()]: newCount, isFilterChanged: true };
   }),
 
-  handleAllowCooking: () => set((state) => ({ allowCooking: !state.allowCooking, isFilterChanged: true })),
-  handleAllowParty: () => set((state) => ({ allowParty: !state.allowParty, isFilterChanged: true })),
-  handleAllowPets: () => set((state) => ({ allowPets: !state.allowPets, isFilterChanged: true })),
+  handleAllowCooking:() => set((state) => ({ allowCooking: !state.allowCooking, isFilterChanged: true })),
+  handleAllowParty:  () => set((state) => ({ allowParty: !state.allowParty, isFilterChanged: true })),
+  handleAllowPets:   ()=> set((state) => ({ allowPets: !state.allowPets, isFilterChanged: true })),
 
   updateMinPrice: (value: string) => {
     const numValue = parseInt(value);
     if (!isNaN(numValue)) {
-      set({ minPrice: Math.max(10, numValue) }); 
+      set({ minPrice: Math.max(10, numValue),isFilterChanged: true }); 
+
     }
+   
   },
 
   updateMaxPrice: (value: string) =>{
     const numValue = parseInt(value);
     if (!isNaN(numValue)) {
-      set({ maxPrice: Math.min(5000, numValue) });
+      set({ maxPrice: Math.min(5000, numValue) ,isFilterChanged: true});
     } 
   },  
 

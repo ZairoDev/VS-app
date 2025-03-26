@@ -17,6 +17,8 @@ export interface FetchPropertiesRequest {
   allowCooking: boolean;
   allowParty: boolean;
   allowPets: boolean; 
+  minPrice: number;
+  maxPrice: number;
 }
 
 const getAllProperties: RequestHandler = async (
@@ -24,7 +26,7 @@ const getAllProperties: RequestHandler = async (
   res: Response
 ) => {
   try {
-    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets} =
+    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets,minPrice,maxPrice} =
       (await req.body) as FetchPropertiesRequest;
 
     console.log("request body: ", skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets);
@@ -46,6 +48,14 @@ const getAllProperties: RequestHandler = async (
     if(bedrooms !== undefined && bedrooms !== null && bedrooms>0){
       query["bedrooms"] =  { $gte: bedrooms }  ;
     }
+
+    if (minPrice !== undefined && minPrice !== null && minPrice>10) {
+      query["basePrice"] = { $gte: minPrice };
+    }
+    if (maxPrice !== undefined && maxPrice !== null && maxPrice<5000) {
+      query["basePrice"] = { $lte: maxPrice };
+    }
+
     if(isEnabled){
       query['rentalType']="Long Term";
     }

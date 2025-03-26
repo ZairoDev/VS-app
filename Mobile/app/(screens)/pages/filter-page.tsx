@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-import Slider from "@react-native-community/slider";
+// import Slider from "@react-native-community/slider";
 import { useNavigation ,router} from "expo-router";
 
 import useStore from "@/store/filter-store";
@@ -64,7 +64,7 @@ export default function FilterPage() {
     if (isFilterChanged) {
       setModalVisible(true);
     }
-  },[isEnabled, allowCooking, allowParty, allowPets, minPrice, maxPrice, bedrooms, beds, bathroom]);
+  },[isEnabled, allowCooking, allowParty, allowPets, minPrice, maxPrice, bedrooms, beds, bathroom,]);
 
   return (
     <View
