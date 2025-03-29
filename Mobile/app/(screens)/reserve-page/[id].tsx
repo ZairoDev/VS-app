@@ -7,17 +7,24 @@ import {
   Dimensions,
   SafeAreaView,
   Pressable,
+  ScrollView,
+  TextInput,
+  Image,
+  StatusBar,
+  FlatList,
 } from "react-native";
 import { Modalize } from "react-native-modalize";
 import { Calendar } from "react-native-calendars";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { StatusBar } from "react-native";
-import { Image } from "react-native";
 import { Plus, Minus } from "lucide-react-native";
 import { useCouponStore } from "@/store/coupon-store";
 import { PropertyInterface } from "@/types";
 import axios from "axios";
+import DropDownPicker from "react-native-dropdown-picker"
+import { KeyboardAvoidingView } from "react-native";
+import { Platform } from "react-native";
+
 
 const { height, width } = Dimensions.get("window");
 
@@ -27,10 +34,6 @@ const BLOCKED_DATES: { [key: string]: boolean } = {
   "2025-04-20": true,
   "2025-04-21": true,
 };
-
-
-const DISCOUNT_PERCENTAGE = 10; 
-
 
 const ZigzagPattern = () => {
   const zigzagWidth = 12; // Width of each zigzag
@@ -49,9 +52,10 @@ const ZigzagPattern = () => {
 };
 
 export default function ReservationScreen() {
-  const {id} = useLocalSearchParams();
+  const { id } = useLocalSearchParams();
   const modalizeRef = useRef<Modalize>(null);
   const guestModalizeRef = useRef<Modalize>(null);
+  const travellerDetailsRef = useRef<Modalize>(null);
   const [selectedDates, setSelectedDates] = useState({
     startDate: "",
     endDate: "",
@@ -63,11 +67,21 @@ export default function ReservationScreen() {
     children: 0,
     infants: 0,
   });
+
   const [tempGuests, setTempGuests] = useState({
     adults: 1,
     children: 0,
     infants: 0,
   });
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(null);
+  const [items, setItems] = useState([
+    { label: "India", value: "India" },
+    { label: "USA", value: "USA" },
+    { label: "Canada", value: "Canada" },
+    { label: "Australia", value: "Australia" },
+  ]);
+  const travellers = [{ id: 1 }];
 
   const { appliedCoupon } = useCouponStore();
 
@@ -86,7 +100,7 @@ export default function ReservationScreen() {
     getproperty();
   }, []);
 
-  let PRICE_PER_NIGHT = property?.basePrice||0;
+  let PRICE_PER_NIGHT = property?.basePrice || 0;
 
   const billDetails = useMemo(() => {
     if (!selectedDates.startDate || !selectedDates.endDate) {
@@ -96,20 +110,18 @@ export default function ReservationScreen() {
         discountedPrice: 0,
         platformFee: 0,
         total: 0,
-        couponDiscount: 0, 
+        couponDiscount: 0,
       };
     }
-    
+
     const start = new Date(selectedDates.startDate);
     const end = new Date(selectedDates.endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
 
     const basePrice = totalNights * PRICE_PER_NIGHT;
-  
-    
-    let couponDiscount = 0; 
+
+    let couponDiscount = 0;
     if (appliedCoupon) {
       if (appliedCoupon.discountType === "percentage") {
         couponDiscount = (appliedCoupon.discountValue / 100) * basePrice;
@@ -117,12 +129,12 @@ export default function ReservationScreen() {
         couponDiscount = appliedCoupon.discountValue;
       }
     }
-  
+
     // Apply discount if valid
     const discountedPrice = basePrice - couponDiscount;
     const platformFee = 75;
     const total = discountedPrice + platformFee;
-  
+
     return {
       totalNights,
       basePrice,
@@ -144,12 +156,13 @@ export default function ReservationScreen() {
     };
   }, []);
 
- 
-
   const handleGuestModalOpen = () => {
-    // Set temporary state to current guest values when opening modal
     setTempGuests({ ...guests });
     guestModalizeRef.current?.open();
+  };
+
+  const handleTravellerDetailsModalOpen = () => {
+    travellerDetailsRef.current?.open();
   };
 
   const handleConfirmGuests = () => {
@@ -359,16 +372,16 @@ export default function ReservationScreen() {
     if (billDetails.totalNights === 0) return null;
     return (
       <Pressable
-        onPress={()=>router.push("/(screens)/pages/apply-coupon")}
+        onPress={() => router.push("/(screens)/pages/apply-coupon")}
         style={{
           marginVertical: 16,
           height: height * 0.07,
           borderRadius: 10,
-          elevation:3
+          elevation: 3,
         }}
       >
         <View
-          style={{ 
+          style={{
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
@@ -391,59 +404,66 @@ export default function ReservationScreen() {
       </Pressable>
     );
   };
+
   const renderBillDetails = () => {
-  if (billDetails.totalNights === 0) return null;
+    if (billDetails.totalNights === 0) return null;
 
-  return (
-    <View style={styles.billWrapper}>
-      <View style={styles.billContainer}>
-        <View style={styles.billHeader}>
-          <Text style={styles.billTitle}>Bill Details</Text>
-        </View>
-
-        <View style={styles.billContent}>
-          {/* Base Price Row */}
-          <View style={styles.billRow}>
-            <Text style={styles.billLabel}>
-              €{PRICE_PER_NIGHT} × {billDetails.totalNights} nights
-            </Text>
-            <Text style={styles.billAmount}>€{billDetails.basePrice.toFixed(2)}</Text>
+    return (
+      <View style={styles.billWrapper}>
+        <View style={styles.billContainer}>
+          <View style={styles.billHeader}>
+            <Text style={styles.billTitle}>Bill Details</Text>
           </View>
 
-          {/* Platform Fee Row */}
-          <View style={styles.billRow}>
-            <View style={styles.platformFeeContainer}>
-              <Text style={styles.billLabel}>Platform fee</Text>
-            </View>
-            <Text style={styles.billAmount}>€{billDetails.platformFee.toFixed(2)}</Text>
-          </View>
-
-          {/* Coupon Discount Row - Only Show if Coupon is Applied */}
-          {appliedCoupon && (
+          <View style={styles.billContent}>
             <View style={styles.billRow}>
-              <View style={styles.platformFeeContainer}>
-                <Text style={styles.couponDiscountLabel}>Coupon Discount</Text>
-              </View>
-              <Text style={styles.couponDiscountAmount}>
-                - €{billDetails.couponDiscount.toFixed(2)}
+              <Text style={styles.billLabel}>
+                €{PRICE_PER_NIGHT} × {billDetails.totalNights} nights
+              </Text>
+              <Text style={styles.billAmount}>
+                €{billDetails.basePrice.toFixed(2)}
               </Text>
             </View>
-          )}
 
-          {/* Dashed Line */}
-          <View style={styles.dashedLine} />
+            <View style={styles.billRow}>
+              <View style={styles.platformFeeContainer}>
+                <Text style={styles.billLabel}>Platform fee</Text>
+              </View>
+              <Text style={styles.billAmount}>
+                €{billDetails.platformFee.toFixed(2)}
+              </Text>
+            </View>
 
-          {/* Total Row */}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalAmount}>€{billDetails.total.toFixed(2)}</Text>
+            {appliedCoupon && (
+              <View style={styles.billRow}>
+                <View style={styles.platformFeeContainer}>
+                  <Text style={styles.couponDiscountLabel}>
+                    Coupon Discount
+                  </Text>
+                </View>
+                <Text style={styles.couponDiscountAmount}>
+                  -€{billDetails.couponDiscount.toFixed(2)}
+                </Text>
+              </View>
+            )}
+
+            {/* Dashed Line */}
+            <View style={styles.dashedLine} />
+
+            {/* Total Row */}
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalAmount}>
+                €{billDetails.total.toFixed(2)}
+              </Text>
+            </View>
           </View>
         </View>
+        <ZigzagPattern />
       </View>
-      <ZigzagPattern />
-    </View>
-  );
-};
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar hidden={false} />
@@ -468,9 +488,7 @@ export default function ReservationScreen() {
             }}
           />
           <Text style={{ textAlign: "center" }}>VSID : {property?.VSID}</Text>
-          <Text style={{ textAlign: "center" }}>
-            {property?.propertyName}
-          </Text>
+          <Text style={{ textAlign: "center" }}>{property?.propertyName}</Text>
         </View>
 
         <View style={styles.reservationInfo}>
@@ -489,7 +507,7 @@ export default function ReservationScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity onPress={() => modalizeRef.current?.open()}>       
+            <TouchableOpacity onPress={() => modalizeRef.current?.open()}>
               <Ionicons name="calendar-outline" size={32} color="#111111" />
             </TouchableOpacity>
           </View>
@@ -505,24 +523,36 @@ export default function ReservationScreen() {
               <Ionicons name="person-add-outline" size={32} color="#111111" />
             </TouchableOpacity>
           </View>
+          <View style={styles.guestSelector}>
+            <View style={styles.dateDisplay}>
+              <View>
+                <Text style={styles.label}>Traveller Details</Text>
+                <Text style={styles.selectedText}>Abhay lacks skill</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity onPress={() => router.push("/(screens)/pages/add-traveller")}>
+              <FontAwesome name="address-card-o" size={28} color="#111111" />
+            </TouchableOpacity>
+          </View>
         </View>
         {renderApplyCouponModal()}
         {renderBillDetails()}
       </View>
       {billDetails.totalNights !== 0 && (
-  <TouchableOpacity style={styles.checkout}>
-    <Text
-      style={{
-        color: "white",
-        textAlign: "center",
-        fontWeight: "600",
-        fontSize: 18,
-      }}
-    >
-      Proceed to Checkout
-    </Text>
-  </TouchableOpacity>
-)}
+        <TouchableOpacity style={styles.checkout}>
+          <Text
+            style={{
+              color: "white",
+              textAlign: "center",
+              fontWeight: "600",
+              fontSize: 18,
+            }}
+          >
+            Proceed to Checkout
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <Modalize
         ref={modalizeRef}
@@ -570,10 +600,6 @@ export default function ReservationScreen() {
               />
               <Text style={styles.legendText}>Selected</Text>
             </View>
-            {/* <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} />
-              <Text style={styles.legendText}>Unavailable</Text>
-            </View> */}
           </View>
           <Text style={styles.helperText}>{getHelperText()}</Text>
         </View>
@@ -615,9 +641,10 @@ export default function ReservationScreen() {
           </TouchableOpacity>
         </View>
       </Modalize>
+      
     </SafeAreaView>
   );
-} 
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -803,7 +830,7 @@ const styles = StyleSheet.create({
   billContainer: {
     backgroundColor: "#ffffff",
     paddingHorizontal: 10,
-    paddingTop: 10,
+    paddingTop: 7,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     shadowColor: "#000",
@@ -821,8 +848,8 @@ const styles = StyleSheet.create({
   billHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 10,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
   },
@@ -836,7 +863,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   billLabel: {
     fontSize: 16,
@@ -862,13 +889,13 @@ const styles = StyleSheet.create({
   platformFeeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 5,
   },
   dashedLine: {
     borderStyle: "dashed",
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    marginVertical: 16,
+    marginVertical: 10,
   },
   totalRow: {
     flexDirection: "row",
@@ -921,4 +948,42 @@ const styles = StyleSheet.create({
     height: "7%",
     textAlign: "center",
   },
+  nameInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  ageInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    fontSize: 16,
+  },
+  nationalityInput: {
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 15,
+    paddingLeft: 10,
+    backgroundColor: "#fff",
+  },
+  detailsSubContainer: {
+    display: "flex",
+    flexDirection: "row",
+    gap: 10,
+  },
+  dropdown: {
+    borderColor: "#ccc",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  dropdownMenu: {
+    borderColor: "#ccc",
+  },
+
 });

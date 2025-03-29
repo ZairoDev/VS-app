@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { useNavigation ,router} from "expo-router";
 import useStore from "@/store/filter-store";
 import { TextInput } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 
 type CountType = "BEDROOMS" | "BATHROOM" | "BEDS";
 type OperationType = "INCREMENT" | "DECREMENT";
@@ -56,6 +57,10 @@ export default function FilterPage() {
     if (allowParty) count++;
     if (allowPets) count++;
     if (isEnabled) count++;
+
+    if (minPrice !== 10) count++;
+    if (maxPrice !== 5000) count++;
+
   
     return count;
   };
@@ -65,6 +70,8 @@ export default function FilterPage() {
       setModalVisible(true);
     }
   },[isEnabled, allowCooking, allowParty, allowPets, minPrice, maxPrice, bedrooms, beds, bathroom,]);
+
+  
 
   return (
     <View
@@ -108,7 +115,7 @@ export default function FilterPage() {
 
         <Text style={{ fontSize: 18, marginHorizontal: 10 }}> - </Text>
 
-        {/* Maximum Price Input */}
+   
         <TextInput
           style={styles.input}
           keyboardType="numeric"
