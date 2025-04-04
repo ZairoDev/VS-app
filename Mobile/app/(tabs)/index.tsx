@@ -79,7 +79,7 @@ export default function Index() {
         minPrice,
        
       };
-
+      console.log("requestBody");
       const response = await axios.post<FetchPropertiesResponse>(
         `${process.env.EXPO_PUBLIC_BASE_URL}/properties/getAllProperties`,
         requestBody

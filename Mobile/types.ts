@@ -83,23 +83,28 @@ export interface nearbyLocationInterface {
 }
 
 export interface UserDataType {
-  _id: string;
+  googleId?: string;
   name: string;
   email: string;
-  profilePic: string;
-  nationality: string;
-  gender: string;
-  spokenLanguage: string;
-  bankDetails: object;
-  phone: string;
-  myRequests: string[];
-  myBookings?: string[];
-  myUpcommingRequests: string[];
-  declinedRequests: string[];
-  address: string;
-  role: string;
-  isVerified: boolean;
-  Payment?: object;
-  createdAt: string;
-  updatedAt: Date;
+  profilePic?: string;
+  picture?: string;
+  nationality?: string;
+  gender?: "Male" | "Female" | "Other";
+  spokenLanguage?: string;
+  bankDetails?: Record<string, any>;
+  phone?: string;
+  myRequests?: string[];
+  myUpcommingRequests?: string[];
+  declinedRequests?: Record<string, any>[];
+  address?: string;
+  password?: string;
+  isVerified?: boolean;
+  role?: "Owner" | "Traveller";
+  Payment?: Record<string, any>;
+  forgotPasswordToken?: string;
+  forgotPasswordTokenExpiry?: Date;
+  verifyToken?: string;
+  verifyTokenExpiry?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

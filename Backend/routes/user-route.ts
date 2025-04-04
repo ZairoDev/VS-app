@@ -1,17 +1,18 @@
 
 
 import { OAuth2Client } from 'google-auth-library';
-import Users from '../models/User'; // Import your user model
-import {loginUser, registerUser,getUser} from "../controllers/UserController";
+import User from "../models/User";
+// import {loginOrSignup,refreshToken} from "../controllers/UserController";
+import {login,register} from "../controllers/UserController";
 import express, { Request, Response } from 'express';
 
+
 const router = express.Router();
+router.post('/login',login);
+router.post('/register',register);
 
-router.post("/registerUser", registerUser);
-router.post("/loginUser",loginUser)
-router.post("/getUser",getUser)
-
-
+// router.post('/login', loginOrSignup);
+// router.post('/refresh', refreshToken);
 
 const client = new OAuth2Client("360635271354-f7vr696f94nqqniijfrhqrmqpsvm2st2.apps.googleusercontent.com");
 
@@ -29,12 +30,9 @@ router.post('/verify-google-token', async (req: Request, res: Response) => {
     const name = payload?.name;
     const profilePicture = payload?.picture;
 
-    
-    let user = await Users.findOne({ googleId });
-
-    if (!user) {
-      
-      user = new Users({
+    let user = await User.findOne({ googleId });
+    if (!user) { 
+      user = new User({
         name,
         email,
         googleId,
@@ -43,7 +41,6 @@ router.post('/verify-google-token', async (req: Request, res: Response) => {
       });
       await user.save();
     }
-
     res.json({ message: 'Token verified', userId: user._id }); 
   } catch (error) {
     console.error('Token verification failed:', error);
@@ -53,6 +50,3 @@ router.post('/verify-google-token', async (req: Request, res: Response) => {
 });
 
 export default router;
-  
-
-

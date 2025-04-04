@@ -2,17 +2,27 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     name: {
       type: String,
-      required: [true, "PLease Enter your name"],
+      required: [true, "Please enter your name"],
     },
     email: {
       type: String,
-      required: [true, "PLease Enter  your email"],
+      required: [true, "Please enter your email"],
+      unique: true,
+      lowercase: true,
     },
     profilePic: {
       type: String,
       default: "",
+    },
+    picture: {
+      type: String, 
     },
     nationality: {
       type: String,
@@ -33,7 +43,6 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
     },
     myRequests: {
       type: [String],
@@ -54,7 +63,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required "],
     },
     isVerified: {
       type: Boolean,
@@ -63,11 +71,9 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["Owner", "Traveller"],
-      default: "Owner", // Optional: you can set a default role if needed
+      default: "Owner",
     },
-
     Payment: Object,
-
     forgotPasswordToken: String,
     forgotPasswordTokenExpiry: Date,
     verifyToken: String,
@@ -75,5 +81,6 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-const Users = mongoose.models?.users || mongoose.model("users", userSchema);
-export default Users;
+
+const User = mongoose.models?.users || mongoose.model("users", userSchema);
+export default User;

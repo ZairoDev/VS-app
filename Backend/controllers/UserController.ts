@@ -1,55 +1,135 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import Users from "@/models/User";
+// import { OAuth2Client } from "google-auth-library";
+import User from "@/models/User"
+// import { create } from "domain";
+import dotenv from 'dotenv';
+dotenv.config(); 
 
-
-export const registerUser = async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+export const register = async (req: Request, res: Response) => {
   try {
-    const existingUser = await Users.findOne({ email });
-    if (existingUser)
-    res.status(400).json({ message: "User already exists" });
+    const { name, email, password, phone } = req.body;
+
+    
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(400).json({ message: "User already exists" });
+      return;
+    }
 
   
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await Users.create({ name, email, password: hashedPassword });
-    res.status(201).json({ user ,message:"User created successfully"});
+
+
+    const newUser = new User({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      isVerified: false,
+    });
+
+    await newUser.save();
+    res.status(201).json({ message: "User registered successfully" });
+    return;
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: "Internal server error", error: error.message }); 
+    return;
+
   }
 };
 
-export const loginUser = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    const user = await Users.findOne({ email });
+
+    const user = await User.findOne({ email });
     if (!user) {
-      res.status(401).json({ message: "Invalid credentials" });
-    }
-    const isMatch = await bcrypt.compare(password, user.password!);
-    if (!isMatch) {
-      res.status(401).json({ message: "Invalid credentials" });
+      res.status(400).json({ message: "Invalid credentials" }); 
       return;
     }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
-      expiresIn: "1h",
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+       res.status(400).json({ message: "Invalid credentials" });
+       return;
+    }
+
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET!, {
+      expiresIn: "7d",
     });
-    res.json({ token, user });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ message: "Some error occurred", error: err.message });
+
+     res.status(200).json({ message: "Login successful", token, user }); 
+     return;
+  } catch (error) {
+     res.status(500).json({ message: "Internal server error", error: error.message }); 
+     return;
   }
 };
 
-export const getUser = async (req:Request, res:Response) => {
-  try{
-    const {userId} = req.body;
-    const user = await Users.findById(userId);
-    res.send({ data: user, status: 200 });
-  }catch(err){
-    res.json({ error: "Unable to fetch Particular Property", status: 400 });
-  }
-}
+
+
+// export const loginOrSignup = async(req:Request, res:Response) => {
+//   const {id_token} = req.body;
+//   try {
+//     const ticket=await client.verifyIdToken({
+//       idToken:id_token,
+//       audience:process.env.GOOGLE_CLIENT_ID
+//     })
+
+//     const payload=ticket.getPayload();
+
+//     const {email,sub:googleId,name,picture,email_verified}=payload!;
+//     if(!email_verified){
+//       res.status(400).json({ error:"failed to authenticate with google" });
+//       return; 
+//     }
+
+//     let user=await User.findOne({googleId});
+//     let isNewUser=false;
+//     if(!user){
+//       isNewUser=true;
+//       user=new User({googleId,name,email,picture,createdAt:new Date(),updatedAt:new Date()});
+//       await user.save();
+//     }
+
+//     const {accessToken,refreshToken}=generateTokens(user.toObject());
+
+//     res.status(200).json({
+//       user,
+//       accessToken,
+//       refreshToken,
+//       isNewUser
+//     });
+
+    
+//   } catch (error) {
+//     console.error("login error",error);
+//     res.status(500).json({ error:"failed to authenticate with google" });
+    
+//   }
+// }
+
+// export const refreshToken = async(req:Request, res:Response) => {
+//   const {refreshToken} = req.body;
+//   if(!refreshToken){
+//     res.status(401).json({ error: "Unauthorized" });
+//     return;
+//   }
+//   try {
+//     const decoded=jwt.verify(refreshToken,process.env.JWT_SECRET!);
+//     const {userId}=decoded as {userId:string};
+//     const user=await User.findById(userId);
+//     if(!user){
+//       res.status(401).json({ error: "Unauthorized" });
+//       return;
+//     }
+//     const newAccessToken =jwt.sign({userId:user._id},process.env.JWT_SECRET!,{expiresIn:"1d"});
+//     res.status(200).json({ accessToken: newAccessToken });
+    
+//   } catch (error) {
+//     console.error("refresh token error",error);
+//     res.status(403).json({ error: "Forbidden" });
+//   }
+// }; 
