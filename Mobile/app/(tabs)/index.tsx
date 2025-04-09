@@ -13,25 +13,26 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState, useEffect, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import  useStore  from "@/store/filter-store";
+import useStore from "@/store/filter-store";
 import { Countries } from "@/Constants/Country";
 import { PropertyInterface } from "@/data/types";
 import { propertyTypes } from "@/Constants/Country";
+import { useAuthStore } from "@/store/auth-store";
 
 export interface FetchPropertiesRequest {
   skip: number;
   limit: number;
   selectedCountry: string[];
   propertyType: string[];
-  beds:number
-  bedrooms:number
-  bathroom:number
-  allowCooking:boolean
-  isEnabled:boolean
-  allowParty:boolean
-  allowPets:boolean
-  minPrice:number
-  maxPrice:number
+  beds: number;
+  bedrooms: number;
+  bathroom: number;
+  allowCooking: boolean;
+  isEnabled: boolean;
+  allowParty: boolean;
+  allowPets: boolean;
+  minPrice: number;
+  maxPrice: number;
 }
 
 export interface FetchPropertiesResponse {
@@ -41,28 +42,40 @@ export interface FetchPropertiesResponse {
 }
 
 enum SelectedType {
-  COUNTRY="country",
-  PROPERTY_TYPE="propertyType",
-  BEDS="beds",
-  BEDROOMS="bedrooms",
-  BATHROOMS="bathroom"
+  COUNTRY = "country",
+  PROPERTY_TYPE = "propertyType",
+  BEDS = "beds",
+  BEDROOMS = "bedrooms",
+  BATHROOMS = "bathroom",
 }
 
 export default function Index() {
+  const { user } = useAuthStore();
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(false);
-;
   const [propertyType, setPropertyType] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
-
-  const {beds,bathroom,bedrooms,allowCooking,allowParty,allowPets,isEnabled,minPrice,maxPrice,handleCount,applyFilters} = useStore();
+  const [wishlist, setWishlist] = useState<string[]>(user?.wishlist || []);
+  const {
+    beds,
+    bathroom,
+    bedrooms,
+    allowCooking,
+    allowParty,
+    allowPets,
+    isEnabled,
+    minPrice,
+    maxPrice,
+    handleCount,
+    applyFilters,
+  } = useStore();
 
   const fetchProperties = async () => {
     try {
-      setLoading(true);    
-     
+      setLoading(true);
+
       const requestBody: FetchPropertiesRequest = {
         skip,
         limit,
@@ -77,7 +90,6 @@ export default function Index() {
         allowPets,
         maxPrice,
         minPrice,
-       
       };
       console.log("requestBody");
       const response = await axios.post<FetchPropertiesResponse>(
@@ -93,7 +105,6 @@ export default function Index() {
     }
   };
 
- 
   const handleSelect = (type: string, value: string) => {
     setProperties([]);
     setSkip(0);
@@ -112,16 +123,14 @@ export default function Index() {
     }
   };
 
-  
+  useEffect(() => {
+    setWishlist(user?.wishlist || []);
+  }, [user]);
 
-
-  useEffect(()=>{
+  useEffect(() => {
     setProperties([]);
     setSkip(0);
-  },[applyFilters]);
-  // },[beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets]);
-
-
+  }, [applyFilters]);
 
   useEffect(() => {
     fetchProperties();
@@ -131,11 +140,52 @@ export default function Index() {
     console.log("property array: ", properties.length);
   }, [properties]);
 
+  const handleWishlistToggle = async (propertyId: string) => {
+    const { user } = useAuthStore.getState();
+    if (!user || !user._id) {
+      console.log("User not logged in");
+      return;
+    }
 
+    const isInWishlist = wishlist.includes(propertyId);
+    const updatedWishlist = isInWishlist
+      ? wishlist.filter((id) => id !== propertyId)
+      : [...wishlist, propertyId];
 
-  
+    // Update UI optimistically
+    setWishlist(updatedWishlist);
 
-  
+    try {
+      const endpoint = isInWishlist
+        ? `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`
+        : `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/add`;
+
+      const response = await axios.post(endpoint, {
+        userId: user._id,
+        propertyId,
+      });
+
+      console.log("Success:", response.data.message);
+    } catch (error) {
+      // Revert UI in case of error
+      setWishlist((prev) =>
+        isInWishlist
+          ? [...prev, propertyId]
+          : prev.filter((id) => id !== propertyId)
+      );
+
+      if (
+        axios.isAxiosError(error) &&
+        error.response &&
+        error.response.data?.message
+      ) {
+        console.log("Error:", error.response.data.message);
+      } else {
+        console.log("Unknown error:", error);
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.mainContainer}>
       <FlatList
@@ -160,12 +210,18 @@ export default function Index() {
                   />
                 </Link>
 
-                <Ionicons
+                <Pressable
                   style={styles.icon}
-                  size={20}
-                  name="heart-outline"
-                  color={"white"}
-                />
+                  onPress={() => handleWishlistToggle(item._id)}
+                >
+                  <Ionicons
+                    size={20}
+                    name={
+                      wishlist.includes(item._id) ? "heart" : "heart-outline"
+                    }
+                    color={wishlist.includes(item._id) ? "orange" : "white"}
+                  />
+                </Pressable>
               </View>
               <Text style={styles.propertyText}>{item.beds} beds</Text>
               <Text style={styles.propertyTitle}>
@@ -175,7 +231,12 @@ export default function Index() {
                 <Ionicons name="location-outline" size={15} color="gray" />
                 {item.postalCode}, {item.city}, {item.state}
               </Text>
-              <Text style={{color:"gray",fontWeight:400,fontSize:14,}}><Text style={{color:"black",fontWeight:600,fontSize:18,}}>€{item.basePrice}</Text>/night</Text>
+              <Text style={{ color: "gray", fontWeight: 400, fontSize: 14 }}>
+                <Text style={{ color: "black", fontWeight: 600, fontSize: 18 }}>
+                  €{item.basePrice}
+                </Text>
+                /night
+              </Text>
             </View>
           </View>
         )}
@@ -189,7 +250,7 @@ export default function Index() {
               <Pressable
                 style={{
                   width: "80%",
-                  height:50,
+                  height: 50,
                   display: "flex",
                   flexDirection: "row",
                   alignItems: "center",
@@ -200,7 +261,9 @@ export default function Index() {
                 <Ionicons name="search" size={24} color={"gray"} />
                 <Text style={styles.input}>Start Search</Text>
               </Pressable>
-              <TouchableOpacity onPress={()=>router.push("/(screens)/pages/filter-page")}>
+              <TouchableOpacity
+                onPress={() => router.push("/(screens)/pages/filter-page")}
+              >
                 <Ionicons name="options" size={24} color={"gray"} />
               </TouchableOpacity>
             </View>
@@ -217,7 +280,8 @@ export default function Index() {
                     style={styles.countryItem}
                     onPress={() =>
                       handleSelect(SelectedType.COUNTRY, item.name)
-                    }>
+                    }
+                  >
                     <Image
                       source={{
                         uri:
@@ -272,7 +336,6 @@ export default function Index() {
           </View>
         }
       />
-      
     </SafeAreaView>
   );
 }
@@ -286,9 +349,9 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: 18,
-    fontWeight: "500", 
+    fontWeight: "500",
     color: "gray",
-    flex: 1, 
+    flex: 1,
     textAlign: "center",
   },
   horizontalList: {
@@ -381,7 +444,6 @@ const styles = StyleSheet.create({
   },
   selectedPropertyTypeText: {
     color: "white",
-    
   },
   filtersContainer: {
     padding: 10,
@@ -398,7 +460,6 @@ const styles = StyleSheet.create({
     display: "flex",
     borderRadius: 20,
     borderWidth: 2,
-
   },
   header: {
     width: "100%",
@@ -408,7 +469,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     flexDirection: "row",
     borderRadius: 10,
-    backgroundColor: "orange"
+    backgroundColor: "orange",
   },
   container: {
     width: "100%",
@@ -420,7 +481,7 @@ const styles = StyleSheet.create({
   },
   inputDiv: {
     height: 50,
-    backgroundColor: "#f0f0f0", 
+    backgroundColor: "#f0f0f0",
     borderRadius: 15,
     margin: 16,
     paddingHorizontal: 15,

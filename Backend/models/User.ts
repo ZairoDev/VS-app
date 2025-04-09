@@ -73,6 +73,11 @@ const userSchema = new mongoose.Schema(
       enum: ["Owner", "Traveller"],
       default: "Owner",
     },
+    wishlist:{
+      type:[mongoose.Schema.Types.ObjectId],
+      ref:"properties",
+      default:[],
+    },
     Payment: Object,
     forgotPasswordToken: String,
     forgotPasswordTokenExpiry: Date,

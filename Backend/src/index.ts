@@ -10,6 +10,7 @@ import connectMongoDB from "@/config/Connection";
 import propertyRoutes from "@/routes/property-route";
 import userRoutes from "@/routes/user-route";
 import couponRoutes from "@/routes/discount-coupon-route";
+import wishlistRoutes from "@/routes/wishlist-routes";
 import "@/config/passport";
 
 
@@ -40,6 +41,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 app.use("/properties", propertyRoutes);
 app.use("/user", userRoutes);
+app.use("/wishlist", wishlistRoutes);
 app.use("/coupon", couponRoutes);
 
 

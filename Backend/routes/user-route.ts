@@ -3,13 +3,16 @@
 import { OAuth2Client } from 'google-auth-library';
 import User from "../models/User";
 // import {loginOrSignup,refreshToken} from "../controllers/UserController";
-import {login,register} from "../controllers/UserController";
+import {login,register,getUser} from "../controllers/UserController";
 import express, { Request, Response } from 'express';
+import { get } from 'http';
 
 
 const router = express.Router();
 router.post('/login',login);
 router.post('/register',register);
+router.post('/getUser',getUser);
+// router.post('/register', register);
 
 // router.post('/login', loginOrSignup);
 // router.post('/refresh', refreshToken);
@@ -48,5 +51,7 @@ router.post('/verify-google-token', async (req: Request, res: Response) => {
     res.status(401).json({ message: 'Token verification failed' });
   }
 });
+
+
 
 export default router;

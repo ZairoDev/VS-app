@@ -7,11 +7,9 @@ import {
   Dimensions,
   SafeAreaView,
   Pressable,
-  ScrollView,
-  TextInput,
   Image,
   StatusBar,
-  FlatList,
+
 } from "react-native";
 import { Modalize } from "react-native-modalize";
 import { Calendar } from "react-native-calendars";
@@ -21,9 +19,7 @@ import { Plus, Minus } from "lucide-react-native";
 import { useCouponStore } from "@/store/coupon-store";
 import { PropertyInterface } from "@/types";
 import axios from "axios";
-import DropDownPicker from "react-native-dropdown-picker"
-import { KeyboardAvoidingView } from "react-native";
-import { Platform } from "react-native";
+
 
 
 const { height, width } = Dimensions.get("window");
@@ -36,8 +32,8 @@ const BLOCKED_DATES: { [key: string]: boolean } = {
 };
 
 const ZigzagPattern = () => {
-  const zigzagWidth = 12; // Width of each zigzag
-  const zigzagHeight = 8; // Height of each zigzag
+  const zigzagWidth = 12; 
+  const zigzagHeight = 8; 
   const numberOfZigzags = Math.ceil(width / zigzagWidth);
 
   return (
@@ -161,9 +157,9 @@ export default function ReservationScreen() {
     guestModalizeRef.current?.open();
   };
 
-  const handleTravellerDetailsModalOpen = () => {
-    travellerDetailsRef.current?.open();
-  };
+  // const handleTravellerDetailsModalOpen = () => {
+  //   travellerDetailsRef.current?.open();
+  // };
 
   const handleConfirmGuests = () => {
     // Update main guest state with temporary values
@@ -576,8 +572,6 @@ export default function ReservationScreen() {
             pastSwipeRange={0}
             futureSwipeRange={12}
             theme={{
-              // todayTextColor: '#FF7900',
-              // selectedDayBackgroundColor: '#FF7900',
               selectedDayTextColor: "#ffffff",
               textDayFontSize: 16,
               textMonthFontSize: 18,
@@ -824,8 +818,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   billWrapper: {
-    // marginTop: 10,
-    // overflow: 'hidden',
   },
   billContainer: {
     backgroundColor: "#ffffff",
@@ -985,5 +977,4 @@ const styles = StyleSheet.create({
   dropdownMenu: {
     borderColor: "#ccc",
   },
-
 });

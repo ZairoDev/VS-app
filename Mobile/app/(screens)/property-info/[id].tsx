@@ -1,15 +1,11 @@
 import axios from "axios";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { Link, Route, router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState, useRef } from "react";
+import { Link, Route, useLocalSearchParams } from "expo-router";
 import Carousel from "react-native-reanimated-carousel";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Modalize } from "react-native-modalize";
-import Animated, {
-  SlideInDown,
-  SlideInUp,
-  SlideOutDown,
-} from "react-native-reanimated";
+
 
 import {
   Text,
@@ -67,12 +63,13 @@ export default function PropertyInfo() {
 
   const getUser = async () => {
     try {
+      const userId = property?.userId;
       const response = await axios.post(
         `${process.env.EXPO_PUBLIC_BASE_URL}/user/getUser`,
-        { userId: property?.userId }
+        { userId }
       );
-      setUser(response.data.data);
-    } catch (err) {
+      setUser(response.data.user);
+    } catch (error) {
       console.log("error in fetching user");
     }
   };
@@ -265,15 +262,15 @@ export default function PropertyInfo() {
             ))}
           <View
             style={{
-              backgroundColor: "#c1c2c3",
+              backgroundColor: "orange",
               borderRadius: 20,
-              borderColor: "black",
+              borderColor: "#ff7f11",
               padding: 5,
               borderWidth: 1,
             }}
           >
             <TouchableOpacity onPress={handleOpenBottomsheet}>
-              <Text>View All..</Text>
+              <Text style={{ color: "white" }}>View All..</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -338,7 +335,7 @@ export default function PropertyInfo() {
           <View style={styles.hostItem}>
             <MaterialIcons name="date-range" size={20} />
             <Text style={globalStyles.MutedText}>
-              Joined {user?.createdAt.slice(0, 4)}
+            Joined {user?.createdAt && new Date(user.createdAt).getFullYear()}
             </Text>
           </View>
 
@@ -357,7 +354,7 @@ export default function PropertyInfo() {
           <View style={styles.hostItem}>
             <Ionicons name="language-outline" size={20} />
             <Text style={globalStyles.MutedText}>
-              Language Spoken - {user?.spokenLanguage}
+              Language Spoken - {user?.spokenLanguage || "English"}
             </Text>
           </View>
         </View>
@@ -393,8 +390,8 @@ export default function PropertyInfo() {
               borderBottomRightRadius: 5,
             }}
           >
-            <Text>11:00</Text>
-            <Text style={{ textAlign: "center" }}>15:00</Text>
+            <Text>{property?.time[0]}:00</Text>
+            <Text style={{ textAlign: "center" }}>{property?.time[1]}:00</Text>
           </View>
         </View>
 
@@ -546,7 +543,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    width: "35%",
+    width: "40%",
     borderColor: "black",
     borderWidth: 1,
     borderRadius: 20,
@@ -648,7 +645,6 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     flexDirection: "row",
-    alignItems: "center",
-    // gap: 4,
+    alignItems: "center",   
   },
 });

@@ -17,61 +17,37 @@ import { UserDataType } from "@/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { useAuthStore } from "@/store/auth-store";
 
 const Menu = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
-  const [user, setUser] = useState<UserDataType | null>(null);
+  // const [user, setUser] = useState<UserDataType | null>(null);
   const [modalVisible, setModalVisible] = useState(true);
   const [isLogin, setIsLogin] = useState(true);
-
-  // const width=Dimensions.get("window")
+  const { user, login, register, logout ,setUser } = useAuthStore();
+   
 
   useEffect(() => {
+    const checkUserLoggedIn = async () => {
+      const token = await AsyncStorage.getItem("token");
+      const storedUser = await AsyncStorage.getItem("user");
+
+      if (token && storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    };
+
     checkUserLoggedIn();
-  }, []);
-
-  const checkUserLoggedIn = async () => {
-    const token = await AsyncStorage.getItem("token");
-    const storedUser = await AsyncStorage.getItem("user");
-
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
-      setModalVisible(false);
-    }
-  };
+  }, [setUser]);
 
   const handleLogin = async () => {
     try {
-      console.log("trying to get the response");
-      const response = await axios.post(
-        `${process.env.EXPO_PUBLIC_BASE_URL}/user/login`,
-        {
-          email,
-          password,
-        }
-      );
-      const { token, user } = response.data;
-      console.log("token", token);
-      console.log("user", user);
-
-      await AsyncStorage.setItem("token", token);
-      await AsyncStorage.setItem("user", JSON.stringify(user));
-
-      setUser(user);
-      setModalVisible(false);
-    } catch (error: unknown) {
-      console.log("error aa gyi hai ");
-      if (axios.isAxiosError(error)) {
-        Alert.alert(
-          "Login Failed",
-          error.response?.data?.message || "Something went wrong"
-        );
-      } else {
-        Alert.alert("Login Failed", "An unexpected error occurred");
-      }
+      await login(email, password);
+    } catch (err: any) {
+      console.error("Login error:", err?.response?.data?.message || err.message);
     }
   };
 
@@ -85,7 +61,7 @@ const Menu = () => {
       });
       Alert.alert("Success", "Registration successful. Please login.");
       setIsLogin(true);
-    } catch (error: unknown) {
+    } catch (error) {
       if (axios.isAxiosError(error)) {
         Alert.alert(
           "Registration Failed",
@@ -98,10 +74,8 @@ const Menu = () => {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("user");
     setUser(null);
-    setModalVisible(true);
+    await logout();
   };
   const recentActivity = [
     { type: 'visit', property: 'Sunset Villa', date: '2 days ago' },
@@ -112,191 +86,81 @@ const Menu = () => {
     <SafeAreaView style={styles.container}>
       {user ? (
         <ScrollView style={styles.container}>
-        {/* Background gradient */}
-        <LinearGradient
-          colors={['#ffdea8', '#ffffff']}
-          style={styles.gradientBackground}
-        />
-  
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.profileImageContainer}>
-            <Image
-              style={styles.profileImage}
-              source={{
-                uri: user.profilePic,
-              }}
-            />
-            <TouchableOpacity
-              style={styles.editIconContainer}
-              onPress={() => {
-                // Handle profile picture edit
-              }}
-            >
-              <MaterialIcons name="edit" size={18} color="#333" />
-            </TouchableOpacity>
-          </View>
-  
-          <Text style={styles.welcomeText}>Welcome</Text>
-          <Text style={styles.nameText}>{user.name}</Text>
-          
-          {/* Quick stats */}
-          {/* <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>12</Text>
-              <Text style={styles.statLabel}>Visits</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>3</Text>
-              <Text style={styles.statLabel}>Saved</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>5</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
-          </View> */}
-        </View>
-  
-        {/* Quick Actions */}
-        {/* <View style={styles.quickActionsContainer}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActions}>
-            <TouchableOpacity style={styles.quickActionItem}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#e6f7ff' }]}>
-                <MaterialIcons name="search" size={24} color="#0080ff" />
-              </View>
-              <Text style={styles.quickActionText}>Search</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.quickActionItem}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#fff0f0' }]}>
-                <MaterialIcons name="favorite-border" size={24} color="#ff4d4d" />
-              </View>
-              <Text style={styles.quickActionText}>Favorites</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.quickActionItem}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#f0fff0' }]}>
-                <MaterialIcons name="notifications-none" size={24} color="#00cc66" />
-              </View>
-              <Text style={styles.quickActionText}>Alerts</Text>
-            </TouchableOpacity>
-          </View>
-        </View> */}
-  
-        {/* Recent Activity */}
-        {/* <View style={styles.recentActivityContainer}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          {recentActivity.map((activity, index) => (
-            <View key={index} style={styles.activityItem}>
-              <View style={styles.activityIconContainer}>
-                <MaterialIcons 
-                  name={activity.type === 'visit' ? 'visibility' : 'message'} 
-                  size={20} 
-                  color="#fff" 
-                />
-              </View>
-              <View style={styles.activityDetails}>
-                <Text style={styles.activityText}>
-                  {activity.type === 'visit' ? 'You visited ' : 'You messaged about '}
-                  <Text style={styles.activityHighlight}>{activity.property}</Text>
-                </Text>
-                <Text style={styles.activityDate}>{activity.date}</Text>
-              </View>
-            </View>
-          ))}
-        </View> */}
-  
-        {/* Menu Items */}
-        <View style={styles.menuContainer}>
-          <Text style={styles.sectionTitle}>Account Settings</Text>
-          {[
-            { label: "Go to Profile", icon: "person", onPress: () => router.push("/(screens)/pages/profile-page") },
-            // { label: "List Your Property", icon: "add", onPress: () => {} },
-            { label: "Need Help", icon: "help-outline", onPress: () => router.push("/(screens)/pages/need-support") },
-            { label: "Privacy Policy", icon: "lock-outline", onPress: () => router.push("/(screens)/pages/privacy-policy") },
-            { label: "Terms of Use", icon: "description", onPress: () => router.push("/(screens)/pages/terms-conditions") },
-            { label: "Logout", icon: "logout", onPress: handleLogout },
-          ].map((item, index) => (
-            <TouchableOpacity
-              key={index}    
-              onPress={item.onPress}
-              style={styles.menuItem}
-            >
-              <View style={styles.menuIconContainer}>
-                <MaterialIcons name={item.icon} size={20} color="#555" />
-              </View>
-              <Text style={styles.menuItemText}>{item.label}</Text>
-              <MaterialIcons name="chevron-right" size={20} color="#ccc" />
-            </TouchableOpacity>
-          ))}
-        </View>
-  
-        {/* App version */}
-        <Text style={styles.versionText}>Version 1.0.0</Text>
-      </ScrollView>
-      ) : null}
+          <LinearGradient colors={["#ffdea8", "#ffffff"]} style={styles.gradientBackground} />
 
-      {modalVisible && (
+          <View style={styles.profileHeader}>
+            <View style={styles.profileImageContainer}>
+              <Image
+                style={styles.profileImage}
+                source={{ uri: user.profilePic }}
+              />
+              <TouchableOpacity style={styles.editIconContainer}>
+                <MaterialIcons name="edit" size={18} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.welcomeText}>Welcome</Text>
+            <Text style={styles.nameText}>{user.name}</Text>
+          </View>
+
+          <View style={styles.menuContainer}>
+            <Text style={styles.sectionTitle}>Account Settings</Text>
+            {[
+              {
+                label: "Go to Profile",
+                icon: "person",
+                onPress: () => router.push("/(screens)/pages/profile-page"),
+              },
+              {
+                label: "Need Help",
+                icon: "help-outline",
+                onPress: () => router.push("/(screens)/pages/need-support"),
+              },
+              {
+                label: "Privacy Policy",
+                icon: "lock-outline",
+                onPress: () => router.push("/(screens)/pages/privacy-policy"),
+              },
+              {
+                label: "Terms of Use",
+                icon: "description",
+                onPress: () => router.push("/(screens)/pages/terms-conditions"),
+              },
+              { label: "Logout", icon: "logout", onPress: handleLogout },
+            ].map((item, index) => (
+              <TouchableOpacity key={index} onPress={item.onPress} style={styles.menuItem}>
+                <View style={styles.menuIconContainer}>
+                  <MaterialIcons name={item.icon as any} size={20} color="#555" />
+                </View>
+                <Text style={styles.menuItemText}>{item.label}</Text>
+                <MaterialIcons name="chevron-right" size={20} color="#ccc" />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.versionText}>Version 1.0.0</Text>
+        </ScrollView>
+      ) : (
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {isLogin ? "Login" : "Register"}
-            </Text>
+            <Text style={styles.modalTitle}>{isLogin ? "Login" : "Register"}</Text>
 
             {!isLogin && (
               <>
-                <TextInput
-                  placeholder="Name"
-                  value={name}
-                  onChangeText={setName}
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder="Phone"
-                  value={phone}
-                  onChangeText={setPhone}
-                  style={styles.input}
-                  keyboardType="phone-pad"
-                />
+                <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
+                <TextInput placeholder="Phone" value={phone} onChangeText={setPhone} style={styles.input} keyboardType="phone-pad" />
               </>
             )}
 
-            <TextInput
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              style={styles.input}
-              secureTextEntry
-            />
+            <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" autoCapitalize="none" />
+            <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
 
-            <TouchableOpacity
-              onPress={isLogin ? handleLogin : handleRegister}
-              style={styles.authButton}
-            >
-              <Text style={styles.authButtonText}>
-                {isLogin ? "Login" : "Register"}
-              </Text>
+            <TouchableOpacity onPress={isLogin ? handleLogin : handleRegister} style={styles.authButton}>
+              <Text style={styles.authButtonText}>{isLogin ? "Login" : "Register"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => setIsLogin(!isLogin)}
-              style={styles.toggleTextContainer}
-            >
+            <TouchableOpacity onPress={() => setIsLogin(!isLogin)} style={styles.toggleTextContainer}>
               <Text style={styles.toggleText}>
-                {isLogin
-                  ? "Don't have an account? Register"
-                  : "Already have an account? Login"}
+                {isLogin ? "Don't have an account? Register" : "Already have an account? Login"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -307,12 +171,7 @@ const Menu = () => {
 };
 
 const styles = StyleSheet.create({
-  // container: {
-  //   flex: 1,
-  //   width: "100%",
-  //   height: "100%",
-  //   backgroundColor: "white",
-  // },
+ 
   profileContainer: {
     backgroundColor: "white",
     marginTop: 50,

@@ -83,7 +83,7 @@ export interface nearbyLocationInterface {
 }
 
 export interface UserDataType {
-  googleId?: string;
+  _id: string;
   name: string;
   email: string;
   profilePic?: string;
@@ -94,6 +94,7 @@ export interface UserDataType {
   bankDetails?: Record<string, any>;
   phone?: string;
   myRequests?: string[];
+  wishlist: string[];
   myUpcommingRequests?: string[];
   declinedRequests?: Record<string, any>[];
   address?: string;
