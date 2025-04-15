@@ -26,13 +26,17 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "axios": "^1.7.9",
+    "buffer": "^6.0.3",
     "expo": "~52.0.36",
     "expo-application": "^6.0.2",
     "expo-auth-session": "~6.0.3",
     "expo-blur": "~14.0.3",
     "expo-constants": "~17.0.4",
+    "expo-dev-client": "~5.0.19",
+    "expo-file-system": "~18.0.12",
     "expo-font": "~13.0.3",
     "expo-haptics": "~14.0.1",
+    "expo-image-picker": "~16.0.6",
     "expo-linear-gradient": "^14.0.2",
     "expo-linking": "~7.0.4",
     "expo-location": "~18.0.7",
@@ -82,8 +86,7 @@
     "react-native-webview": "13.12.5",
     "start": "^5.1.0",
     "tailwindcss": "^3.4.17",
-    "zustand": "^5.0.3",
-    "expo-dev-client": "~5.0.19"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

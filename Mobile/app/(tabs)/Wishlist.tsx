@@ -149,6 +149,9 @@ const Wishlist = () => {
         </View>
         <Text style={styles.emptyStateTitle}>Your wishlist is empty</Text>
         <Text style={styles.emptyStateMessage}>Save properties you love to find them here later</Text>
+        
+        <TouchableOpacity style={{ marginTop: 20, padding: 10, backgroundColor: "orange", borderRadius: 8 }}
+          onPress={onRefresh}><Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>Refresh</Text></TouchableOpacity>
       </View>
     )
   }

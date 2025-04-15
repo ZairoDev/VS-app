@@ -12,23 +12,103 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { Dimensions } from "react-native";
+import { Buffer } from "buffer";
 import { UserDataType } from "@/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useAuthStore } from "@/store/auth-store";
 
+
+
 const Menu = () => {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   // const [user, setUser] = useState<UserDataType | null>(null);
   const [modalVisible, setModalVisible] = useState(true);
   const [isLogin, setIsLogin] = useState(true);
   const { user, login, register, logout ,setUser } = useAuthStore();
+  const BUNNY_ACCESS_KEY=process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY
    
+  const pickImageFromGallery = async () =>{
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8
+    });
+
+    if(!result.canceled){
+      return result.assets[0].uri;
+
+    }
+    return null;
+  }
+
+  const uploadToBunny = async (uri: string, fileName: string): Promise<string | null> => {
+    try {
+      const fileBinary = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+  
+      const buffer = Buffer.from(fileBinary, "base64");
+  
+      const url = `${process.env.EXPO_PUBLIC_BUNNY_STORAGE_URL}/${process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE}/${fileName}`;
+  
+      console.log("Uploading to:", url);
+  
+      await axios.put(url, buffer, {
+        headers: {
+          AccessKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY!,
+          "Content-Type": "application/octet-stream",
+        },
+      });
+  
+      return `${process.env.EXPO_PUBLIC_BUNNY_CDN_URL}/${fileName}`;
+    } catch (error: any) {
+      console.error(
+        "Bunny Upload Error:",
+        error.response?.data || error.message || "Unknown Error"
+      );
+      return null;
+    }
+  };
+
+
+  const updateProfilePicInDB = async (userId: string, profilePicUrl: string) => {
+    try {
+      await axios.put(`${process.env.EXPO_PUBLIC_BASE_URL}/user/updateProfilePic`, {
+        userId,
+        profilePic: profilePicUrl,
+      });
+      Alert.alert("Success", "Profile photo updated!");
+    } catch (err) {
+      console.error("DB Update Error:", err);
+      Alert.alert("Failed to update profile pic in DB");
+    }
+  };
+  
+
+
+  const handleEditProfilePhoto = async (user: UserDataType) => {
+    const localUri = await pickImageFromGallery();
+    if (!localUri) return;
+  
+    const fileName = `profile_${user._id}_${Date.now()}.jpg`;
+    const bunnyUrl = await uploadToBunny(localUri, fileName);
+  
+    if (bunnyUrl) {
+      await updateProfilePicInDB(user._id, bunnyUrl);
+  
+      // Update the profilePic in auth store after successful upload
+      setUser({ ...user, profilePic: bunnyUrl });
+    }
+  };
 
   useEffect(() => {
     const checkUserLoggedIn = async () => {
@@ -42,6 +122,8 @@ const Menu = () => {
 
     checkUserLoggedIn();
   }, [setUser]);
+
+
 
   const handleLogin = async () => {
     try {
@@ -94,13 +176,13 @@ const Menu = () => {
                 style={styles.profileImage}
                 source={{ uri: user.profilePic }}
               />
-              <TouchableOpacity style={styles.editIconContainer}>
+              <TouchableOpacity onPress={() => handleEditProfilePhoto(user)} style={styles.editIconContainer}>
                 <MaterialIcons name="edit" size={18} color="#333" />
               </TouchableOpacity>
             </View>
             <Text style={styles.welcomeText}>Welcome</Text>
             <Text style={styles.nameText}>{user.name}</Text>
-          </View>
+          </View>    
 
           <View style={styles.menuContainer}>
             <Text style={styles.sectionTitle}>Account Settings</Text>
