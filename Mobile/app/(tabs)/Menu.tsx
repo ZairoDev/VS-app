@@ -22,8 +22,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useAuthStore } from "@/store/auth-store";
 
-
-
 const Menu = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState(""); 
@@ -239,7 +237,7 @@ const Menu = () => {
             <TouchableOpacity onPress={isLogin ? handleLogin : handleRegister} style={styles.authButton}>
               <Text style={styles.authButtonText}>{isLogin ? "Login" : "Register"}</Text>
             </TouchableOpacity>
-
+            
             <TouchableOpacity onPress={() => setIsLogin(!isLogin)} style={styles.toggleTextContainer}>
               <Text style={styles.toggleText}>
                 {isLogin ? "Don't have an account? Register" : "Already have an account? Login"}
