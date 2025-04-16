@@ -9,6 +9,7 @@ import {
   Image,
   ScrollView,
   SafeAreaView,
+  StatusBar,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -164,6 +165,7 @@ const Menu = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#ffdea8" />
       {user ? (
         <ScrollView style={styles.container}>
           <LinearGradient colors={["#ffdea8", "#ffffff"]} style={styles.gradientBackground} />

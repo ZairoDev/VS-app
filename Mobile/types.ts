@@ -91,8 +91,9 @@ export interface UserDataType {
   nationality?: string;
   gender?: "Male" | "Female" | "Other";
   spokenLanguage?: string;
-  bankDetails?: Record<string, any>;
-  phone?: string;
+  bankDetails: Record<string, any>;
+  phone: string;
+  emergencyContact: string;
   myRequests?: string[];
   wishlist: string[];
   myUpcommingRequests?: string[];

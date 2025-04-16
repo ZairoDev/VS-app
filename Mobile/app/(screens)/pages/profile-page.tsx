@@ -1,67 +1,234 @@
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
-import React from "react";
-import { TouchableOpacity } from "react-native";
-import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
 
-const Profile = () => {
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  StatusBar,
+  ScrollView,
+} from "react-native";
+import axios from "axios";
+import { Feather } from "@expo/vector-icons";
+import { useAuthStore } from "@/store/auth-store";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+
+interface ProfileFieldProps{
+  icon: string;
+  label: string;
+  value: string;
+  actionText: string;
+  description?: string;
+}
+
+const ProfileCard = ({
+  icon,
+  label,
+  value,
+  actionText,
+  description,
+}: ProfileFieldProps) => {
+  const isEmpty = value === "Not provided";
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.iconContainer}>
+          <Feather name={icon as any} size={20} color="#555" />
+        </View>
+        <Text style={styles.cardLabel}>{label}</Text>
+      </View>
+
+      <View style={styles.cardContent}>
+        <Text style={isEmpty ? styles.emptyValue : styles.valueText}>
+          {value}
+        </Text>
+        {description && (
+          <Text style={styles.descriptionText}>{description}</Text>
+        )}
+      </View>
+
+      <TouchableOpacity
+        style={[
+          styles.actionBtn,
+          { backgroundColor: "transparent"},
+        ]}
+      >
+        <Text
+          style={[styles.actionText, { color:  "#Fea850" }]}
+        >
+          {" "}
+          {actionText}{" "}
+        </Text>
+        <Feather
+          name={isEmpty ? "plus" : "edit-2"}
+          size={16}
+          color={ "#Fea850"}
+          style={{ marginLeft: 4 }}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const ProfilePage = () => {
+  // const [profile, setProfile] = useState<any>(null);
+   const { user} = useAuthStore();
+  const navigation = useNavigation();
+
+  // useEffect(() => {
+  //   const fetchProfile = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         "http://<your-ip>:5000/api/users/profile/USER_ID"
+  //       );
+  //       setProfile(response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching profile:", error);
+  //     }
+  //   };
+
+  //   fetchProfile();
+  // }, []);
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
-      <View style={{ padding: 20 }}>
-        <View style={styles.detailsCard}>
-          <Text style={styles.cardHeading}>Personal Details</Text>
+      <StatusBar barStyle="light-content" backgroundColor="#Fea850" />
 
+      <LinearGradient colors={["#fea850", "orange"]} style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Feather name="arrow-left" size={24} color="#fff" />
+        </TouchableOpacity>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.headerTitle}>Profile Details</Text>
+          <Text style={styles.headerSubtitle}>
+            Manage your personal information
+          </Text>
         </View>
-        <View style={styles.detailsCard}>
-          <Text style={styles.cardHeading}>Additional Details</Text>
+      </LinearGradient>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.cardsContainer}>
+          <ProfileCard
+            icon="user"
+            label="Legal name"
+            value={user?.name || "Not provided"}
+            actionText={user?.name ? "Edit" : "Add"}
+          />
+          <ProfileCard
+            icon="smile"
+            label="Preferred first name"
+            value={ "Not provided"}
+            // actionText={user?.preferredName ? "Edit" : "Add"}
+            actionText={"Add"}
+          />
+          <ProfileCard
+            icon="phone"
+            label="Phone number"
+            value={user?.phone || "Not provided"}
+            actionText={user?.phone ? "Edit" : "Add"}
+            description="Contact number (for confirmed guests and service providers to get in touch)."
+          />
+          <ProfileCard
+            icon="mail"
+            label="Email"
+            value={user?.email || "Not provided"}
+            actionText={user?.email ? "Edit" : "Add"}
+          />
+          <ProfileCard
+            icon="map-pin"
+            label="Address"
+            value={ user?.address || "Not provided"}
+            actionText={user?.address ? "Edit" : "Add"}
+          />
+          <ProfileCard
+            icon="alert-circle"
+            label="Emergency contact"
+            value={user?.emergencyContact || "Not provided"}
+            actionText={user?.emergencyContact ? "Edit" : "Add"}
+            
+          />
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default Profile;
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    maxHeight: "100%",
-    backgroundColor: "white",
-  },
+  container: { flex: 1, backgroundColor: "#F8F9FA" },
   header: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 5,
+    paddingTop: 20,
+    paddingBottom: 30,
     paddingHorizontal: 20,
-    height: "7%",
-    backgroundColor: "white",
-    elevation: 5,
+    // marginBottom: 20,
   },
-  headerTitle: {
-    paddingLeft: 10,
-    fontSize: 18,
-    fontWeight: "bold",
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
   },
-  detailsCard:{
-    padding: 10,
-    backgroundColor: "white",
-    borderRadius: 6,
-    position: "relative",
+  headerTextContainer: { paddingLeft: 10 },
+  headerTitle: { fontSize: 28, fontWeight: "bold", color: "#fff" },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.8)",
+    marginTop: 5,
+  },
+  content: { flex: 1, paddingHorizontal: 20 },
+  cardsContainer: { paddingBottom: 20 },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#ccc",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  cardLabel: { fontSize: 16, fontWeight: "600", color: "#555" },
+  cardContent: { marginBottom: 16 },
+  valueText: { fontSize: 18, color: "#333", marginBottom: 6 },
+  emptyValue: {
+    fontSize: 16,
+    color: "#AAAAAA",
+    fontStyle: "italic",
+    marginBottom: 6,
+  },
+  descriptionText: { fontSize: 14, color: "#777", lineHeight: 20 },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
-    marginBottom: 20,
-    elevation: 5,
-    height: 100,
+    backgroundColor: "transparent",
+    borderColor: "orange",
   },
-  cardHeading:{
-    position: "absolute",
-    top: -10,
-    left: 20,
-    backgroundColor: "white",
-  }
+  actionText: { fontSize: 14, fontWeight: "600" },
 });
+
+export default ProfilePage;

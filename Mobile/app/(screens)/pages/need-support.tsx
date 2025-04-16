@@ -328,7 +328,7 @@ export default function ContactScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* <StatusBar barStyle="light-content" /> */}
+      <StatusBar barStyle="light-content" backgroundColor="#fea850" />
 
       <Animated.View style={[styles.header, { height: headerHeight, opacity: headerOpacity }]}>
         <LinearGradient

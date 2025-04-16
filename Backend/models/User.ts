@@ -44,6 +44,9 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
     },
+    emergencyContact: {
+      type: String,
+    },
     myRequests: {
       type: [String],
       require: false,
