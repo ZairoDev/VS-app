@@ -167,7 +167,6 @@ const AddTraveller = () => {
             ))}
           </View>
 
-          {/* Full Name */}
           <TextInput
             placeholder="Full Name"
             style={styles.input}
@@ -175,7 +174,6 @@ const AddTraveller = () => {
             onChangeText={setName}
           />
 
-          {/* Age */}
           <TextInput
             placeholder="Age"
             style={styles.input}
@@ -183,21 +181,7 @@ const AddTraveller = () => {
             onChangeText={setAge}
             keyboardType="numeric"
           />
-
-          {/* Nationality Dropdown */}
-          {/* <DropDownPicker
-            open={open}
-            value={nationality}
-            items={items}
-            setOpen={setOpen}
-            setValue={setNationality}
-            setItems={setItems}
-            placeholder="Choose a country"
-            containerStyle={styles.dropdown}
-            style={{ backgroundColor: "#fafafa" }}
-            dropDownContainerStyle={{ backgroundColor: "#fff" }}
-          /> */}
-
+      
           <TextInput
             placeholder="Country"
             style={styles.input}
@@ -205,7 +189,6 @@ const AddTraveller = () => {
             onChangeText={setNationality}
           />
 
-          {/* Save Button */}
           <TouchableOpacity style={styles.saveButton} onPress={addTraveller}>
             <Text style={styles.saveButtonText}>Save</Text>
           </TouchableOpacity>

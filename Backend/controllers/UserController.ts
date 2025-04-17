@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 // import { OAuth2Client } from "google-auth-library";
 import User from "@/models/User"
 // import { create } from "domain";
@@ -113,6 +114,58 @@ export const updateProfilePic = async (req: Request, res: Response) => {
     return
   }
 };
+
+export const sendEmail = async (req: Request, res: Response) => {
+  const { name, email, message } = req.body;
+
+  if (!email || !name || !message) {
+    res.status(400).json({ error: "Missing fields required" });
+    return
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.PASSWORD,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"${name}" <${email}>`,
+      to: `${process.env.EMAIL}`,
+      subject: `New Contact Form Message from ${name}`,
+      html: `
+        <h3>Contact Form Submission</h3>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Message:</strong><br/>${message}</p>
+      `,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ error: "Failed to send email" });
+  }
+};
+
+export const updateProfile= async(req:Request,res:Response)=>{
+  const {userId,...fieldsToUpdate}=req.body;
+  try {
+    const user=await User.findByIdAndUpdate(userId,fieldsToUpdate,{new:true});
+    if(!user){
+      res.status(404).json({message:"user not found"});
+      return;
+    }
+    res.status(200).json({message:"profile updated",user});
+    return;
+  } catch (error) {
+    
+  } 
+}
+
 
 
 

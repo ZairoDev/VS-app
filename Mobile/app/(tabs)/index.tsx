@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
+  StatusBar,
 } from "react-native";
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
@@ -188,6 +189,7 @@ export default function Index() {
 
   return (
     <SafeAreaView style={styles.mainContainer}>
+      <StatusBar barStyle="dark-content" backgroundColor="#Fff" />
       <FlatList
         data={properties}
         keyExtractor={(item) =>

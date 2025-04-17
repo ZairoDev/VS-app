@@ -14,6 +14,9 @@ import { Feather } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/auth-store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
+import { UserDataType } from "@/types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import EditModal from "@/components/edit";
 
 interface ProfileFieldProps{
   icon: string;
@@ -21,6 +24,7 @@ interface ProfileFieldProps{
   value: string;
   actionText: string;
   description?: string;
+  onEdit?: () => void;
 }
 
 const ProfileCard = ({
@@ -29,6 +33,7 @@ const ProfileCard = ({
   value,
   actionText,
   description,
+  onEdit,
 }: ProfileFieldProps) => {
   const isEmpty = value === "Not provided";
 
@@ -55,6 +60,7 @@ const ProfileCard = ({
           styles.actionBtn,
           { backgroundColor: "transparent"},
         ]}
+        onPress={onEdit}
       >
         <Text
           style={[styles.actionText, { color:  "#Fea850" }]}
@@ -74,24 +80,39 @@ const ProfileCard = ({
 };
 
 const ProfilePage = () => {
-  // const [profile, setProfile] = useState<any>(null);
-   const { user} = useAuthStore();
+   const { user,setUser} = useAuthStore();
   const navigation = useNavigation();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [fieldLabel, setFieldLabel] = useState("");
+  const [fieldKey, setFieldKey] = useState("");
+  const [fieldValue, setFieldValue] = useState("");
 
-  // useEffect(() => {
-  //   const fetchProfile = async () => {
-  //     try {
-  //       const response = await axios.get(
-  //         "http://<your-ip>:5000/api/users/profile/USER_ID"
-  //       );
-  //       setProfile(response.data);
-  //     } catch (error) {
-  //       console.error("Error fetching profile:", error);
-  //     }
-  //   };
+  const handleEdit = (label: string,key: string, value: string) => {
+    setFieldLabel(label);
+    setFieldKey(key);
+    setFieldValue(value);
+    setModalVisible(true);
+  };
 
-  //   fetchProfile();
-  // }, []);
+  const saveChanges = async (newValue: string) => {
+    try{
+      const res= await axios.put(`${process.env.EXPO_PUBLIC_BASE_URL}/user/update`,{
+        [fieldKey]:newValue,
+        userId:user?._id
+      });
+
+      const updatedUser: UserDataType = {
+        ...(user as UserDataType),
+        [fieldKey]: newValue,
+      };
+      
+      setUser(updatedUser);
+      await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser));
+
+    }catch(error){
+      console.error("Error saving changes:", error);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -119,13 +140,13 @@ const ProfilePage = () => {
             label="Legal name"
             value={user?.name || "Not provided"}
             actionText={user?.name ? "Edit" : "Add"}
+            onEdit={() => handleEdit("Legal name", "name", user?.name || "")}
           />
           <ProfileCard
             icon="smile"
             label="Preferred first name"
-            value={ "Not provided"}
-            // actionText={user?.preferredName ? "Edit" : "Add"}
-            actionText={"Add"}
+            value={ user?.name || "Not provided"}
+            actionText={user?.name ? "Edit" : "Add"}
           />
           <ProfileCard
             icon="phone"
@@ -151,10 +172,17 @@ const ProfilePage = () => {
             label="Emergency contact"
             value={user?.emergencyContact || "Not provided"}
             actionText={user?.emergencyContact ? "Edit" : "Add"}
-            
           />
         </View>
       </ScrollView>
+
+      <EditModal
+        visible={modalVisible}
+        label={fieldLabel}
+        value={fieldValue}
+        onClose={() => setModalVisible(false)}
+        onSave={saveChanges}
+      />
     </SafeAreaView>
   );
 };

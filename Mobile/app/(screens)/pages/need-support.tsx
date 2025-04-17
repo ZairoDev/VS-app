@@ -1,4 +1,3 @@
-"use client"
 
 import { useState, useRef } from "react"
 import {
@@ -20,6 +19,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient"
 import { FontAwesome, MaterialCommunityIcons, Ionicons, Feather } from "@expo/vector-icons"
 import { MotiView, MotiText } from "moti"
+import axios from "axios";
 
 const { width, height } = Dimensions.get("window")
 const SPACING = 16
@@ -33,10 +33,8 @@ export default function ContactScreen() {
   const [activeTab, setActiveTab] = useState("info")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
-  // const [showFAQ, setShowFAQ] = useState(false)
 
   const scrollY = useRef(new Animated.Value(0)).current
-  // const formAnimation = useRef(new Animated.Value(0)).current
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 100],
@@ -52,26 +50,34 @@ export default function ContactScreen() {
 
   const handleSend = async () => {
     if (!name || !email || !message) {
-      return
+      alert("Please fill all fields.");
+      return;
     }
-
-    setIsSubmitting(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    console.log({ name, email, message })
-    setIsSubmitting(false)
-    setIsSubmitted(true)
-
-    // Reset form after 5 seconds
-    setTimeout(() => {
-      setIsSubmitted(false)
-      setName("")
-      setEmail("")
-      setMessage("")
-    }, 5000)
-  }
+  
+    setIsSubmitting(true);
+  
+    try {
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/user/contact`, {
+        name,
+        email,
+        message,
+      });
+  
+      if (response.status === 200) {
+        setIsSubmitted(true);
+        setName("");
+        setEmail("");
+        setMessage("");
+      } else {
+        alert(response.data.error || "Failed to send message.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleCall = (phone: string) => {
     Linking.openURL(`tel:${phone}`)
@@ -189,33 +195,6 @@ export default function ContactScreen() {
           </View>
         </View>
       </View>
-
-      {/* <TouchableOpacity style={styles.faqButton} onPress={() => setShowFAQ(!showFAQ)}>
-        <Text style={styles.faqButtonText}>
-          {showFAQ ? "Hide Frequently Asked Questions" : "View Frequently Asked Questions"}
-        </Text>
-        <Ionicons name={showFAQ ? "chevron-up" : "chevron-down"} size={16} color="#f97316" />
-      </TouchableOpacity> */}
-
-      {/* {showFAQ && (
-        <MotiView
-          from={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ type: "timing", duration: 300 }}
-          style={styles.faqContainer}
-        >
-          {faqs.map((faq, index) => (
-            <View key={index} style={styles.faqItem}>
-              <View style={styles.faqQuestion}>
-                <MaterialCommunityIcons name="help-circle-outline" size={18} color="#f97316" />
-                <Text style={styles.faqQuestionText}>{faq.question}</Text>
-              </View>
-              <Text style={styles.faqAnswer}>{faq.answer}</Text>
-            </View>
-          ))}
-        </MotiView>
-      )} */}
     </MotiView>
   )
 
@@ -337,7 +316,7 @@ export default function ContactScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
         >
-          {/* <Image source={{uri:"https://images.pexels.com/photos/30800337/pexels-photo-30800337/free-photo-of-playful-border-collie-enjoying-snowy-winter-day.jpeg?auto=compress&cs=tinysrgb&w=600&lazy=load"}} style={styles.headerPattern} resizeMode="cover" /> */}
+        
           <View style={styles.headerContent}>
             <MotiText
               from={{ opacity: 0, translateY: -20 }}
@@ -698,25 +677,4 @@ const styles = StyleSheet.create({
   },
 })
 
-const faqs = [
-  {
-    question: "How do I make a booking?",
-    answer:
-      "You can make a booking through our website, mobile app, or by calling our booking support number at +91 8960980806.",
-  },
-  {
-    question: "What is your cancellation policy?",
-    answer:
-      "Our cancellation policy varies depending on the type of booking. Generally, cancellations made 48 hours before the scheduled service are eligible for a full refund.",
-  },
-  {
-    question: "Do you offer international travel packages?",
-    answer:
-      "Yes, we offer a wide range of international travel packages to popular destinations worldwide. Contact our sales team for more information.",
-  },
-  {
-    question: "How can I get a receipt for my booking?",
-    answer:
-      "Receipts are automatically sent to the email address provided during booking. You can also access them from your account dashboard.",
-  },
-]
+
