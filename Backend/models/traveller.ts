@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema(
+const travellerSchema = new mongoose.Schema(
   {
     googleId: {
       type: String,
@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
     picture: {
-      type: String, 
+      type: String,
     },
     nationality: {
       type: String,
@@ -43,29 +43,42 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
+      default: "",
     },
     emergencyContact: {
       type: String,
     },
-    myRequests: {
-      type: [String],
-      require: false,
-    },
-    myUpcommingRequests: {
-      type: [String],
-      require: false,
-    },
-    declinedRequests: {
-      type: [Object],
-      require: false,
-      default: [],
-    },
+    myRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "properties",
+      },
+    ],
+    myUpcommingRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "properties",
+      },
+    ],
+    declinedRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "properties",
+      },
+    ],
+    myBookings: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "bookings",
+      },
+    ],
     address: {
       type: String,
       default: "",
     },
     password: {
       type: String,
+      required: true,
     },
     isVerified: {
       type: Boolean,
@@ -74,21 +87,31 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["Owner", "Traveller"],
-      default: "Owner",
+      default: "Traveller",
     },
-    wishlist:{
-      type:[mongoose.Schema.Types.ObjectId],
-      ref:"properties",
-      default:[],
+    wishlist: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "properties",
+      default: [],
     },
-    Payment: Object,
-    forgotPasswordToken: String,
-    forgotPasswordTokenExpiry: Date,
-    verifyToken: String,
-    verifyTokenExpiry: Date,
+    Payment: {
+      type: Object,
+    },
+    forgotPasswordToken: {
+      type: String,
+    },
+    forgotPasswordTokenExpiry: {
+      type: Date,
+    },
+    verifyToken: {
+      type: String,
+    },
+    verifyTokenExpiry: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
 
-const User = mongoose.models?.users || mongoose.model("users", userSchema);
-export default User;
+const Traveller = mongoose.models?.travellers || mongoose.model("travellers", travellerSchema);
+export default Traveller;

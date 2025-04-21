@@ -257,6 +257,6 @@ const styles = StyleSheet.create({
     borderColor: "orange",
   },
   actionText: { fontSize: 14, fontWeight: "600" },
-});
+}); 
 
 export default ProfilePage;

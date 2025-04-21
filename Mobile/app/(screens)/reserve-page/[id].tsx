@@ -17,7 +17,7 @@ import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Plus, Minus } from "lucide-react-native";
 import { useCouponStore } from "@/store/coupon-store";
-import { PropertyInterface } from "@/types";
+import { PropertyInterface , Traveller} from "@/types";
 import axios from "axios";
 
 
@@ -58,6 +58,7 @@ export default function ReservationScreen() {
   });
   const [includePlatformFee, setIncludePlatformFee] = useState(true);
   const [property, setProperty] = useState<PropertyInterface>();
+  const [travellers, setTravellers] = useState<Traveller[]>([]);
   const [guests, setGuests] = useState({
     adults: 1,
     children: 0,
@@ -69,15 +70,7 @@ export default function ReservationScreen() {
     children: 0,
     infants: 0,
   });
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
-  const [items, setItems] = useState([
-    { label: "India", value: "India" },
-    { label: "USA", value: "USA" },
-    { label: "Canada", value: "Canada" },
-    { label: "Australia", value: "Australia" },
-  ]);
-  const travellers = [{ id: 1 }];
+  
 
   const { appliedCoupon } = useCouponStore();
 
@@ -160,6 +153,31 @@ export default function ReservationScreen() {
   // const handleTravellerDetailsModalOpen = () => {
   //   travellerDetailsRef.current?.open();
   // };
+
+  const handleAddTraveller = () => {
+    router.push({
+      pathname: "/(screens)/pages/add-traveller",
+      params: { 
+        id: id,
+        adults: guests.adults.toString(),
+        children: guests.children.toString(),
+        infants: guests.infants.toString(),
+        existingTravellers:JSON.stringify(travellers)
+      }
+    })
+  }
+
+//  useEffect(() => {
+//     const unsubscribe = router.addListener('focus', () => {
+//       if (router.params?.travellers) {
+//         const returnedTravellers = JSON.parse(router.params.travellers);
+//         setTravellers(returnedTravellers);
+//       }
+//     });
+
+//     return unsubscribe;
+//   }, [router]);
+
 
   const handleConfirmGuests = () => {
     // Update main guest state with temporary values
@@ -527,7 +545,8 @@ export default function ReservationScreen() {
               </View>
             </View>
 
-            <TouchableOpacity onPress={() => router.push("/(screens)/pages/add-traveller")}>
+            <TouchableOpacity onPress={handleAddTraveller}>
+            {/* <TouchableOpacity onPress={() => router.push("/(screens)/pages/add-traveller")}> */}
               <FontAwesome name="address-card-o" size={28} color="#111111" />
             </TouchableOpacity>
           </View>

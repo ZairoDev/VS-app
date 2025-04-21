@@ -2,7 +2,7 @@ import passport from "passport";
 import dotenv from "dotenv";
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import User from "../models/User";
+import Traveller from "../models/traveller";
 
 dotenv.config();
 
@@ -16,7 +16,7 @@ passport.use(
     },
     async (payload, done) => {
       try {
-        const user = await User.findById(payload.id);
+        const user = await Traveller.findById(payload.id);
         if (user) return done(null, user);
         return done(null, false);
       } catch (err) {
@@ -35,10 +35,10 @@ passport.use(
     },
     async (_accessToken, _refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ googleId: profile.id });
+        let user = await Traveller.findOne({ googleId: profile.id });
 
         if (!user) {
-          user = await User.create({
+          user = await Traveller.create({
             name: profile.displayName,
             email: profile.emails?.[0]?.value,
             googleId: profile.id,
@@ -59,7 +59,7 @@ passport.serializeUser((user: any, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    const user = await Traveller.findById(id);
     done(null, user);
   } catch (err) {
     done(err, null);

@@ -110,3 +110,12 @@ export interface UserDataType {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface Traveller {
+  id: string;
+  name: string;
+  age: string;
+  gender: string;
+  nationality: string;
+  type: 'Adult' | 'Child' | 'Infant';
+}

@@ -1,7 +1,7 @@
 
 
 import { OAuth2Client } from 'google-auth-library';
-import User from "../models/User";
+import Traveller from "../models/traveller";
 // import {loginOrSignup,refreshToken} from "../controllers/UserController";
 import {login,register,getUser, updateProfilePic, sendEmail, updateProfile} from "../controllers/UserController";
 import express, { Request, Response } from 'express';
@@ -36,9 +36,9 @@ router.post('/verify-google-token', async (req: Request, res: Response) => {
     const name = payload?.name;
     const profilePicture = payload?.picture;
 
-    let user = await User.findOne({ googleId });
+    let user = await Traveller.findOne({ googleId });
     if (!user) { 
-      user = new User({
+      user = new Traveller({
         name,
         email,
         googleId,

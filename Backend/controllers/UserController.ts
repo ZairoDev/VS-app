@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 // import { OAuth2Client } from "google-auth-library";
-import User from "@/models/User"
+import Traveller from "@/models/traveller"
 // import { create } from "domain";
 import dotenv from 'dotenv';
 dotenv.config(); 
@@ -14,7 +14,7 @@ export const register = async (req: Request, res: Response) => {
     const { name, email, password, phone } = req.body;
 
     
-    const existingUser = await User.findOne({ email });
+    const existingUser = await Traveller.findOne({ email });
     if (existingUser) {
       res.status(400).json({ message: "User already exists" });
       return;
@@ -24,7 +24,7 @@ export const register = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
 
-    const newUser = new User({
+    const newUser = new Traveller({
       name,
       email,
       phone,
@@ -46,7 +46,7 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await Traveller.findOne({ email });
     if (!user) {
       res.status(400).json({ message: "Invalid credentials" }); 
       return;
@@ -74,7 +74,7 @@ export const getUser = async (req: Request, res: Response) => {
   try {
     const { userId } = req.body;
     const objectId = new mongoose.Types.ObjectId(userId);
-    const user = await User.findById(objectId);
+    const user = await Traveller.findById(objectId);
     if (!user) {
        res.status(404).json({ message: "User not found" });
        return
@@ -95,7 +95,7 @@ export const updateProfilePic = async (req: Request, res: Response) => {
   }
 
   try {
-    const user = await User.findByIdAndUpdate(
+    const user = await Traveller.findByIdAndUpdate(
       userId,
       { profilePic },
       { new: true }
@@ -154,7 +154,7 @@ export const sendEmail = async (req: Request, res: Response) => {
 export const updateProfile= async(req:Request,res:Response)=>{
   const {userId,...fieldsToUpdate}=req.body;
   try {
-    const user=await User.findByIdAndUpdate(userId,fieldsToUpdate,{new:true});
+    const user=await Traveller.findByIdAndUpdate(userId,fieldsToUpdate,{new:true});
     if(!user){
       res.status(404).json({message:"user not found"});
       return;

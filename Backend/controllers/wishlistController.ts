@@ -1,11 +1,11 @@
 import {Request,Response} from "express";
-import User from "../models/User";
+import Traveller from "../models/traveller";
 import mongoose,{Types} from "mongoose";
 
 export const addToWishlist =async(req:Request,res:Response)=>{
     try{
         const {userId,propertyId}=req.body;
-        const user=await User.findById(userId);
+        const user=await Traveller.findById(userId);
         if(!user){
             res.status(404).json({message:"user not found"});
             return;
@@ -28,7 +28,7 @@ export const addToWishlist =async(req:Request,res:Response)=>{
 export const removeFromWishlist = async(req:Request,res:Response)=>{
     try {
         const {userId,propertyId}=req.body;
-        const user=await User.findById(userId);
+        const user=await Traveller.findById(userId);
         if(!user){
             res.status(404).json({message:"user not found"});
             return;
@@ -49,7 +49,7 @@ export const getWishlist = async (req: Request, res: Response) => {
     try {
       const { userId } = req.body;
   
-      const user = await User.findById(userId).populate("wishlist");
+      const user = await Traveller.findById(userId).populate("wishlist");
       if (!user){
          res.status(404).json({ message: "User not found" });
          return;
