@@ -5,8 +5,6 @@ import Carousel from "react-native-reanimated-carousel";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Modalize } from "react-native-modalize";
-
-
 import {
   Text,
   View,

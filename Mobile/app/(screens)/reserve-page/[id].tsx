@@ -47,8 +47,13 @@ const ZigzagPattern = () => {
   );
 };
 
+type ReservePageParams = {
+  id?: string;
+  travellers?: string;
+};
+
 export default function ReservationScreen() {
-  const { id } = useLocalSearchParams();
+  const { id ,travellers} = useLocalSearchParams<ReservePageParams>();
   const modalizeRef = useRef<Modalize>(null);
   const guestModalizeRef = useRef<Modalize>(null);
   const travellerDetailsRef = useRef<Modalize>(null);
@@ -58,7 +63,7 @@ export default function ReservationScreen() {
   });
   const [includePlatformFee, setIncludePlatformFee] = useState(true);
   const [property, setProperty] = useState<PropertyInterface>();
-  const [travellers, setTravellers] = useState<Traveller[]>([]);
+  const [selectedTravellers, setSelectedTravellers] = useState<Traveller[]>([]);
   const [guests, setGuests] = useState({
     adults: 1,
     children: 0,
@@ -167,17 +172,19 @@ export default function ReservationScreen() {
     })
   }
 
-//  useEffect(() => {
-//     const unsubscribe = router.addListener('focus', () => {
-//       if (router.params?.travellers) {
-//         const returnedTravellers = JSON.parse(router.params.travellers);
-//         setTravellers(returnedTravellers);
-//       }
-//     });
-
-//     return unsubscribe;
-//   }, [router]);
-
+  useEffect(() => {
+    if (typeof travellers === "string") {
+      try {
+        const parsedTravellers: Traveller[] = JSON.parse(travellers);
+        console.log("✅ Selected Travellers coming to Reserve Page:", parsedTravellers);
+        setSelectedTravellers(parsedTravellers);
+      } catch (error) {
+        console.error("❌ Invalid traveller data in URL params", error);
+      }
+    } else if (travellers !== undefined) {
+      console.warn("❗ Travellers param was not a string:", travellers);
+    }
+  }, [travellers])
 
   const handleConfirmGuests = () => {
     // Update main guest state with temporary values
@@ -367,7 +374,7 @@ export default function ReservationScreen() {
           <Minus
             size={20}
             color={
-              value === (type === "adults" ? 1 : 0) ? "#A1A1AA" : "#4F46E5"
+              value === (type === "adults" ? 1 : 0) ? "#A1A1AA" : "#ff7900"
             }
           />
         </TouchableOpacity>
@@ -376,7 +383,7 @@ export default function ReservationScreen() {
           style={styles.guestTypeButton}
           onPress={() => updateGuestCount(type, true)}
         >
-          <Plus size={20} color="#4F46E5" />
+          <Plus size={20} color="#ff7900" />
         </TouchableOpacity>
       </View>
     </View>
@@ -609,7 +616,7 @@ export default function ReservationScreen() {
           <View style={styles.legend}>
             <View style={styles.legendItem}>
               <View
-                style={[styles.legendDot, { backgroundColor: "#4F46E5" }]}
+                style={[styles.legendDot, { backgroundColor: "#ff7900" }]}
               />
               <Text style={styles.legendText}>Selected</Text>
             </View>
@@ -824,7 +831,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   confirmButton: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: "orange",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
