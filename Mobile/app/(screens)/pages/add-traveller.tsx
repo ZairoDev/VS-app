@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Modalize } from 'react-native-modalize';
 import { Checkbox } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
+import { useTravellerStore } from '@/store/traveller-store';
 
 interface Traveller {
   id: string;
@@ -38,14 +39,21 @@ type AddTravellerParams = {
 const AddTraveller = () => {
   const params = useLocalSearchParams<AddTravellerParams>();
   const modalizeRef = useRef<Modalize>(null);
+  const {
+    travellers,
+    addTraveller,
+    toggleTravellerSelect,
+    setTravellers,
+    clearTravellers,
+  } = useTravellerStore();
   
   const maxAdults = parseInt(params.adults || '1');
   const maxChildren = parseInt(params.children || '0');
   const maxInfants = parseInt(params.infants || '0');
   
-  const [travellers, setTravellers] = useState<Traveller[]>(
-    params.existingTravellers ? JSON.parse(params.existingTravellers) : []
-  );
+  // const [travellers, setTravellers] = useState<Traveller[]>(
+  //   params.existingTravellers ? JSON.parse(params.existingTravellers) : []
+  // );
   
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
@@ -91,7 +99,7 @@ const AddTraveller = () => {
     return null;
   };
   
-  const addTraveller = () => {
+  const addNewTraveller = () => {
     const error = validateTraveller();
     if (error) {
       Alert.alert('Validation Error', error);
@@ -108,7 +116,8 @@ const AddTraveller = () => {
       selected: false,
     };
     
-    setTravellers([...travellers, newTraveller]);
+    // setTravellers([...travellers, newTraveller]);
+    addTraveller(newTraveller);
     modalizeRef.current?.close();
     resetForm();
     
@@ -129,20 +138,22 @@ const AddTraveller = () => {
   };
 
   const toggleSelect = (id: string) => {
-    setTravellers(travellers.map(traveller =>
-      traveller.id === id ? { ...traveller, selected: !traveller.selected } : traveller
-    ));
+    // setTravellers(travellers.map(traveller =>
+    //   traveller.id === id ? { ...traveller, selected: !traveller.selected } : traveller
+    // ));
+    toggleTravellerSelect(id);
   };
 
   const handleSaveAndReturn = () => {
     console.log('Selected Travellers:', travellers.filter(t => t.selected));
-    router.push({
-      pathname: "/(screens)/reserve-page/[id]" ,
-      params: {
-        id: params.id,
-        travellers: JSON.stringify(travellers)
-      }
-    });
+    // router.push({
+    //   pathname: "/(screens)/reserve-page/[id]" ,
+    //   params: {
+    //     id: params.id,
+    //     travellers: JSON.stringify(travellers)
+    //   }
+    // });
+    router.back();
   };
 
   const getRemainingSummary = () => {
@@ -465,7 +476,7 @@ const AddTraveller = () => {
           
           <TouchableOpacity
             style={styles.addButtonModal}
-            onPress={addTraveller}
+            onPress={addNewTraveller}
           >
             <Text style={styles.addButtonModalText}>Add Traveller</Text>
           </TouchableOpacity>

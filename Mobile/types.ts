@@ -119,3 +119,40 @@ export interface Traveller {
   nationality: string;
   type: 'Adult' | 'Child' | 'Infant';
 }
+
+
+
+interface Property {
+  _id: string;
+  propertyName: string;
+  placeName: string;
+  city: string;
+  country: string;
+  basePrice: number;
+  propertyCoverFileUrl: string;
+}
+
+interface Guests {
+  adults: number;
+  children: number;
+  infants: number;
+}
+
+export interface Booking {
+  _id: string;
+  propertyId: Property;
+  userId: string; 
+  travellerId: string; 
+  startDate: string; 
+  endDate: string;   
+  travellers: Traveller[];
+  guests: Guests;
+  totalNights: number;
+  price: number;
+  paymentStatus: "pending" | "paid" | "refunded";
+  bookingStatus: "pending" | "confirmed" | "cancelled";
+  notes?: string; 
+  createdAt: string;
+  updatedAt: string; 
+  __v: number; 
+}

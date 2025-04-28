@@ -1,11 +1,14 @@
 import mongoose from "mongoose";
 
+import {Properties} from "./Properties"; // ✅ if needed
+import Traveller from "./traveller"; // ✅ if needed
+
 const travellerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   age: { type: String, required: true },
   gender: { type: String, required: true },
   nationality: { type: String, required: true },
-  type: { type: String, enum: ["Adult", "Child", "Infant"], required: true },
+  type: { type: String, enum: ["adult", "child", "infant"], required: true },
 });
 
 const bookingsSchema = new mongoose.Schema(
@@ -15,14 +18,14 @@ const bookingsSchema = new mongoose.Schema(
       ref: "properties",
       required: true,
     },
-    ownerId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "users",
       required: true,
     },
     travellerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "traveller",
+      ref: "travellers",
       required: true,
     },
     startDate: {
@@ -49,7 +52,7 @@ const bookingsSchema = new mongoose.Schema(
     bookingStatus: {
       type: String,
       enum: ["confirmed", "pending", "cancelled"],
-      default: "confirmed",
+      default: "pending",
     },
     notes: {
       type: String,
@@ -58,5 +61,4 @@ const bookingsSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Bookings =
-  mongoose.models.Bookings || mongoose.model("Bookings", bookingsSchema);
+export const Bookings = mongoose.models.bookings || mongoose.model("bookings", bookingsSchema);

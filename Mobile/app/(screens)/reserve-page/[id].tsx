@@ -9,6 +9,7 @@ import {
   Pressable,
   Image,
   StatusBar,
+  Alert,
 
 } from "react-native";
 import { Modalize } from "react-native-modalize";
@@ -17,8 +18,11 @@ import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Plus, Minus } from "lucide-react-native";
 import { useCouponStore } from "@/store/coupon-store";
+import { useAuthStore } from "@/store/auth-store";
+import { useTravellerStore } from "@/store/traveller-store";
 import { PropertyInterface , Traveller} from "@/types";
 import axios from "axios";
+import { useSearchParams } from "expo-router/build/hooks";
 
 
 
@@ -47,13 +51,11 @@ const ZigzagPattern = () => {
   );
 };
 
-type ReservePageParams = {
-  id?: string;
-  travellers?: string;
-};
 
 export default function ReservationScreen() {
-  const { id ,travellers} = useLocalSearchParams<ReservePageParams>();
+  const {id}=useLocalSearchParams()
+  const {travellers } =useTravellerStore()
+  const { user, login, register, logout ,setUser } = useAuthStore();
   const modalizeRef = useRef<Modalize>(null);
   const guestModalizeRef = useRef<Modalize>(null);
   const travellerDetailsRef = useRef<Modalize>(null);
@@ -63,6 +65,7 @@ export default function ReservationScreen() {
   });
   const [includePlatformFee, setIncludePlatformFee] = useState(true);
   const [property, setProperty] = useState<PropertyInterface>();
+
   const [selectedTravellers, setSelectedTravellers] = useState<Traveller[]>([]);
   const [guests, setGuests] = useState({
     adults: 1,
@@ -80,7 +83,9 @@ export default function ReservationScreen() {
   const { appliedCoupon } = useCouponStore();
 
   const getproperty = async () => {
+    
     try {
+      
       const response = await axios.post(
         `${process.env.EXPO_PUBLIC_BASE_URL}/properties/getParticularProperty`,
         { propertyId: id }
@@ -162,29 +167,29 @@ export default function ReservationScreen() {
   const handleAddTraveller = () => {
     router.push({
       pathname: "/(screens)/pages/add-traveller",
-      params: { 
-        id: id,
-        adults: guests.adults.toString(),
-        children: guests.children.toString(),
-        infants: guests.infants.toString(),
-        existingTravellers:JSON.stringify(travellers)
-      }
+      // params: { 
+      //   id: id,
+      //   adults: guests.adults.toString(),
+      //   children: guests.children.toString(),
+      //   infants: guests.infants.toString(),
+      //   existingTravellers:JSON.stringify(travellers)
+      // }
     })
   }
 
-  useEffect(() => {
-    if (typeof travellers === "string") {
-      try {
-        const parsedTravellers: Traveller[] = JSON.parse(travellers);
-        console.log("✅ Selected Travellers coming to Reserve Page:", parsedTravellers);
-        setSelectedTravellers(parsedTravellers);
-      } catch (error) {
-        console.error("❌ Invalid traveller data in URL params", error);
-      }
-    } else if (travellers !== undefined) {
-      console.warn("❗ Travellers param was not a string:", travellers);
-    }
-  }, [travellers])
+  // useEffect(() => {
+  //   if (typeof travellers === "string") {
+  //     try {
+  //       const parsedTravellers: Traveller[] = JSON.parse(travellers);
+  //       console.log("✅ Selected Travellers coming to Reserve Page:", parsedTravellers);
+  //       setSelectedTravellers(parsedTravellers);
+  //     } catch (error) {
+  //       console.error("❌ Invalid traveller data in URL params", error);
+  //     }
+  //   } else if (travellers !== undefined) {
+  //     console.warn("❗ Travellers param was not a string:", travellers);
+  //   }
+  // }, [travellers])
 
   const handleConfirmGuests = () => {
     // Update main guest state with temporary values
@@ -389,6 +394,39 @@ export default function ReservationScreen() {
     </View>
   );
 
+  const handleCheckout = async () => {
+    const propertyId = property?._id;
+    const userId = property?.userId;
+    const travellerId = user?._id;
+    const startDate = selectedDates?.startDate;
+    const endDate = selectedDates?.endDate;
+    const price = billDetails.total;
+  
+    const bookingData = {
+      propertyId,
+      userId,
+      travellerId,
+      startDate,
+      endDate,
+      guests,
+      travellers,
+      price
+    };
+  
+    try {
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/create-booking/`, bookingData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      Alert.alert('Success!', 'Booking request created successfully');
+      console.log(response);
+    } catch (error:any) {
+      console.error('Booking error:', error.response?.data || error.message);
+      Alert.alert('Error', 'Failed to create booking.');
+    }
+  };
   const renderApplyCouponModal = () => {
     if (billDetails.totalNights === 0) return null;
     return (
@@ -562,7 +600,7 @@ export default function ReservationScreen() {
         {renderBillDetails()}
       </View>
       {billDetails.totalNights !== 0 && (
-        <TouchableOpacity style={styles.checkout}>
+        <TouchableOpacity style={styles.checkout} onPress={handleCheckout}>
           <Text
             style={{
               color: "white",
