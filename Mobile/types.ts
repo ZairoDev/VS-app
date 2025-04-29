@@ -131,6 +131,11 @@ interface Property {
   basePrice: number;
   propertyCoverFileUrl: string;
 }
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+}
 
 interface Guests {
   adults: number;
@@ -141,7 +146,7 @@ interface Guests {
 export interface Booking {
   _id: string;
   propertyId: Property;
-  userId: string; 
+  userId: User; 
   travellerId: string; 
   startDate: string; 
   endDate: string;   

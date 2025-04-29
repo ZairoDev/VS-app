@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 
 import { Bookings } from '../models/Booking';
 import mongoose from 'mongoose';
+import  Users  from '../models/users';
 import Traveller from '@/models/traveller';
 import { Properties } from '../models/Properties';
 
@@ -20,6 +21,10 @@ export const getBookingsByUser = async (req: Request, res: Response) => {
       .populate({
         path: "propertyId",
         select: "propertyName placeName city country propertyCoverFileUrl basePrice ",
+      })
+      .populate({
+        path: "userId",
+        select: "name email",
       })
       
 

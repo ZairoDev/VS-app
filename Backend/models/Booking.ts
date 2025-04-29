@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 
-import {Properties} from "./Properties"; // ✅ if needed
-import Traveller from "./traveller"; // ✅ if needed
+import {Properties} from "./Properties"; 
+import Traveller from "./traveller"; 
+import Users from "./users";
 
 const travellerSchema = new mongoose.Schema({
   name: { type: String, required: true },

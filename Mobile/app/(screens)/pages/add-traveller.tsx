@@ -1,871 +1,692 @@
-import { Ionicons, FontAwesome, FontAwesome5 } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState } from 'react';
+"use client"
+
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
-  SectionList,
   Alert,
   ScrollView,
-  Animated,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Modalize } from 'react-native-modalize';
-import { Checkbox } from 'react-native-paper';
-import { StatusBar } from 'expo-status-bar';
-import { useTravellerStore } from '@/store/traveller-store';
+  Dimensions,
+  SafeAreaView,
+  StatusBar,
+} from "react-native"
+import { useLocalSearchParams, router } from "expo-router"
+import { useTravellerStore } from "@/store/traveller-store"
+import { FontAwesome5, Ionicons } from "@expo/vector-icons"
+import { Modalize } from "react-native-modalize"
+// import { Portal } from "react-native-portalize"
 
-interface Traveller {
-  id: string;
-  name: string;
-  age: string;
-  gender: string;
-  nationality: string;
-  type: 'adult' | 'child' | 'infant';
-  selected: boolean;
-}
-
-type AddTravellerParams = {
-  id: string;
-  adults: string;
-  children: string;
-  infants: string;
-  existingTravellers?: string;
-};
+const { width } = Dimensions.get("window")
 
 const AddTraveller = () => {
-  const params = useLocalSearchParams<AddTravellerParams>();
-  const modalizeRef = useRef<Modalize>(null);
+  const params = useLocalSearchParams()
   const {
     travellers,
-    addTraveller,
-    toggleTravellerSelect,
-    setTravellers,
-    clearTravellers,
-  } = useTravellerStore();
-  
-  const maxAdults = parseInt(params.adults || '1');
-  const maxChildren = parseInt(params.children || '0');
-  const maxInfants = parseInt(params.infants || '0');
-  
-  // const [travellers, setTravellers] = useState<Traveller[]>(
-  //   params.existingTravellers ? JSON.parse(params.existingTravellers) : []
-  // );
-  
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('Male');
-  const [nationality, setNationality] = useState('India');
-  const [currentType, setCurrentType] = useState<'adult' | 'child' | 'infant'>('adult');
-  const [showTypeSelector, setShowTypeSelector] = useState(false);
+    maxAdults,
+    maxChildren,
+    maxInfants,
+    bookingId,
+    setLimits,
+    addTraveller: addTravellerToStore,
+    removeTraveller,
+  } = useTravellerStore()
 
-  const remainingAdults = maxAdults - travellers.filter(t => t.type === 'adult').length;
-  const remainingChildren = maxChildren - travellers.filter(t => t.type === 'child').length;
-  const remainingInfants = maxInfants - travellers.filter(t => t.type === 'infant').length;
+  // Modalize reference
+  const modalizeRef = useRef<Modalize>(null)
 
-  const canAddAdult = remainingAdults > 0;
-  const canAddChild = remainingChildren > 0;
-  const canAddInfant = remainingInfants > 0;
-  
-  const openModal = () => {
-    if (canAddAdult) setCurrentType('adult');
-    else if (canAddChild) setCurrentType('child');
-    else if (canAddInfant) setCurrentType('infant');
-    modalizeRef.current?.open();
-  };
-  
+  // Set booking limits on mount or param change
+  useEffect(() => {
+    const adults = Math.max(0, Number.parseInt(params.adults?.toString() || "1"))
+    const children = Math.max(0, Number.parseInt(params.children?.toString() || "0"))
+    const infants = Math.max(0, Number.parseInt(params.infants?.toString() || "0"))
+    const id = params.id?.toString() || ""
+
+    if (maxAdults !== adults || maxChildren !== children || maxInfants !== infants || bookingId !== id) {
+      setLimits(adults, children, infants, id)
+    }
+  }, [params])
+
+  const [name, setName] = useState("")
+  const [age, setAge] = useState("")
+  const [gender, setGender] = useState<"male" | "female" | "other">("male")
+  const [nationality, setNationality] = useState("")
+  const [type, setType] = useState<"adult" | "child" | "infant">("adult")
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false)
+
+  const countByType = useCallback(
+    (t: "adult" | "child" | "infant") => travellers.filter((tr) => tr.type === t).length,
+    [travellers],
+  )
+
+  const remaining = useMemo(
+    () => ({
+      adult: Math.max(0, maxAdults - countByType("adult")),
+      child: Math.max(0, maxChildren - countByType("child")),
+      infant: Math.max(0, maxInfants - countByType("infant")),
+    }),
+    [maxAdults, maxChildren, maxInfants, countByType],
+  )
+
+  // Calculate progress
+  const totalTravellers = maxAdults + maxChildren + maxInfants
+  const addedTravellers = travellers.length
+  const progress = totalTravellers > 0 ? (addedTravellers / totalTravellers) * 100 : 0
+
   const validateTraveller = (): string | null => {
-    if (!name.trim()) return 'Name is required';
-    if (!age.trim()) return 'Age is required';
-    
-    const ageNum = parseInt(age);
-    if (isNaN(ageNum)) return 'Age must be a number';
-    
-    if (currentType === 'adult' && ageNum < 13) {
-      return 'Adults must be 13 or older';
-    }
-    
-    if (currentType === 'child' && (ageNum < 2 || ageNum > 12)) {
-      return 'Children must be between 2-12 years old';
-    }
-    
-    if (currentType === 'infant' && ageNum >= 2) {
-      return 'Infants must be under 2 years old';
-    }
-    
-    return null;
-  };
-  
-  const addNewTraveller = () => {
-    const error = validateTraveller();
-    if (error) {
-      Alert.alert('Validation Error', error);
-      return;
-    }
+    if (!name.trim()) return "Please enter a name"
+    const ageNum = Number.parseInt(age)
+    if (isNaN(ageNum)) return "Please enter a valid age"
 
-    const newTraveller: Traveller = {
-      id: Date.now().toString(),
+    if (type === "adult" && ageNum < 13) return "Adults must be 13+ years"
+    if (type === "child" && (ageNum < 2 || ageNum > 12)) return "Children must be 2-12 years"
+    if (type === "infant" && ageNum >= 2) return "Infants must be under 2 years"
+
+    if (remaining[type] <= 0) return `Maximum ${type}s reached`
+    if (!nationality.trim()) return "Please enter nationality"
+
+    return null
+  }
+
+  const addTraveller = () => {
+    const error = validateTraveller()
+    if (error) return Alert.alert("Cannot Add Traveller", error)
+
+    addTravellerToStore({
       name: name.trim(),
-      age: age.trim(),
+      age,
       gender,
-      nationality,
-      type: currentType,
-      selected: false,
-    };
-    
-    // setTravellers([...travellers, newTraveller]);
-    addTraveller(newTraveller);
-    modalizeRef.current?.close();
-    resetForm();
-    
-    if (currentType === 'adult' && remainingAdults <= 1) {
-      if (canAddChild) setCurrentType('child');
-      else if (canAddInfant) setCurrentType('infant');
-    } else if (currentType === 'child' && remainingChildren <= 1) {
-      if (canAddInfant) setCurrentType('infant');
-      else if (canAddAdult) setCurrentType('adult');
+      nationality: nationality.trim(),
+      type,
+    })
+
+    setName("")
+    setAge("")
+    setGender("male")
+    setNationality("")
+    modalizeRef.current?.close()
+
+    if (remaining[type] <= 1) {
+      if (remaining.child > 0) setType("child")
+      else if (remaining.infant > 0) setType("infant")
     }
-  };
+  }
 
-  const resetForm = () => {
-    setName('');
-    setAge('');
-    setGender('Male');
-    setNationality('India');
-  };
-
-  const toggleSelect = (id: string) => {
-    // setTravellers(travellers.map(traveller =>
-    //   traveller.id === id ? { ...traveller, selected: !traveller.selected } : traveller
-    // ));
-    toggleTravellerSelect(id);
-  };
-
-  const handleSaveAndReturn = () => {
-    console.log('Selected Travellers:', travellers.filter(t => t.selected));
-    // router.push({
-    //   pathname: "/(screens)/reserve-page/[id]" ,
-    //   params: {
-    //     id: params.id,
-    //     travellers: JSON.stringify(travellers)
-    //   }
-    // });
-    router.back();
-  };
-
-  const getRemainingSummary = () => {
-    const parts = [];
-    if (remainingAdults > 0) parts.push(`${remainingAdults} adult${remainingAdults !== 1 ? 's' : ''}`);
-    if (remainingChildren > 0) parts.push(`${remainingChildren} child${remainingChildren !== 1 ? 'ren' : ''}`);
-    if (remainingInfants > 0) parts.push(`${remainingInfants} infant${remainingInfants !== 1 ? 's' : ''}`);
-    
-    return parts.length > 0 ? `Remaining: ${parts.join(', ')}` : 'All travellers added';
-  };
-
-  const getTravellerTypeIcon = (type: string) => {
-    switch(type) {
-      case 'adult': return 'person';
-      case 'child': return 'happy';
-      case 'infant': return 'baby';
-      default: return 'person';
+  const saveAndReturn = () => {
+    if (countByType("adult") === 0) {
+      return Alert.alert("Cannot Save", "At least one adult is required")
     }
-  };
+    router.back()
+  }
+
+  const openBottomSheet = () => {
+    modalizeRef.current?.open()
+    setIsBottomSheetOpen(true)
+  }
+
+  const renderTypeButton = (t: "adult" | "child" | "infant") => {
+    const canSelect = remaining[t] > 0
+    const isSelected = type === t
+
+    return (
+      <TouchableOpacity
+        key={t}
+        onPress={() => setType(t)}
+        disabled={!canSelect}
+        style={[styles.typeButton, isSelected && styles.selectedType, !canSelect && styles.disabledType]}
+      >
+        <Text
+          style={[styles.typeButtonText, isSelected && styles.selectedTypeText, !canSelect && styles.disabledTypeText]}
+        >
+          {t.charAt(0).toUpperCase() + t.slice(1)} ({remaining[t]})
+        </Text>
+      </TouchableOpacity>
+    )
+  }
+
+  const renderTravellerCard = (t: any) => {
+    const typeColors = {
+      adult: "orange",
+      child: "orange",
+      infant: "orange",
+    }
+
+    return (
+      <View key={t.id} style={styles.travellerCard}>
+        <View style={styles.travellerCardHeader}>
+          <View style={[styles.travellerTypeTag, { backgroundColor: typeColors[t.type as keyof typeof typeColors] }]}>
+            <Text style={styles.travellerTypeText}>{t.type.toUpperCase()}</Text>
+          </View>
+          <TouchableOpacity onPress={() => removeTraveller(t.id)} style={styles.removeButton}>
+            <Ionicons name="trash-outline" size={24} color="#777" />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.travellerName}>{t.name}</Text>
+
+        <View style={styles.travellerDetails}>
+          <View style={styles.detailItem}>
+            <Ionicons name="calendar-outline" size={16} color="#666" />
+            <Text style={styles.detailText}>{t.age} years</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Ionicons
+              name={t.gender === "male" ? "male" : t.gender === "female" ? "female" : "person"}
+              size={16}
+              color="#666"
+            />
+            <Text style={styles.detailText}>{t.gender}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Ionicons name="flag-outline" size={16} color="#666" />
+            <Text style={styles.detailText}>{t.nationality}</Text>
+          </View>
+        </View>
+      </View>
+    )
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-      
-      {/* Header */}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color="#1F2937" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Traveller</Text>
-        <View style={styles.headerRight} />
+        <Text style={styles.headerTitle}>Add Travellers</Text>
+        <View style={styles.placeholder} />
       </View>
 
-      {/* Progress Indicator */}
+      {/* Progress Bar */}
       <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill, 
-              { 
-                width: `${100 - ((remainingAdults + remainingChildren + remainingInfants) / 
-                  (maxAdults + maxChildren + maxInfants) * 100)}%` 
-              }
-            ]} 
-          />
+        <View style={styles.progressInfo}>
+          <Text style={styles.progressText}>
+            {addedTravellers} of {totalTravellers} travellers added
+          </Text>
+          <Text style={styles.progressPercentage}>{Math.round(progress)}%</Text>
         </View>
-        <Text style={styles.remainingText}>{getRemainingSummary()}</Text>
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBar, { width: `${progress}%` }]} />
+        </View>
       </View>
 
-      <ScrollView 
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.limitsContainer}>
+        <View style={styles.limitItem}>
+          <Ionicons name="person" size={20} color="orange" />
+          <Text style={styles.limitText}>
+            <Text style={styles.limitCount}>
+              {countByType("adult")}/{maxAdults}
+            </Text>{" "}
+            Adults
+          </Text>
+        </View>
+        <View style={styles.limitItem}>
+          <Ionicons name="person-outline" size={20} color="orange" />
+          <Text style={styles.limitText}>
+            <Text style={styles.limitCount}>
+              {countByType("child")}/{maxChildren}
+            </Text>{" "}
+            Children
+          </Text>
+        </View>
+        <View style={styles.limitItem}>
+          <FontAwesome5 name="baby" size={20} color="orange" />
+          <Text style={styles.limitText}>
+            <Text style={styles.limitCount}>
+              {countByType("infant")}/{maxInfants}
+            </Text>{" "}
+            Infants
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.container}>
         {travellers.length > 0 ? (
-          <SectionList
-            sections={[{ title: 'Saved Travellers', data: travellers }]}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.typeIconContainer}>
-                    <Ionicons name={getTravellerTypeIcon(item.type )as any} size={16} color="#fff" />
-                  </View>
-                  <Text style={styles.travellerType}>
-                    {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                  </Text>
-                  <TouchableOpacity 
-                    style={styles.deleteButton}
-                    onPress={() => {
-                      setTravellers(travellers.filter(t => t.id !== item.id));
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                  </TouchableOpacity>
-                </View>
-                
-                <View style={styles.cardRow}>
-                  <Checkbox
-                    status={item.selected ? 'checked' : 'unchecked'}
-                    onPress={() => toggleSelect(item.id)}
-                    color="orange"
-                  />
-                  <View style={styles.travellerInfoContainer}>
-                    <Text style={styles.travellerName}>{item.name}</Text>
-                    <View style={styles.travellerDetailsRow}>
-                      <View style={styles.detailItem}>
-                        <Ionicons name={item.gender === 'Male' ? 'male' : 'female'} size={14} color="#6B7280" />
-                        <Text style={styles.travellerDetails}>{item.gender}</Text>
-                      </View>
-                      <View style={styles.detailItem}>
-                        <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                        <Text style={styles.travellerDetails}>{item.age} yr</Text>
-                      </View>
-                      <View style={styles.detailItem}>
-                        <Ionicons name="flag-outline" size={14} color="#6B7280" />
-                        <Text style={styles.travellerDetails}>{item.nationality}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            )}
-            ListFooterComponent={
-              (canAddAdult || canAddChild || canAddInfant) ? (
-                <TouchableOpacity onPress={openModal} style={styles.addButton}>
-                  <View style={styles.addIconContainer}>
-                    <Ionicons name="add" size={20} color="#fff" />
-                  </View>
-                  <Text style={styles.addButtonText}>Add New Traveller</Text>
-                </TouchableOpacity>
-              ) : null
-            }
-            scrollEnabled={false}
-          />
+          <View style={styles.travellerList}>{travellers.map(renderTravellerCard)}</View>
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="people" size={60} color="#E5E7EB" />
-            <Text style={styles.emptyStateTitle}>No travellers added yet</Text>
-            <Text style={styles.emptyStateText}>Add travellers to continue with your booking</Text>
-            {(canAddAdult || canAddChild || canAddInfant) && (
-              <TouchableOpacity onPress={openModal} style={styles.emptyStateButton}>
-                <Ionicons name="add" size={20} color="#fff" />
-                <Text style={styles.emptyStateButtonText}>Add Traveller</Text>
-              </TouchableOpacity>
-            )}
+            <Ionicons name="people" size={64} color="#ddd" />
+            <Text style={styles.emptyStateText}>No travellers added yet</Text>
+            <Text style={styles.emptyStateSubtext}>Tap the button below to add travellers</Text>
           </View>
         )}
       </ScrollView>
 
-      {/* Save Button */}
-      <View style={styles.bottomContainer}>
+      <View style={styles.footer}>
         <TouchableOpacity
-          style={[
-            styles.saveButton,
-            travellers.filter(t => t.selected).length === 0 && styles.saveButtonDisabled
-          ]}
-          onPress={handleSaveAndReturn}
-          disabled={travellers.filter(t => t.selected).length === 0}
+          onPress={openBottomSheet}
+          style={styles.addTravellerButton}
+          disabled={remaining.adult <= 0 && remaining.child <= 0 && remaining.infant <= 0}
         >
-          <Text style={styles.saveButtonText}>
-            {travellers.filter(t => t.selected).length > 0 
-              ? `Save ${travellers.filter(t => t.selected).length} Traveller${travellers.filter(t => t.selected).length !== 1 ? 's' : ''}` 
-              : 'Select Travellers'}
-          </Text>
-          <Ionicons name="chevron-forward" size={20} color="white" />
+          <Ionicons name="add" size={24} color="orange" />
+          <Text style={styles.addTravellerButtonText}>Add Traveller</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={saveAndReturn}
+          style={[styles.saveButton, travellers.length === 0 && styles.disabledSaveButton]}
+          disabled={travellers.length === 0}
+        >
+          <Text style={styles.saveButtonText}>Save & Continue</Text>
+          <Ionicons name="arrow-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
 
+      {/* Modalize Bottom Sheet */}
+      
+        <Modalize
+          ref={modalizeRef}
+          adjustToContentHeight
+          handleStyle={styles.modalizeHandle}
+          modalStyle={styles.modalizeContainer}
+          HeaderComponent={
+            <View style={styles.modalizeHeader}>
+              <Text style={styles.bottomSheetTitle}>Add New Traveller</Text>
+            </View>
+          }
+          onClose={() => setIsBottomSheetOpen(false)}
+        >
+          <View style={styles.bottomSheetContent}>
+            <View style={styles.typeContainer}>
+              {renderTypeButton("adult")}
+              {renderTypeButton("child")}
+              {renderTypeButton("infant")}
+            </View>
 
-      <Modalize
-        ref={modalizeRef}
-        adjustToContentHeight
-        modalStyle={styles.modalContent}
-        handleStyle={styles.modalHandle}
-        handlePosition="inside"
-      >
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Add Traveller Details</Text>
-          
-          <View style={styles.typeContainer}>
-            <Text style={styles.label}>Traveller Type</Text>
-            <TouchableOpacity
-              style={styles.typeSelector}
-              onPress={() => setShowTypeSelector(!showTypeSelector)}
-            >
-              <View style={styles.typeSelectorInner}>
-                <View style={[styles.typeIconContainer, styles.typeIconSmall]}>
-                  <Ionicons name={getTravellerTypeIcon(currentType) as any} size={14} color="#fff" />
-                </View>
-                <Text style={styles.typeSelectorText}>
-                  {currentType.charAt(0).toUpperCase() + currentType.slice(1)}
-                </Text>
-              </View>
-              <Ionicons
-                name={showTypeSelector ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="orange"
-              />
-            </TouchableOpacity>
-            
-            {showTypeSelector && (
-              <View style={styles.typeOptions}>
-                {canAddAdult && (
-                  <TouchableOpacity
-                    style={styles.typeOption}
-                    onPress={() => {
-                      setCurrentType('adult');
-                      setShowTypeSelector(false);
-                    }}
-                  >
-                    <View style={styles.typeOptionInner}>
-                      <View style={[styles.typeIconContainer, styles.typeIconSmall]}>
-                        <Ionicons name="person" size={14} color="#fff" />
-                      </View>
-                      <Text style={styles.typeOptionText}>Adult</Text>
-                    </View>
-                    <Text style={styles.typeOptionRemaining}>
-                      {remainingAdults} remaining
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                {canAddChild && (
-                  <TouchableOpacity
-                    style={styles.typeOption}
-                    onPress={() => {
-                      setCurrentType('child');
-                      setShowTypeSelector(false);
-                    }}
-                  >
-                    <View style={styles.typeOptionInner}>
-                      <View style={[styles.typeIconContainer, styles.typeIconSmall]}>
-                        <Ionicons name="happy" size={14} color="#fff" />
-                      </View>
-                      <Text style={styles.typeOptionText}>Child</Text>
-                    </View>
-                    <Text style={styles.typeOptionRemaining}>
-                      {remainingChildren} remaining
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                {canAddInfant && (
-                  <TouchableOpacity
-                    style={styles.typeOption}
-                    onPress={() => {
-                      setCurrentType('infant');
-                      setShowTypeSelector(false);
-                    }}
-                  >
-                    <View style={styles.typeOptionInner}>
-                      <View style={[styles.typeIconContainer, styles.typeIconSmall]}>
-                        <FontAwesome5 name="baby" size={14} color="#fff" />
-                      </View>
-                      <Text style={styles.typeOptionText}>Infant</Text>
-                    </View>
-                    <Text style={styles.typeOptionRemaining}>
-                      {remainingInfants} remaining
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-          </View>
-          
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="person-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Full Name</Text>
               <TextInput
-                style={styles.input}
-                placeholder="Enter full name"
+                placeholder="Enter traveller's full name"
                 value={name}
                 onChangeText={setName}
-                placeholderTextColor="#9CA3AF"
+                style={styles.formInput}
+                autoCorrect={false}
               />
             </View>
-          </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Age</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="calendar-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Age</Text>
               <TextInput
-                style={styles.input}
                 placeholder="Enter age"
                 value={age}
                 onChangeText={setAge}
-                keyboardType="numeric"
-                placeholderTextColor="#9CA3AF"
+                keyboardType="number-pad"
+                style={styles.formInput}
               />
             </View>
-          </View>
 
-          <View style={styles.genderContainer}>
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.genderOptions}>
-              {['Male', 'Female', 'Other'].map((item) => (
-                <TouchableOpacity
-                  key={item}
-                  style={[
-                    styles.genderButton,
-                    gender === item && styles.genderButtonSelected,
-                  ]}
-                  onPress={() => setGender(item)}
-                >
-                  <Ionicons 
-                    name={item === 'Male' ? 'male' : item === 'Female' ? 'female' : 'person'} 
-                    size={16} 
-                    color={gender === item ? 'white' : '#374151'} 
-                    style={styles.genderIcon}
-                  />
-                  <Text
-                    style={[
-                      styles.genderButtonText,
-                      gender === item && styles.genderButtonTextSelected,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-          
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Nationality</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="flag-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Nationality</Text>
               <TextInput
-                style={styles.input}
                 placeholder="Enter nationality"
                 value={nationality}
                 onChangeText={setNationality}
-                placeholderTextColor="#9CA3AF"
+                style={styles.formInput}
               />
             </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Gender</Text>
+              <View style={styles.radioGroup}>
+                {["male", "female", "other"].map((g) => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[styles.radioButton, gender === g && styles.radioButtonSelected]}
+                    onPress={() => setGender(g as "male" | "female" | "other")}
+                  >
+                    <Text style={gender === g ? styles.radioButtonTextSelected : styles.radioButtonText}>
+                      {g.charAt(0).toUpperCase() + g.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={addTraveller}
+              style={[
+                styles.submitButton,
+                (!name.trim() || !age.trim() || !nationality.trim()) && styles.disabledSubmitButton,
+              ]}
+              disabled={!name.trim() || !age.trim() || !nationality.trim()}
+            >
+              <Text style={styles.submitButtonText}>Add Traveller</Text>
+            </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity
-            style={styles.addButtonModal}
-            onPress={addNewTraveller}
-          >
-            <Text style={styles.addButtonModalText}>Add Traveller</Text>
-          </TouchableOpacity>
-        </View>
-      </Modalize>
+        </Modalize>
+      
     </SafeAreaView>
-  );
-};
+  )
+}
+
+export default AddTraveller
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#f8f9fa",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#eee",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
+    padding: 8,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontWeight: "600",
   },
-  headerRight: {
+  placeholder: {
     width: 40,
   },
   progressContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
-    overflow: 'hidden',
+  progressInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: 'orange',
-    borderRadius: 3,
+  progressText: {
+    fontSize: 14,
+    color: "#555",
   },
-  remainingText: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
+  progressPercentage: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "orange",
   },
-  content: {
-    padding: 16,
-    paddingBottom: 100,
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 4,
+    overflow: "hidden",
   },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
+  progressBar: {
+    height: "100%",
+    backgroundColor: "orange",
+    borderRadius: 4,
+  },
+  limitsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: 3,
     elevation: 2,
-    overflow: 'hidden',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#F3F4F6',
+  limitItem: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  typeIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'orange',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  typeIconSmall: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  travellerType: {
+  limitText: {
+    marginLeft: 4,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#4B5563',
-    flex: 1,
+    color: "#555",
   },
-  deleteButton: {
+  limitCount: {
+    fontWeight: "600",
+    color: "#333",
+  },
+  container: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#555",
+    marginTop: 16,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: "#888",
+    marginTop: 8,
+  },
+  travellerList: {
+    paddingTop: 8,
+  },
+  travellerCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  travellerCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  travellerTypeTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  travellerTypeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  removeButton: {
     padding: 4,
   },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  travellerInfoContainer: {
-    flex: 1,
-    marginLeft: 12,
-  },
   travellerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 6,
-  },
-  travellerDetailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 12,
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 12,
   },
   travellerDetails: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 16,
+    marginBottom: 4,
+  },
+  detailText: {
+    marginLeft: 6,
     fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 4,
+    color: "#666",
   },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  addIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'orange',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'orange',
-  },
-  bottomContainer: {
-    position: 'absolute',
+  footer: {
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  saveButton: {
-    backgroundColor: 'orange',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#FBBF85',
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    marginRight: 8,
-  },
-  modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 12,
-  },
-  modalHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
-  },
-  modalContainer: {
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  typeContainer: {
-    marginBottom: 20,
-    position: 'relative',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4B5563',
-    marginBottom: 8,
-  },
-  typeSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  typeSelectorInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  typeSelectorText: {  
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  typeOptions: {
-    marginTop: 8,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    overflow: 'hidden',
-    position: 'absolute',
-    top: 80,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  typeOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  typeOptionInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  typeOptionText: {
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  typeOptionRemaining: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  genderContainer: {
-    marginBottom: 20,
-  },
-  genderOptions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  genderButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginRight: 8,
-    backgroundColor: 'white',
-  },
-  genderIcon: {
-    marginRight: 6,
-  },
-  genderButtonSelected: {
-    backgroundColor: 'orange',
-    borderColor: 'orange',
-  },
-  genderButtonText: {
-    fontSize: 15,
-    color: '#374151',
-    fontWeight: '500',
-  },
-  genderButtonTextSelected: {
-    color: 'white',
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    overflow: 'hidden',
-  },
-  inputIcon: {
-    marginLeft: 12,
-  },
-  input: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  addButtonModal: {
-    backgroundColor: 'orange',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  addButtonModalText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  emptyStateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'orange',
-    borderRadius: 12,
-    paddingVertical: 12,
+    backgroundColor: "#fff",
     paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    flexDirection: "column",
+    gap: 12,
   },
-  emptyStateButtonText: {
+  addTravellerButton: {
+    // backgroundColor: "#",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "orange",
+    paddingVertical: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addTravellerButtonText: {
+    color: "orange",
+    fontWeight: "600",
     fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
     marginLeft: 8,
   },
-});
-
-export default AddTraveller;
+  saveButton: {
+    backgroundColor: "orange",
+    borderRadius: 8,
+    paddingVertical: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  disabledSaveButton: {
+    backgroundColor: "#f6c39f",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+    marginRight: 8,
+  },
+  bottomSheetBackground: {
+    backgroundColor: "#fff",
+  },
+  bottomSheetIndicator: {
+    backgroundColor: "#ddd",
+    width: 40,
+  },
+  bottomSheetContent: {
+    padding: 20,
+  },
+  bottomSheetTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  typeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  typeButton: {
+    flex: 1,
+    padding: 12,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    alignItems: "center",
+  },
+  typeButtonText: {
+    fontSize: 14,
+    color: "#555",
+  },
+  selectedType: {
+    backgroundColor: "orange",
+    borderColor: "orange",
+  },
+  selectedTypeText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  disabledType: {
+    backgroundColor: "#f5f5f5",
+    borderColor: "#eee",
+  },
+  disabledTypeText: {
+    color: "#aaa",
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  formLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 8,
+    color: "#555",
+  },
+  formInput: {
+    backgroundColor: "#f5f7fa",
+    borderWidth: 1,
+    borderColor: "#e0e4e8",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  radioGroup: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  radioButton: {
+    flex: 1,
+    padding: 12,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e4e8",
+    alignItems: "center",
+  },
+  radioButtonSelected: {
+    backgroundColor: "orange",
+    borderColor: "orange",
+  },
+  radioButtonText: {
+    color: "#555",
+  },
+  radioButtonTextSelected: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  submitButton: {
+    backgroundColor: "orange",
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  disabledSubmitButton: {
+    backgroundColor: "#f6c39f",
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  modalizeContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 24,
+  },
+  modalizeHandle: {
+    backgroundColor: "#ddd",
+    width: 40,
+    height: 5,
+  },
+  modalizeHeader: {
+    paddingTop: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+})

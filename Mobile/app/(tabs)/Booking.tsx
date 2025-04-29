@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import {
   View,
@@ -37,6 +35,7 @@ const BookingHubScreen = () => {
     try {
       const response = await axios.get(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${travellerId}`)
       setBookings(response.data.bookings)
+      console.log("bookings", response.data.bookings)
     } catch (error: any) {
       console.error("error fetching bookings", error)
     }
@@ -103,7 +102,7 @@ const BookingHubScreen = () => {
         <View style={styles.hostRow}>
           <View style={styles.hostInfo}>
             <FontAwesome5 name="user-circle" size={16} color="#666" />
-            <Text style={styles.hostName}>Tulsidas Khan</Text>
+            <Text style={styles.hostName}>{item.userId.name}</Text>
           </View>
         </View>
 
@@ -146,7 +145,7 @@ const BookingHubScreen = () => {
       <View style={styles.header}>
         <BlurView intensity={90} tint="dark" style={styles.blurView}>
           <LinearGradient colors={["#fca42c", "#ffb86b"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
-            <Text style={styles.heading}>Booking Hub</Text>
+            <Text style={styles.heading}>Booking</Text>
             <View style={styles.tabContainer}>
               <TouchableOpacity style={[styles.tab, activeTab === "upcoming" && styles.activeTab]} onPress={() => setActiveTab("upcoming")}>  
                 <Text style={[styles.tabText, activeTab === "upcoming" && styles.activeTabText]}>Upcoming</Text>
@@ -320,9 +319,7 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "orange",
-  },
+    fontWeight: "700",  },
   hostRow: {
     flexDirection: "row",
     justifyContent: "space-between",

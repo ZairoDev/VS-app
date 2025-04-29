@@ -167,13 +167,13 @@ export default function ReservationScreen() {
   const handleAddTraveller = () => {
     router.push({
       pathname: "/(screens)/pages/add-traveller",
-      // params: { 
-      //   id: id,
-      //   adults: guests.adults.toString(),
-      //   children: guests.children.toString(),
-      //   infants: guests.infants.toString(),
-      //   existingTravellers:JSON.stringify(travellers)
-      // }
+      params: { 
+        id: id,
+        adults: guests.adults.toString(),
+        children: guests.children.toString(),
+        infants: guests.infants.toString(),
+        existingTravellers:JSON.stringify(travellers)
+      }
     })
   }
 
@@ -401,7 +401,7 @@ export default function ReservationScreen() {
     const startDate = selectedDates?.startDate;
     const endDate = selectedDates?.endDate;
     const price = billDetails.total;
-  
+    console.log("travelllers",travellers)
     const bookingData = {
       propertyId,
       userId,
