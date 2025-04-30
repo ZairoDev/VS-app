@@ -24,7 +24,7 @@ export const getBookingsByUser = async (req: Request, res: Response) => {
       })
       .populate({
         path: "userId",
-        select: "name email",
+        select: "name email phone",
       })
       
 

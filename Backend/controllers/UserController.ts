@@ -7,6 +7,7 @@ import nodemailer from "nodemailer";
 import Traveller from "@/models/traveller"
 // import { create } from "domain";
 import dotenv from 'dotenv';
+import Users from "@/models/users";
 dotenv.config(); 
 
 export const register = async (req: Request, res: Response) => {
@@ -74,7 +75,7 @@ export const getUser = async (req: Request, res: Response) => {
   try {
     const { userId } = req.body;
     const objectId = new mongoose.Types.ObjectId(userId);
-    const user = await Traveller.findById(objectId);
+    const user = await Users.findById(objectId);
     if (!user) {
        res.status(404).json({ message: "User not found" });
        return

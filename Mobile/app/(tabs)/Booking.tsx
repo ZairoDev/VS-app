@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import {
   View,
   Text,
@@ -9,93 +9,268 @@ import {
   StatusBar,
   Dimensions,
   ScrollView,
+  RefreshControl,
   Platform,
+  Alert,
+  Modal,
+  TextInput,
+  Animated,
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { BlurView } from "expo-blur"
-import { Feather, MaterialCommunityIcons, Ionicons, FontAwesome5 } from "@expo/vector-icons"
-import { Booking ,} from "@/types"
-const { width } = Dimensions.get("window")
-const CARD_WIDTH = width * 0.85
-import { useAuthStore } from "@/store/auth-store"
+import { Feather, MaterialCommunityIcons, Ionicons, FontAwesome5, AntDesign } from "@expo/vector-icons"
 import axios from "axios"
+import { useAuthStore } from "@/store/auth-store"
+import type { Booking } from "@/types"
+
+const { width, height } = Dimensions.get("window")
+const CARD_WIDTH = width * 0.85
 
 const formatDate = (dateString: string): string => {
   const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }
   return new Date(dateString).toLocaleDateString("en-IN", options)
 }
 
+const formatFullDate = (dateString: string): string => {
+  const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" }
+  return new Date(dateString).toLocaleDateString("en-IN", options)
+}
+
 const BookingHubScreen = () => {
+  // Main state
   const [activeTab, setActiveTab] = useState("upcoming")
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [loading, setLoading] = useState(true)
   const { user } = useAuthStore()
   const travellerId = user?._id
-  
-  const getBooking = async () => {
+  const scrollViewRef = useRef<ScrollView>(null)
+
+  // Modal states
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [isEditingNotes, setIsEditingNotes] = useState(false)
+  const [notes, setNotes] = useState("")
+
+  // Animation values
+  const slideAnimation = useRef(new Animated.Value(0)).current
+  const fadeAnimation = useRef(new Animated.Value(0)).current
+
+  // Fetch bookings
+  const getBookings = async () => {
+    setLoading(true)
     try {
       const response = await axios.get(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${travellerId}`)
       setBookings(response.data.bookings)
-      console.log("bookings", response.data.bookings)
     } catch (error: any) {
       console.error("error fetching bookings", error)
+      Alert.alert("Error", "Failed to load bookings. Please try again.")
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
-    getBooking()
+    getBookings()
   }, [travellerId])
 
-  const handleContactHost = (phone: string) => Linking.openURL(phone)
+  // Handle contact host via email
+  const handleContactHost = (email: string) => {
+    if (email) {
+      Linking.openURL(`mailto:${email}`)
+    } else {
+      Alert.alert("Contact Info", "Host email is not available")
+    }
+  }
 
+  // Handle pay platform fees
+  const handlePayPlatformFees = (booking: Booking) => {
+    Alert.alert(
+      "Pay Platform Fees",
+      "You are about to pay the platform fees for this booking.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Continue to Payment", 
+          onPress: () => {
+            // Implement payment logic here
+            Alert.alert("Payment", "Payment functionality will be implemented here.")
+          }
+        }
+      ]
+    )
+  }
+
+  // Handle cancel booking
   const handleCancelBooking = (id: string) => {
-    console.log("Cancel booking:", id)
+    Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
+      { text: "No", style: "cancel" },
+      {
+        text: "Yes",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setLoading(true)
+            await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+              bookingStatus: "cancelled",
+            })
+            getBookings() // Refresh bookings
+            if (detailsModalVisible) {
+              setDetailsModalVisible(false)
+            }
+            Alert.alert("Success", "Your booking has been cancelled")
+          } catch (error) {
+            console.error("Error cancelling booking:", error)
+            Alert.alert("Error", "Failed to cancel booking. Please try again.")
+          } finally {
+            setLoading(false)
+          }
+        },
+      },
+    ])
   }
 
-  const handleRebook = (id: string) => {
-    console.log("Rebook property:", id)
+  // Handle rebook
+  const handleRebook = (booking: Booking) => {
+    // Placeholder for rebooking functionality
+    // You'll implement this part yourself
+    Alert.alert(
+      "Rebook Property",
+      `You're about to rebook ${booking.propertyId.placeName}. This functionality will be implemented by you.`,
+    )
   }
 
-  const handleViewDetails = (id: string) => {
-    console.log("View details for booking:", id)
+  // Handle view details
+  const handleViewDetails = (booking: Booking) => {
+    setSelectedBooking(booking)
+    setNotes(booking.notes || "")
+    setDetailsModalVisible(true)
+
+    // Animate the modal
+    Animated.timing(slideAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start()
+
+    Animated.timing(fadeAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start()
   }
 
-  const upcomingBookings = bookings.filter((item) => item.bookingStatus === "pending")
-  const pastBookings = bookings.filter((item) => item.bookingStatus === "confirmed")
+  // Handle save notes
+  const handleSaveNotes = async () => {
+    if (!selectedBooking) return
 
-  const renderBookingCard = ({ item }: { item: Booking }) => (
-    <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => handleViewDetails(item._id)}>
+    try {
+      setLoading(true)
+      await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${selectedBooking._id}`, {
+        notes: notes,
+      })
+      setIsEditingNotes(false)
+
+      // Update the local booking data
+      const updatedBookings = bookings.map((booking) =>
+        booking._id === selectedBooking._id ? { ...booking, notes } : booking,
+      )
+      setBookings(updatedBookings)
+
+      Alert.alert("Success", "Notes updated successfully")
+    } catch (error) {
+      console.error("Error updating notes:", error)
+      Alert.alert("Error", "Failed to update notes. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "#4CAF50"
+      case "pending":
+        return "#FFC107"
+      case "cancelled":
+        return "#F44336"
+      default:
+        return "#FFC107"
+    }
+  }
+
+  // Get payment status color
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case "paid":
+        return "#4CAF50"
+      case "refunded":
+        return "#2196F3"
+      case "pending":
+        return "#FFC107"
+      default:
+        return "#FFC107"
+    }
+  }
+
+  // Filter bookings
+  const upcomingBookings = bookings.filter(
+    (item) => item.bookingStatus !== "cancelled" && new Date(item.endDate) >= new Date(),
+  )
+  const pastBookings = bookings.filter(
+    (item) => item.bookingStatus === "cancelled" || new Date(item.endDate) < new Date(),
+  )
+
+  // Check if contact host button should be enabled
+  const isContactHostEnabled = (booking: Booking) => {
+    return booking.bookingStatus === "confirmed" && booking.paymentStatus === "paid"
+  }
+
+  // Render booking card
+  const renderBookingCard = (item: Booking) => (
+    <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => handleViewDetails(item)} key={item._id}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: item.propertyId.propertyCoverFileUrl}} style={styles.image} />
+        <Image source={{ uri: item.propertyId.propertyCoverFileUrl }} style={styles.image} />
         <LinearGradient colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.6)"]} style={styles.gradient} />
-        <View style={styles.imageOverlay}>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>{item.bookingStatus}</Text>
-          </View>
-        </View>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>{item.propertyId.placeName}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {item.propertyId.placeName}
+        </Text>
 
         <View style={styles.locationRow}>
           <Feather name="map-pin" size={14} color="#666" />
-          <Text style={styles.location}>{item.propertyId.city}, {item.propertyId.country}</Text>
+          <Text style={styles.location} numberOfLines={1}>
+            {item.propertyId.city}, {item.propertyId.country}
+          </Text>
         </View>
 
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
-            <MaterialCommunityIcons name="calendar-range" size={16} color="orange" />
-            <Text style={styles.detailText}>{formatDate(item.startDate)} - {formatDate(item.endDate)}</Text>
+            <MaterialCommunityIcons name="calendar-range" size={16} color="#fca42c" />
+            <Text style={styles.detailText}>
+              {formatDate(item.startDate)} - {formatDate(item.endDate)}
+            </Text>
           </View>
 
           <View style={styles.detailItem}>
-            <Ionicons name="people" size={16} color="orange" />
-            <Text style={styles.detailText}>{item.guests.adults + item.guests.children + item.guests.infants} guests</Text>
+            <Ionicons name="people" size={16} color="#fca42c" />
+            <Text style={styles.detailText}>
+              {item.guests.adults + item.guests.children + item.guests.infants} guests
+            </Text>
           </View>
         </View>
 
         <View style={styles.priceRow}>
-          <Text style={styles.priceLabel}>Total</Text>
+          <View style={styles.priceInfo}>
+            <Text style={styles.priceLabel}>Total</Text>
+            {item.totalNights > 0 && (
+              <Text style={styles.nightsText}>
+                {item.totalNights} {item.totalNights === 1 ? "night" : "nights"}
+              </Text>
+            )}
+          </View>
           <Text style={styles.price}>Є{item.price.toLocaleString("en-IN")}</Text>
         </View>
 
@@ -107,10 +282,41 @@ const BookingHubScreen = () => {
         </View>
 
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.primaryButton}>
-            <Feather name="phone" size={18} color="#fff" />
-            <Text style={styles.buttonText}>Contact Host</Text>
-          </TouchableOpacity>
+          {item.bookingStatus !== "confirmed" ? (
+            <View style={styles.waitingContainer}>
+              <Text style={styles.waitingText}>Pending request confirmation</Text>
+            </View>
+          ) : (
+            <>
+              {isContactHostEnabled(item) ? (
+                <TouchableOpacity 
+                  style={styles.primaryButton} 
+                  onPress={() => handleContactHost(item.userId.email || "")}
+                >
+                  <Feather name="mail" size={18} color="#fff" />
+                  <Text style={styles.buttonText}>Contact Host</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                  style={[styles.primaryButton, { opacity: 0.5 }]} 
+                  disabled={true}
+                >
+                  <Feather name="mail" size={18} color="#fff" />
+                  <Text style={styles.buttonText}>Contact Host</Text>
+                </TouchableOpacity>
+              )}
+
+              {item.paymentStatus !== "paid" && (
+                <TouchableOpacity 
+                  style={styles.outlineButton} 
+                  onPress={() => handlePayPlatformFees(item)}
+                >
+                  <Feather name="credit-card" size={18} color="#5E72E4" />
+                  <Text style={styles.outlineButtonText}>Pay Fees</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
 
           {item.bookingStatus === "pending" && (
             <TouchableOpacity style={styles.dangerButton} onPress={() => handleCancelBooking(item._id)}>
@@ -119,8 +325,8 @@ const BookingHubScreen = () => {
             </TouchableOpacity>
           )}
 
-          {item.bookingStatus === "confirmed" && (
-            <TouchableOpacity style={styles.outlineButton} onPress={() => handleRebook(item._id)}>
+          {item.bookingStatus === "confirmed" && new Date(item.endDate) < new Date() && (
+            <TouchableOpacity style={styles.outlineButton} onPress={() => handleRebook(item)}>
               <Feather name="refresh-cw" size={18} color="#5E72E4" />
               <Text style={styles.outlineButtonText}>Rebook</Text>
             </TouchableOpacity>
@@ -130,6 +336,7 @@ const BookingHubScreen = () => {
     </TouchableOpacity>
   )
 
+  // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="calendar" size={60} color="#ccc" />
@@ -137,20 +344,43 @@ const BookingHubScreen = () => {
       <Text style={styles.emptyStateText}>
         {activeTab === "upcoming" ? "You don't have any upcoming bookings" : "You don't have any past bookings"}
       </Text>
+
+    </View>
+  )
+
+  // Render loading state
+  const renderLoadingState = () => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyStateTitle}>Loading bookings...</Text>
     </View>
   )
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <BlurView intensity={90} tint="dark" style={styles.blurView}>
-          <LinearGradient colors={["#fca42c", "#ffb86b"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
-            <Text style={styles.heading}>Booking</Text>
+          <LinearGradient
+            colors={["#fca42c", "#ffb86b"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerGradient}
+          >
+            <View >
+              <Text style={styles.heading}>My Bookings</Text>
+              
+            </View>
             <View style={styles.tabContainer}>
-              <TouchableOpacity style={[styles.tab, activeTab === "upcoming" && styles.activeTab]} onPress={() => setActiveTab("upcoming")}>  
+              <TouchableOpacity
+                style={[styles.tab, activeTab === "upcoming" && styles.activeTab]}
+                onPress={() => setActiveTab("upcoming")}
+              >
                 <Text style={[styles.tabText, activeTab === "upcoming" && styles.activeTabText]}>Upcoming</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.tab, activeTab === "past" && styles.activeTab]} onPress={() => setActiveTab("past")}>  
+              <TouchableOpacity
+                style={[styles.tab, activeTab === "past" && styles.activeTab]}
+                onPress={() => setActiveTab("past")}
+              >
                 <Text style={[styles.tabText, activeTab === "past" && styles.activeTabText]}>Past</Text>
               </TouchableOpacity>
             </View>
@@ -158,17 +388,282 @@ const BookingHubScreen = () => {
         </BlurView>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {activeTab === "upcoming"
-          ? (upcomingBookings.length > 0 ? upcomingBookings.map(item => <View key={item._id}>{renderBookingCard({ item })}</View>) : renderEmptyState())
-          : (pastBookings.length > 0 ? pastBookings.map(item => <View key={item._id}>{renderBookingCard({ item })}</View>) : renderEmptyState())}
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={getBookings}
+          />
+        }
+      >
+        {loading
+          ? renderLoadingState()
+          : activeTab === "upcoming"
+            ? upcomingBookings.length > 0
+              ? upcomingBookings.map((item) => renderBookingCard(item))
+              : renderEmptyState()
+            : pastBookings.length > 0
+              ? pastBookings.map((item) => renderBookingCard(item))
+              : renderEmptyState()}
       </ScrollView>
+
+      {/* Booking Details Modal */}
+      <Modal
+        visible={detailsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setDetailsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                transform: [
+                  {
+                    translateY: slideAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [height, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setDetailsModalVisible(false)
+                  setIsEditingNotes(false)
+                }}
+              >
+                <AntDesign name="close" size={24} color="#333" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Booking Details</Text>
+              <View style={styles.modalHeaderSpacer} />
+            </View>
+
+            {selectedBooking && (
+              <ScrollView style={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+                <View style={styles.detailsHeader}>
+                  <Image
+                    source={{ uri: selectedBooking.propertyId.propertyCoverFileUrl }}
+                    style={styles.detailsHeaderImage}
+                  />
+                  <LinearGradient
+                    colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.6)"]}
+                    style={styles.detailsHeaderGradient}
+                  />
+                </View>
+
+                <View style={styles.detailsContent}>
+                  <Text style={styles.detailsTitle}>{selectedBooking.propertyId.placeName}</Text>
+                  <View style={styles.detailsLocationRow}>
+                    <Feather name="map-pin" size={14} color="#666" />
+                    <Text style={styles.detailsLocation}>
+                      {selectedBooking.propertyId.city}, {selectedBooking.propertyId.country}
+                    </Text>
+                  </View>
+
+                  <View style={styles.statusContainer}>
+                    <View style={styles.statusItem}>
+                      <Text style={styles.statusLabel}>Booking Status</Text>
+                      <View
+                        style={[styles.statusBadge, { backgroundColor: getStatusColor(selectedBooking.bookingStatus) }]}
+                      >
+                        <Text style={styles.statusText}>{selectedBooking.bookingStatus}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.statusItem}>
+                      <Text style={styles.statusLabel}>Payment Status</Text>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: getPaymentStatusColor(selectedBooking.paymentStatus) },
+                        ]}
+                      >
+                        <Text style={styles.statusText}>{selectedBooking.paymentStatus}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsSectionTitle}>Booking Details</Text>
+                    <View style={styles.detailsGrid}>
+                      <View style={styles.detailsGridItem}>
+                        <MaterialCommunityIcons name="calendar-range" size={20} color="#fca42c" />
+                        <View style={styles.detailsGridItemContent}>
+                          <Text style={styles.detailsGridItemLabel}>Check-in</Text>
+                          <Text style={styles.detailsGridItemValue}>{formatFullDate(selectedBooking.startDate)}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.detailsGridItem}>
+                        <MaterialCommunityIcons name="calendar-range" size={20} color="#fca42c" />
+                        <View style={styles.detailsGridItemContent}>
+                          <Text style={styles.detailsGridItemLabel}>Check-out</Text>
+                          <Text style={styles.detailsGridItemValue}>{formatFullDate(selectedBooking.endDate)}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.detailsGridItem}>
+                        <Ionicons name="time-outline" size={20} color="#fca42c" />
+                        <View style={styles.detailsGridItemContent}>
+                          <Text style={styles.detailsGridItemLabel}>Duration</Text>
+                          <Text style={styles.detailsGridItemValue}>
+                            {selectedBooking.totalNights} {selectedBooking.totalNights === 1 ? "night" : "nights"}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.detailsGridItem}>
+                        <Ionicons name="people" size={20} color="#fca42c" />
+                        <View style={styles.detailsGridItemContent}>
+                          <Text style={styles.detailsGridItemLabel}>Guests</Text>
+                          <Text style={styles.detailsGridItemValue}>
+                            {selectedBooking.guests.adults} {selectedBooking.guests.adults === 1 ? "adult" : "adults"}
+                            {selectedBooking.guests.children > 0 &&
+                              `, ${selectedBooking.guests.children} ${selectedBooking.guests.children === 1 ? "child" : "children"}`}
+                            {selectedBooking.guests.infants > 0 &&
+                              `, ${selectedBooking.guests.infants} ${selectedBooking.guests.infants === 1 ? "infant" : "infants"}`}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsSectionTitle}>Price Details</Text>
+                    <View style={styles.priceDetails}>
+                      <View style={styles.priceDetailRow}>
+                        <Text style={styles.priceDetailLabel}>Total Amount</Text>
+                        <Text style={styles.priceDetailValue}>Є{selectedBooking.price.toLocaleString("en-IN")}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* <View style={styles.detailsSection}>
+                    <View style={styles.notesHeader}>
+                      <Text style={styles.detailsSectionTitle}>Notes</Text>
+                      {!isEditingNotes && (
+                        <TouchableOpacity onPress={() => setIsEditingNotes(true)}>
+                          <Feather name="edit-2" size={18} color="#5E72E4" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {isEditingNotes ? (
+                      <View style={styles.notesEditContainer}>
+                        <TextInput
+                          style={styles.notesInput}
+                          value={notes}
+                          onChangeText={setNotes}
+                          placeholder="Add notes about your stay..."
+                          multiline
+                          numberOfLines={4}
+                        />
+                        <View style={styles.notesActions}>
+                          <TouchableOpacity
+                            style={styles.notesCancelButton}
+                            onPress={() => {
+                              setNotes(selectedBooking.notes || "")
+                              setIsEditingNotes(false)
+                            }}
+                          >
+                            <Text style={styles.notesCancelText}>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.notesSaveButton} onPress={handleSaveNotes} disabled={loading}>
+                            <Text style={styles.notesSaveText}>Save</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <Text style={styles.notesText}>{notes ? notes : "No notes added yet."}</Text>
+                    )}
+                  </View> */}
+
+                  <View style={styles.hostSection}>
+                    <Text style={styles.detailsSectionTitle}>Host Information</Text>
+                    <View style={styles.hostCard}>
+                      <View style={styles.hostCardInfo}>
+                        <FontAwesome5 name="user-circle" size={40} color="#666" />
+                        <View style={styles.hostCardDetails}>
+                          <Text style={styles.hostCardName}>{selectedBooking.userId.name}</Text>
+                          <Text style={styles.hostCardJoined}>Host</Text>
+                        </View>
+                      </View>
+                      {isContactHostEnabled(selectedBooking) ? (
+                        <TouchableOpacity
+                          style={styles.contactHostButton}
+                          onPress={() => handleContactHost(selectedBooking.userId.email || "")}
+                        >
+                          <Feather name="mail" size={18} color="#fff" />
+                          <Text style={styles.contactHostText}>Contact</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={[styles.contactHostButton, { opacity: 0.5 }]}
+                          disabled={true}
+                        >
+                          <Feather name="mail" size={18} color="#fff" />
+                          <Text style={styles.contactHostText}>Contact</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.actionButtons}>
+                    {selectedBooking.bookingStatus === "pending" && (
+                      <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={() => handleCancelBooking(selectedBooking._id)}
+                        disabled={loading}
+                      >
+                        <Feather name="x-circle" size={20} color="#fff" />
+                        <Text style={styles.actionButtonText}>Cancel Booking</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {selectedBooking.bookingStatus === "confirmed" && selectedBooking.paymentStatus !== "paid" && (
+                      <TouchableOpacity
+                        style={styles.rebookButton}
+                        onPress={() => handlePayPlatformFees(selectedBooking)}
+                      >
+                        <Feather name="credit-card" size={20} color="#fff" />
+                        <Text style={styles.actionButtonText}>Pay Platform Fees</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {selectedBooking.bookingStatus === "confirmed" &&
+                      new Date(selectedBooking.endDate) < new Date() && (
+                        <TouchableOpacity
+                          style={styles.rebookButton}
+                          onPress={() => {
+                            setDetailsModalVisible(false)
+                            handleRebook(selectedBooking)
+                          }}
+                        >
+                          <Feather name="refresh-cw" size={20} color="#fff" />
+                          <Text style={styles.actionButtonText}>Book Again</Text>
+                        </TouchableOpacity>
+                      )}
+                  </View>
+                </View>
+              </ScrollView>
+            )}
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   )
 }
 
 export default BookingHubScreen
-
 
 const styles = StyleSheet.create({
   container: {
@@ -182,16 +677,22 @@ const styles = StyleSheet.create({
     left: 0,
     zIndex: 100,
     overflow: "hidden",
-    height: Platform.OS === "ios" ? 140 : 120,
+    height: 140,
+
   },
   blurView: {
     flex: 1,
   },
   headerGradient: {
     flex: 1,
-    paddingTop: Platform.OS === "ios" ? 20 : 20,
+    paddingTop: Platform.OS === "ios" ? 50 : 30,
     paddingHorizontal: 20,
     paddingBottom: 10,
+  },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   heading: {
     fontSize: 28,
@@ -228,7 +729,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    marginBottom: 20,
+    marginTop:18,
+    marginBottom: 18,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -258,7 +760,19 @@ const styles = StyleSheet.create({
     top: 12,
     right: 12,
   },
+  paymentStatusContainer: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+  },
   statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backdropFilter: "blur(4px)",
+  },
+  paymentStatusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -269,6 +783,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "600",
+    textTransform: "capitalize",
   },
   content: {
     padding: 16,
@@ -313,13 +828,22 @@ const styles = StyleSheet.create({
     borderColor: "#f0f0f0",
     marginBottom: 12,
   },
+  priceInfo: {
+    flexDirection: "column",
+  },
   priceLabel: {
     fontSize: 14,
     color: "#666",
   },
+  nightsText: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
+  },
   price: {
     fontSize: 18,
-    fontWeight: "700",  },
+    fontWeight: "700",
+  },
   hostRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -335,20 +859,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
-  ratingBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  ratingText: {
-    marginLeft: 4,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#333",
-  },
   actions: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -363,7 +873,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#5E72E4",
+    shadowColor: "#fca42c",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -406,6 +916,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 8,
   },
+  waitingContainer: {
+    flex: 1,
+    backgroundColor: "#FFC10780",
+    paddingVertical: 12,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  waitingText: {
+    color: "#7A5800",
+    fontWeight: "600",
+    fontSize: 14,
+  },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
@@ -423,5 +946,297 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     maxWidth: "80%",
+    marginBottom: 20,
+  },
+  emptyStateButton: {
+    backgroundColor: "#fca42c",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  emptyStateButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: height * 0.9,
+    maxHeight: height * 0.9,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+  },
+  modalHeaderSpacer: {
+    width: 28,
+  },
+  modalScrollContent: {
+    flex: 1,
+  },
+
+  // Details modal styles
+  detailsHeader: {
+    height: 200,
+    position: "relative",
+  },
+  detailsHeaderImage: {
+    width: "100%",
+    height: "100%",
+  },
+  detailsHeaderGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  detailsContent: {
+    padding: 20,
+  },
+  detailsTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 8,
+  },
+  detailsLocationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  detailsLocation: {
+    color: "#666",
+    marginLeft: 4,
+    fontSize: 14,
+  },
+  statusContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  statusItem: {
+    alignItems: "center",
+  },
+  statusLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+  },
+  detailsSection: {
+    marginBottom: 24,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  detailsSectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 16,
+  },
+  detailsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  detailsGridItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    width: "48%",
+    marginBottom: 16,
+  },
+  detailsGridItemContent: {
+    marginLeft: 8,
+  },
+  detailsGridItemLabel: {
+    fontSize: 12,
+    color: "#666",
+  },
+  detailsGridItemValue: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#333",
+  },
+  priceDetails: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 16,
+  },
+  priceDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  priceDetailLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  priceDetailValue: {
+    fontSize: 14,
+    color: "#333",
+  },
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingTop: 12,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333",
+  },
+  notesHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  notesText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
+  },
+  notesEditContainer: {
+    gap: 12,
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: "#333",
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  notesActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+  },
+  notesCancelButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  notesCancelText: {
+    color: "#666",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  notesSaveButton: {
+    backgroundColor: "#5E72E4",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  notesSaveText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  hostSection: {
+    marginBottom: 24,
+  },
+  hostCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 16,
+    padding: 16,
+  },
+  hostCardInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  hostCardDetails: {
+    marginLeft: 12,
+  },
+  hostCardName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  hostCardJoined: {
+    fontSize: 12,
+    color: "#666",
+  },
+  contactHostButton: {
+    backgroundColor: "#fca42c",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  contactHostText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  actionButtons: {
+    marginTop: 8,
+    marginBottom: 40,
+  },
+  cancelButton: {
+    backgroundColor: "#EF5350",
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  rebookButton: {
+    backgroundColor: "#fca42c",
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  actionButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 })

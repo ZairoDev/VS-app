@@ -20,6 +20,7 @@ import {
 } from "react-native";
 
 import { PropertyInterface, UserDataType } from "@/types";
+import { useAuthStore } from "@/store/auth-store";
 import { globalStyles } from "@/Constants/Styles";
 import {
   Ionicons,
@@ -30,13 +31,13 @@ import {
 
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams();
-
+  const { user } = useAuthStore();
   const [imagesModal, setImagesModal] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [bottomsheetVisible, setBottomsheetVisible] = useState(false);
   const [property, setProperty] = useState<PropertyInterface>();
-  const [user, setUser] = useState<UserDataType>();
+  const [users, setUsers] = useState<UserDataType>();
   const modalizeRef = useRef<Modalize>(null);
 
   const handleOpenBottomsheet = () => {
@@ -66,7 +67,7 @@ export default function PropertyInfo() {
         `${process.env.EXPO_PUBLIC_BASE_URL}/user/getUser`,
         { userId }
       );
-      setUser(response.data.user);
+      setUsers(response.data.user);
     } catch (error) {
       console.log("error in fetching user");
     }
@@ -204,7 +205,7 @@ export default function PropertyInfo() {
         {/* hosted by */}
         <View style={styles.infoContainer}>
           <Ionicons name="person-circle-outline" size={28} />
-          <Text numberOfLines={1}>Hosted by {user?.name}</Text>
+          <Text numberOfLines={1}>Hosted by {users?.name}</Text>
         </View>
         {/* beds and Bathrooms */}
         <View style={{ display: "flex", flexDirection: "row", gap: 15 }}>
@@ -320,12 +321,12 @@ export default function PropertyInfo() {
           <Image
             style={styles.hostImage}
             source={{
-              uri: user?.profilePic
-                ? user.profilePic
+              uri: users?.profilePic
+                ? users.profilePic
                 : "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png",
             }}
           />
-          <Text>{user?.name}</Text>
+          <Text>{users?.name}</Text>
         </View>
 
         {/* host details */}
@@ -333,7 +334,7 @@ export default function PropertyInfo() {
           <View style={styles.hostItem}>
             <MaterialIcons name="date-range" size={20} />
             <Text style={globalStyles.MutedText}>
-            Joined {user?.createdAt && new Date(user.createdAt).getFullYear()}
+            Joined {users?.createdAt && new Date(users.createdAt).getFullYear()}
             </Text>
           </View>
 
@@ -352,7 +353,7 @@ export default function PropertyInfo() {
           <View style={styles.hostItem}>
             <Ionicons name="language-outline" size={20} />
             <Text style={globalStyles.MutedText}>
-              Language Spoken - {user?.spokenLanguage || "English"}
+              Language Spoken - {users?.spokenLanguage || "English"}
             </Text>
           </View>
         </View>
