@@ -5,7 +5,6 @@ import express, { Application, Request, Response } from "express";
 import passport from "passport";
 import session from "express-session";
 
-
 import connectMongoDB from "@/config/Connection";
 import propertyRoutes from "@/routes/property-route";
 import userRoutes from "@/routes/user-route";
@@ -13,6 +12,7 @@ import couponRoutes from "@/routes/discount-coupon-route";
 import wishlistRoutes from "@/routes/wishlist-routes";
 import bookingRoutes from "@/routes/booking-route";
 import ownerRoutes from "@/routes/users-route";
+import paymentRoutes from "@/routes/payment-route";
 import "@/config/passport";
 
 
@@ -46,7 +46,8 @@ app.use("/user", userRoutes);
 app.use("/wishlist", wishlistRoutes);
 app.use("/coupon", couponRoutes);
 app.use("/booking", bookingRoutes);
-app.use("/owner", ownerRoutes)
+app.use("/owner", ownerRoutes);
+app.use("/pay",paymentRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

@@ -33,6 +33,7 @@
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   },
+
   "include": [
     "./src/**/*.ts",
     "controllers/**/*.ts",

@@ -45,7 +45,7 @@ const bookingsSchema = new mongoose.Schema(
     travellers: [travellerSchema],
     totalNights: { type: Number, required: true },
     price: { type: Number, required: true },
-    paymentStatus: { 
+    paymentStatus: {
       type: String,
       enum: ["paid", "pending", "refunded"],
       default: "pending",
@@ -54,6 +54,16 @@ const bookingsSchema = new mongoose.Schema(
       type: String,
       enum: ["confirmed", "pending", "cancelled"],
       default: "pending",
+    },
+    payment: {
+      razorpayOrderId: { type: String },
+      razorpayPaymentId: { type: String },
+      status: { 
+        type: String, 
+        enum: ["pending", "paid", "failed"], 
+        default: "pending" 
+      },
+      paidAt: { type: Date }
     },
     notes: {
       type: String,

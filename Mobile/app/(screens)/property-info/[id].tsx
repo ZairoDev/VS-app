@@ -1,10 +1,12 @@
-import axios from "axios";
-import { useEffect, useState, useRef } from "react";
-import { Link, Route, useLocalSearchParams } from "expo-router";
-import Carousel from "react-native-reanimated-carousel";
-import ImageViewer from "react-native-image-zoom-viewer";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Modalize } from "react-native-modalize";
+"use client"
+
+import axios from "axios"
+import { useEffect, useState, useRef } from "react"
+import { type Route, useLocalSearchParams, router } from "expo-router"
+import Carousel from "react-native-reanimated-carousel"
+import ImageViewer from "react-native-image-zoom-viewer"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { Modalize } from "react-native-modalize"
 import {
   Text,
   View,
@@ -17,69 +19,69 @@ import {
   Dimensions,
   ScrollView,
   TouchableOpacity,
-} from "react-native";
+} from "react-native"
 
-import { PropertyInterface, UserDataType } from "@/types";
-import { useAuthStore } from "@/store/auth-store";
-import { globalStyles } from "@/Constants/Styles";
-import {
-  Ionicons,
-  FontAwesome,
-  MaterialIcons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import type { PropertyInterface, UserDataType } from "@/types"
+import { useAuthStore } from "@/store/auth-store"
+import { globalStyles } from "@/Constants/Styles"
+import { Ionicons, FontAwesome, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons"
 
 export default function PropertyInfo() {
-  const { id } = useLocalSearchParams();
-  const { user } = useAuthStore();
-  const [imagesModal, setImagesModal] = useState(false);
-  const [imageIndex, setImageIndex] = useState(0);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [bottomsheetVisible, setBottomsheetVisible] = useState(false);
-  const [property, setProperty] = useState<PropertyInterface>();
-  const [users, setUsers] = useState<UserDataType>();
-  const modalizeRef = useRef<Modalize>(null);
+  const { id } = useLocalSearchParams()
+
+  // Check if user is authenticated
+  // useEffect(() => {
+  //   if (!user) {
+  //     // Redirect to menu page if user is not logged in
+  //     router.replace("/(screens)/menu")
+  //   }
+  // }, [user])
+
+  const { user } = useAuthStore()
+  const [imagesModal, setImagesModal] = useState(false)
+  const [imageIndex, setImageIndex] = useState(0)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [bottomsheetVisible, setBottomsheetVisible] = useState(false)
+  const [property, setProperty] = useState<PropertyInterface>()
+  const [users, setUsers] = useState<UserDataType>()
+  const modalizeRef = useRef<Modalize>(null)
 
   const handleOpenBottomsheet = () => {
     if (modalizeRef.current) {
-      modalizeRef.current.open();
+      modalizeRef.current.open()
     }
-  };
+  }
   const getproperty = async () => {
     try {
-      const response = await axios.post(
-        `${process.env.EXPO_PUBLIC_BASE_URL}/properties/getParticularProperty`,
-        { propertyId: id }
-      );
-      setProperty(response.data.data);
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/properties/getParticularProperty`, {
+        propertyId: id,
+      })
+      setProperty(response.data.data)
     } catch (err) {
-      console.log("error in fetching particular property");
+      console.log("error in fetching particular property")
     }
-  };
+  }
   useEffect(() => {
-    getproperty();
-  }, []);
+    getproperty()
+  }, [])
 
   const getUser = async () => {
     try {
-      const userId = property?.userId;
-      const response = await axios.post(
-        `${process.env.EXPO_PUBLIC_BASE_URL}/user/getUser`,
-        { userId }
-      );
-      setUsers(response.data.user);
+      const userId = property?.userId
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/user/getUser`, { userId })
+      setUsers(response.data.user)
     } catch (error) {
-      console.log("error in fetching user");
+      console.log("error in fetching user")
     }
-  };
+  }
   useEffect(() => {
-    getUser();
-  }, [property]);
+    getUser()
+  }, [property])
 
   const openImageViewer = (index: number) => {
-    setImageIndex(index);
-    setImagesModal(true);
-  };
+    setImageIndex(index)
+    setImagesModal(true)
+  }
 
   const bentoStyle = (index: number) => {
     const styles = [
@@ -89,21 +91,17 @@ export default function PropertyInfo() {
       { width: Dimensions.get("window").width, height: 300 },
       { width: (Dimensions.get("window").width / 100) * 49, height: 150 },
       { width: (Dimensions.get("window").width / 100) * 49, height: 150 },
-    ];
-    return styles[index % styles.length];
-  };
+    ]
+    return styles[index % styles.length]
+  }
 
   const imageGallery = () => {
     const images =
       property?.propertyImages.map((item, index) => {
-        return { url: item };
-      }) ?? [];
+        return { url: item }
+      }) ?? []
     return (
-      <Modal
-        visible={imagesModal}
-        transparent={true}
-        onRequestClose={() => setImagesModal(false)}
-      >
+      <Modal visible={imagesModal} transparent={true} onRequestClose={() => setImagesModal(false)}>
         <ImageViewer
           enableSwipeDown={true}
           onSwipeDown={() => setImagesModal(false)}
@@ -111,8 +109,8 @@ export default function PropertyInfo() {
           index={imageIndex}
         />
       </Modal>
-    );
-  };
+    )
+  }
   const renderAllPhotos = () => {
     return (
       <View
@@ -130,7 +128,7 @@ export default function PropertyInfo() {
           transparent={true}
           visible={modalVisible}
           onRequestClose={() => {
-            setModalVisible(!modalVisible);
+            setModalVisible(!modalVisible)
           }}
         >
           <View style={{ display: "flex" }}>
@@ -143,19 +141,9 @@ export default function PropertyInfo() {
               }}
             >
               {property?.propertyImages.map((item, index: number) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => openImageViewer(index)}
-                >
-                  <View
-                    key={index}
-                    style={[styles.gridItem, bentoStyle(index)]}
-                  >
-                    <Image
-                      source={{ uri: item }}
-                      style={{ height: "100%", width: "100%" }}
-                      resizeMode="cover"
-                    />
+                <TouchableOpacity key={index} onPress={() => openImageViewer(index)}>
+                  <View key={index} style={[styles.gridItem, bentoStyle(index)]}>
+                    <Image source={{ uri: item }} style={{ height: "100%", width: "100%" }} resizeMode="cover" />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -177,8 +165,8 @@ export default function PropertyInfo() {
         </Modal>
         {imagesModal && imageGallery()}
       </View>
-    );
-  };
+    )
+  }
 
   const renderPropertyInfo = () => {
     return (
@@ -229,13 +217,11 @@ export default function PropertyInfo() {
         {/* description */}
         <View>
           <Text style={globalStyles.Heading}>Stay Information</Text>
-          <Text style={globalStyles.Text}>
-            {(property?.newReviews || property?.reviews)?.trim() ?? ""}
-          </Text>
+          <Text style={globalStyles.Text}>{(property?.newReviews || property?.reviews)?.trim() ?? ""}</Text>
         </View>
       </View>
-    );
-  };
+    )
+  }
   const renderAmenities = () => {
     return (
       <View>
@@ -250,9 +236,9 @@ export default function PropertyInfo() {
               (item, index) =>
                 (
                   property?.generalAmenities as {
-                    [key: string]: boolean;
+                    [key: string]: boolean
                   }
-                )[item] == true && index < 16
+                )[item] == true && index < 16,
             )
             ?.map((amenity, ind) => (
               <View style={styles.amenityItem} key={ind}>
@@ -274,15 +260,13 @@ export default function PropertyInfo() {
           </View>
         </View>
       </View>
-    );
-  };
+    )
+  }
   const renderPricingCard = () => {
     return (
       <View>
         <Text style={globalStyles.Heading}>Room Rates</Text>
-        <Text style={globalStyles.MutedText}>
-          Prices may increase in weekends and holidays
-        </Text>
+        <Text style={globalStyles.MutedText}>Prices may increase in weekends and holidays</Text>
 
         <View style={styles.rateItem}>
           <Text>Monday-Thursday</Text>
@@ -309,8 +293,8 @@ export default function PropertyInfo() {
           <Text>{property?.night[1]} nights</Text>
         </View>
       </View>
-    );
-  };
+    )
+  }
   const renderHostInfo = () => {
     return (
       <View>
@@ -334,7 +318,7 @@ export default function PropertyInfo() {
           <View style={styles.hostItem}>
             <MaterialIcons name="date-range" size={20} />
             <Text style={globalStyles.MutedText}>
-            Joined {users?.createdAt && new Date(users.createdAt).getFullYear()}
+              Joined {users?.createdAt && new Date(users.createdAt).getFullYear()}
             </Text>
           </View>
 
@@ -345,21 +329,17 @@ export default function PropertyInfo() {
 
           <View style={styles.hostItem}>
             <MaterialCommunityIcons name="clock-time-nine-outline" size={20} />
-            <Text style={globalStyles.MutedText}>
-              Fast response - within a few hours
-            </Text>
+            <Text style={globalStyles.MutedText}>Fast response - within a few hours</Text>
           </View>
 
           <View style={styles.hostItem}>
             <Ionicons name="language-outline" size={20} />
-            <Text style={globalStyles.MutedText}>
-              Language Spoken - {users?.spokenLanguage || "English"}
-            </Text>
+            <Text style={globalStyles.MutedText}>Language Spoken - {users?.spokenLanguage || "English"}</Text>
           </View>
         </View>
       </View>
-    );
-  };
+    )
+  }
   const renderThingsToKnow = () => {
     return (
       <View>
@@ -396,24 +376,18 @@ export default function PropertyInfo() {
 
         <View style={styles.container}>
           {property?.additionalRules?.map((item, index) => (
-            <View
-              style={{ display: "flex", flexDirection: "row", gap: 5 }}
-              key={index}
-            >
+            <View style={{ display: "flex", flexDirection: "row", gap: 5 }} key={index}>
               <Text style={globalStyles.Text}>•</Text>
               <Text style={globalStyles.Text}>{item}</Text>
             </View>
           ))}
         </View>
       </View>
-    );
-  };
+    )
+  }
 
   return (
-    <SafeAreaView
-      edges={["left", "right", "bottom"]}
-      style={styles.safeAreaView}
-    >
+    <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeAreaView}>
       <StatusBar hidden={true} />
 
       <FlatList
@@ -422,8 +396,7 @@ export default function PropertyInfo() {
         keyExtractor={(item, index) => index.toString()}
         ListHeaderComponent={
           <View style={styles.imageContainer}>
-            {property?.propertyImages &&
-            property?.propertyImages?.length > 0 ? (
+            {property?.propertyImages && property?.propertyImages?.length > 0 ? (
               <Pressable onPress={() => setModalVisible(true)}>
                 <Carousel
                   loop
@@ -432,11 +405,7 @@ export default function PropertyInfo() {
                   data={property.propertyImages}
                   renderItem={({ item, index }) => (
                     <View key={index}>
-                      <Image
-                        source={{ uri: item }}
-                        resizeMode="cover"
-                        style={styles.image}
-                      />
+                      <Image source={{ uri: item }} resizeMode="cover" style={styles.image} />
                     </View>
                   )}
                 />
@@ -479,9 +448,9 @@ export default function PropertyInfo() {
                 (item, index) =>
                   (
                     property?.generalAmenities as {
-                      [key: string]: boolean;
+                      [key: string]: boolean
                     }
-                  )[item] == true
+                  )[item] == true,
               )
               ?.map((amenity, ind) => (
                 <View style={styles.amenityItem} key={ind}>
@@ -504,17 +473,25 @@ export default function PropertyInfo() {
             <Text>/night</Text>
           </TouchableOpacity>
 
-          <Link href={`/(screens)/reserve-page/${id}` as Route}>
-            <View
-              style={[globalStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}
-            >
+          <TouchableOpacity
+            onPress={() => {
+              if (user) {
+                // If user is logged in, navigate to reserve page
+                router.push(`/(screens)/reserve-page/${id}` as Route)
+              } else {
+                // If user is not logged in, redirect to login page
+                router.push("/(tabs)/Menu")
+              }
+            }}
+          >
+            <View style={[globalStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}>
               <Text style={globalStyles.btnText}>Reserve</Text>
             </View>
-          </Link>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
-  );
+  )
 }
 const styles = StyleSheet.create({
   safeAreaView: { flex: 1 },
@@ -644,6 +621,6 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     flexDirection: "row",
-    alignItems: "center",   
+    alignItems: "center",
   },
-});
+})
