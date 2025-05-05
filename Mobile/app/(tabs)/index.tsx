@@ -7,12 +7,13 @@ import {
   TouchableOpacity,
   Pressable,
   StatusBar,
+  SafeAreaView
 } from "react-native";
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState, useEffect, useRef } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+// import { SafeAreaView } from "react-native-safe-area-context";.
 
 import useStore from "@/store/filter-store";
 import { Countries } from "@/Constants/Country";

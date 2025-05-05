@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react"
 import { type Route, useLocalSearchParams, router } from "expo-router"
 import Carousel from "react-native-reanimated-carousel"
 import ImageViewer from "react-native-image-zoom-viewer"
-import { SafeAreaView } from "react-native-safe-area-context"
+// import { SafeAreaView } from "react-native-safe-area-context"
 import { Modalize } from "react-native-modalize"
 import {
   Text,
@@ -18,6 +18,7 @@ import {
   StyleSheet,
   Dimensions,
   ScrollView,
+  SafeAreaView,
   TouchableOpacity,
 } from "react-native"
 
@@ -387,7 +388,7 @@ export default function PropertyInfo() {
   }
 
   return (
-    <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeAreaView}>
+    <SafeAreaView  style={styles.safeAreaView}>
       <StatusBar hidden={true} />
 
       <FlatList

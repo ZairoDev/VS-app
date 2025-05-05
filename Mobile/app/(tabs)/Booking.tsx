@@ -13,7 +13,6 @@ import {
   Platform,
   Alert,
   Modal,
-  TextInput,
   Animated,
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
@@ -22,6 +21,7 @@ import { Feather, MaterialCommunityIcons, Ionicons, FontAwesome5, AntDesign } fr
 import axios from "axios"
 import { useAuthStore } from "@/store/auth-store"
 import type { Booking } from "@/types"
+import { router } from "expo-router"
 
 const { width, height } = Dimensions.get("window")
 const CARD_WIDTH = width * 0.85
@@ -73,7 +73,7 @@ const BookingHubScreen = () => {
     getBookings()
   }, [travellerId])
 
-  // Handle contact host via email
+  // Handle contact host via email or phone
   const handleContactHost = (email: string) => {
     if (email) {
       Linking.openURL(`mailto:${email}`)
@@ -82,51 +82,252 @@ const BookingHubScreen = () => {
     }
   }
 
+  // Add a new function for calling the host
+  const handleCallHost = (phone: string) => {
+    if (phone) {
+      Linking.openURL(`tel:${phone}`)
+    } else {
+      Alert.alert("Contact Info", "Host phone number is not available")
+    }
+  }
+
+  // Handle contact customer support
+  const handleContactSupport = () => {
+    Linking.openURL(`tel:+447897037080 `)
+  }
+
   // Handle pay platform fees
-  const handlePayPlatformFees = (booking: Booking) => {
+  const handlePayPlatformFees = async (booking: Booking) => {
     Alert.alert(
       "Pay Platform Fees",
       "You are about to pay the platform fees for this booking.",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Continue to Payment", 
-          onPress: () => {
-            // Implement payment logic here
-            Alert.alert("Payment", "Payment functionality will be implemented here.")
+        {
+          text: "Continue to Payment",
+          onPress: async () => {
+            try {
+              const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/pay/create-order`, {
+                amount: booking.price,
+              });
+              const orderId = response.data.order.id;
+  
+              router.push({
+                pathname: "/(screens)/pages/payment-webview-screen",
+                params: {
+                  orderId,
+                  amount: booking.price.toString(),
+                  bookingId: booking._id,
+                },
+              });
+  
+            } catch (error) {
+              console.error("Payment order creation failed", error);
+              Alert.alert("Error", "Failed to create payment order.");
+            }
           }
         }
       ]
-    )
-  }
+    );
+  };
 
-  // Handle cancel booking
   const handleCancelBooking = (id: string) => {
-    Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
-      { text: "No", style: "cancel" },
-      {
-        text: "Yes",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            setLoading(true)
-            await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-              bookingStatus: "cancelled",
-            })
-            getBookings() // Refresh bookings
-            if (detailsModalVisible) {
-              setDetailsModalVisible(false)
-            }
-            Alert.alert("Success", "Your booking has been cancelled")
-          } catch (error) {
-            console.error("Error cancelling booking:", error)
-            Alert.alert("Error", "Failed to cancel booking. Please try again.")
-          } finally {
-            setLoading(false)
-          }
-        },
-      },
-    ])
+    if (!selectedBooking) {
+      // If called from the main list view, find the booking
+      const booking = bookings.find((b) => b._id === id)
+      if (!booking) {
+        Alert.alert("Error", "Booking not found")
+        return
+      }
+
+      // If user hasn't paid, just cancel without mentioning refunds
+      if (booking.paymentStatus !== "paid") {
+        Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
+          { text: "No", style: "cancel" },
+          {
+            text: "Yes, Cancel",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                setLoading(true)
+                await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+                  bookingStatus: "cancelled",
+                })
+                getBookings()
+                if (detailsModalVisible) {
+                  setDetailsModalVisible(false)
+                }
+                Alert.alert("Success", "Your booking has been cancelled")
+              } catch (error) {
+                console.error("Error cancelling booking:", error)
+                Alert.alert("Error", "Failed to cancel booking. Please try again.")
+              } finally {
+                setLoading(false)
+              }
+            },
+          },
+        ])
+        return
+      }
+
+      // Calculate days until booking
+      const today = new Date()
+      const startDate = new Date(booking.startDate)
+      const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+      // Determine refund percentage based on cancellation timing
+      let refundPercentage = 0
+      let refundMessage = ""
+
+      if (daysUntilBooking > 7) {
+        // More than a week before booking
+        refundPercentage = 100
+        refundMessage = "You will receive a 100% refund as you're cancelling more than a week before your booking."
+      } else if (daysUntilBooking > 0) {
+        // Between booking date and one week before
+        refundPercentage = 70
+        refundMessage =
+          "You will receive a 70% refund as you're cancelling between your booking date and one week prior."
+      } else {
+        // On the booking date
+        refundPercentage = 50
+        refundMessage = "You will receive a 50% refund as you're cancelling on your booking date."
+      }
+
+      // Calculate refund amount
+      const refundAmount = (booking.price * refundPercentage) / 100
+
+      Alert.alert(
+        "Cancel Booking",
+        `${refundMessage}\n\nRefund Amount: €${refundAmount.toLocaleString("en-IN")}\n\nAre you sure you want to cancel this booking?`,
+        [
+          { text: "No", style: "cancel" },
+          {
+            text: "Yes, Cancel",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                setLoading(true)
+                await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+                  bookingStatus: "cancelled",
+                  refundAmount: refundAmount,
+                  refundPercentage: refundPercentage,
+                  paymentStatus: "refunded",
+                })
+                getBookings()
+                if (detailsModalVisible) {
+                  setDetailsModalVisible(false)
+                }
+                Alert.alert(
+                  "Success",
+                  `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`,
+                )
+              } catch (error) {
+                console.error("Error cancelling booking:", error)
+                Alert.alert("Error", "Failed to cancel booking. Please try again.")
+              } finally {
+                setLoading(false)
+              }
+            },
+          },
+        ],
+      )
+      return
+    } else {
+      // If called from the details modal, use the selectedBooking
+      // If user hasn't paid, just cancel without mentioning refunds
+      if (selectedBooking.paymentStatus !== "paid") {
+        Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
+          { text: "No", style: "cancel" },
+          {
+            text: "Yes, Cancel",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                setLoading(true)
+                await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+                  bookingStatus: "cancelled",
+                })
+                getBookings()
+                if (detailsModalVisible) {
+                  setDetailsModalVisible(false)
+                }
+                Alert.alert("Success", "Your booking has been cancelled")
+              } catch (error) {
+                console.error("Error cancelling booking:", error)
+                Alert.alert("Error", "Failed to cancel booking. Please try again.")
+              } finally {
+                setLoading(false)
+              }
+            },
+          },
+        ])
+        return
+      }
+
+      // Calculate days until booking
+      const today = new Date()
+      const startDate = new Date(selectedBooking.startDate)
+      const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+      // Determine refund percentage based on cancellation timing
+      let refundPercentage = 0
+      let refundMessage = ""
+
+      if (daysUntilBooking > 7) {
+        // More than a week before booking
+        refundPercentage = 100
+        refundMessage = "You will receive a 100% refund as you're cancelling more than a week before your booking."
+      } else if (daysUntilBooking > 0) {
+        // Between booking date and one week before
+        refundPercentage = 70
+        refundMessage =
+          "You will receive a 70% refund as you're cancelling between your booking date and one week prior."
+      } else {
+        // On the booking date
+        refundPercentage = 50
+        refundMessage = "You will receive a 50% refund as you're cancelling on your booking date."
+      }
+
+      // Calculate refund amount
+      const refundAmount = (selectedBooking.price * refundPercentage) / 100
+
+      Alert.alert(
+        "Cancel Booking",
+        `${refundMessage}\n\nRefund Amount: €${refundAmount.toLocaleString("en-IN")}\n\nAre you sure you want to cancel this booking?`,
+        [
+          { text: "No", style: "cancel" },
+          {
+            text: "Yes, Cancel",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                setLoading(true)
+                await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+                  bookingStatus: "cancelled",
+                  refundAmount: refundAmount,
+                  refundPercentage: refundPercentage,
+                  paymentStatus: "refunded",
+                })
+                getBookings()
+                if (detailsModalVisible) {
+                  setDetailsModalVisible(false)
+                }
+                Alert.alert(
+                  "Success",
+                  `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`,
+                )
+              } catch (error) {
+                console.error("Error cancelling booking:", error)
+                Alert.alert("Error", "Failed to cancel booking. Please try again.")
+              } finally {
+                setLoading(false)
+              }
+            },
+          },
+        ],
+      )
+    }
   }
 
   // Handle rebook
@@ -289,28 +490,50 @@ const BookingHubScreen = () => {
           ) : (
             <>
               {isContactHostEnabled(item) ? (
-                <TouchableOpacity 
-                  style={styles.primaryButton} 
-                  onPress={() => handleContactHost(item.userId.email || "")}
-                >
-                  <Feather name="mail" size={18} color="#fff" />
-                  <Text style={styles.buttonText}>Contact Host</Text>
-                </TouchableOpacity>
+                <View style={styles.contactButtonsContainer}>
+                  <View style={styles.hostButtonsRow}>
+                    <TouchableOpacity style={styles.hostButton} onPress={() => handleCallHost(item.userId.phone || "")}>
+                      <Feather name="phone" size={16} color="#fff" />
+                      <Text style={styles.buttonText}>Call Host</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.hostButton}
+                      onPress={() => handleContactHost(item.userId.email || "")}
+                    >
+                      <Feather name="mail" size={16} color="#fff" />
+                      <Text style={styles.buttonText}>Email Host</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity style={styles.supportButton} onPress={handleContactSupport}>
+                    <Feather name="headphones" size={16} color="#5E72E4" />
+                    <Text style={styles.supportButtonText}>Contact Vacation Saga</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
-                <TouchableOpacity 
-                  style={[styles.primaryButton, { opacity: 0.5 }]} 
-                  disabled={true}
-                >
-                  <Feather name="mail" size={18} color="#fff" />
-                  <Text style={styles.buttonText}>Contact Host</Text>
-                </TouchableOpacity>
+                <View style={[styles.contactButtonsContainer, { opacity: 0.5 }]}>
+                  {/* <View style={styles.hostButtonsRow}>
+                    <TouchableOpacity style={styles.hostButton} disabled={true}>
+                      <Feather name="phone" size={16} color="#fff" />
+                      <Text style={styles.buttonText}>Call Host</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.hostButton} disabled={true}>
+                      <Feather name="mail" size={16} color="#fff" />
+                      <Text style={styles.buttonText}>Email Host</Text>
+                    </TouchableOpacity>
+                  </View> */}
+
+                  <TouchableOpacity style={styles.supportButton} disabled={true}>
+                    {/* <Feather name="headphones" size={16} color="#5E72E4" /> */}
+                    <Text style={styles.supportButtonText}>Contact Vacation Saga</Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
               {item.paymentStatus !== "paid" && (
-                <TouchableOpacity 
-                  style={styles.outlineButton} 
-                  onPress={() => handlePayPlatformFees(item)}
-                >
+                <TouchableOpacity style={styles.outlineButton} onPress={() => handlePayPlatformFees(item)}>
                   <Feather name="credit-card" size={18} color="#5E72E4" />
                   <Text style={styles.outlineButtonText}>Pay Fees</Text>
                 </TouchableOpacity>
@@ -336,7 +559,6 @@ const BookingHubScreen = () => {
     </TouchableOpacity>
   )
 
-  // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="calendar" size={60} color="#ccc" />
@@ -344,7 +566,6 @@ const BookingHubScreen = () => {
       <Text style={styles.emptyStateText}>
         {activeTab === "upcoming" ? "You don't have any upcoming bookings" : "You don't have any past bookings"}
       </Text>
-
     </View>
   )
 
@@ -366,9 +587,12 @@ const BookingHubScreen = () => {
             end={{ x: 1, y: 1 }}
             style={styles.headerGradient}
           >
-            <View >
+            <View style={styles.headerTop}>
               <Text style={styles.heading}>My Bookings</Text>
-              
+              {/* <TouchableOpacity style={styles.supportButton} onPress={handleContactSupport}>
+                <Feather name="headphones" size={20} color="#fff" />
+                <Text style={styles.supportButtonText}>Support</Text>
+              </TouchableOpacity> */}
             </View>
             <View style={styles.tabContainer}>
               <TouchableOpacity
@@ -392,12 +616,7 @@ const BookingHubScreen = () => {
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={getBookings}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={getBookings} />}
       >
         {loading
           ? renderLoadingState()
@@ -598,36 +817,52 @@ const BookingHubScreen = () => {
                         </View>
                       </View>
                       {isContactHostEnabled(selectedBooking) ? (
-                        <TouchableOpacity
-                          style={styles.contactHostButton}
-                          onPress={() => handleContactHost(selectedBooking.userId.email || "")}
-                        >
-                          <Feather name="mail" size={18} color="#fff" />
-                          <Text style={styles.contactHostText}>Contact</Text>
-                        </TouchableOpacity>
+                        <View style={styles.hostCardButtons}>
+                          <TouchableOpacity
+                            style={styles.hostCardButton}
+                            onPress={() => handleCallHost(selectedBooking.userId.phone || "")}
+                          >
+                            <Feather name="phone" size={16} color="#fff" />
+                            <Text style={styles.hostCardButtonText}>Call</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.hostCardButton}
+                            onPress={() => handleContactHost(selectedBooking.userId.email || "")}
+                          >
+                            <Feather name="mail" size={16} color="#fff" />
+                            <Text style={styles.hostCardButtonText}>Email</Text>
+                          </TouchableOpacity>
+                        </View>
                       ) : (
-                        <TouchableOpacity
-                          style={[styles.contactHostButton, { opacity: 0.5 }]}
-                          disabled={true}
-                        >
-                          <Feather name="mail" size={18} color="#fff" />
-                          <Text style={styles.contactHostText}>Contact</Text>
-                        </TouchableOpacity>
+                        <View style={[styles.hostCardButtons, { opacity: 0.5 }]}>
+                          <TouchableOpacity style={styles.hostCardButton} disabled={true}>
+                            <Feather name="phone" size={16} color="#fff" />
+                            <Text style={styles.hostCardButtonText}>Call</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.hostCardButton} disabled={true}>
+                            <Feather name="mail" size={16} color="#fff" />
+                            <Text style={styles.hostCardButtonText}>Email</Text>
+                          </TouchableOpacity>
+                        </View>
                       )}
                     </View>
                   </View>
 
                   <View style={styles.actionButtons}>
-                    {selectedBooking.bookingStatus === "pending" && (
-                      <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={() => handleCancelBooking(selectedBooking._id)}
-                        disabled={loading}
-                      >
-                        <Feather name="x-circle" size={20} color="#fff" />
-                        <Text style={styles.actionButtonText}>Cancel Booking</Text>
-                      </TouchableOpacity>
-                    )}
+                    {/* Show cancel button for pending, confirmed, or paid bookings */}
+                    {(selectedBooking.bookingStatus === "pending" ||
+                      selectedBooking.bookingStatus === "confirmed" ||
+                      selectedBooking.paymentStatus === "paid") &&
+                      selectedBooking.bookingStatus !== "cancelled" && (
+                        <TouchableOpacity
+                          style={styles.cancelButton}
+                          onPress={() => handleCancelBooking(selectedBooking._id)}
+                          disabled={loading}
+                        >
+                          <Feather name="x-circle" size={20} color="#fff" />
+                          <Text style={styles.actionButtonText}>Cancel Booking</Text>
+                        </TouchableOpacity>
+                      )}
 
                     {selectedBooking.bookingStatus === "confirmed" && selectedBooking.paymentStatus !== "paid" && (
                       <TouchableOpacity
@@ -678,7 +913,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
     overflow: "hidden",
     height: 140,
-
   },
   blurView: {
     flex: 1,
@@ -693,6 +927,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 10,
   },
   heading: {
     fontSize: 28,
@@ -729,7 +964,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    marginTop:18,
+    marginTop: 18,
     marginBottom: 18,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -919,8 +1154,8 @@ const styles = StyleSheet.create({
   waitingContainer: {
     flex: 1,
     backgroundColor: "#FFC10780",
-    paddingVertical: 12,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1175,14 +1410,18 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   hostCard: {
-    flexDirection: "row",
+    display: "flex",
+    gap: 10,
+    flexDirection: "column",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#f8f9fa",
     borderRadius: 16,
-    padding: 16,
+    padding: 10,
+    borderColor: "#5E72E4",
   },
   hostCardInfo: {
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
   },
@@ -1237,6 +1476,69 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  supportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "transparent",
+    paddingVertical: 10,
+    borderRadius: 12,
+    // flexDirection: "row",
+    justifyContent: "center",
+    // alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#5E72E4",
+  },
+  supportButtonText: {
+    color: "#5E72E4",
+    fontWeight: "600",
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  contactButtonsContainer: {
+    flex: 1,
+    gap: 10,
+  },
+  hostButtonsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  hostButton: {
+    flex: 1,
+    backgroundColor: "#fca42c",
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#fca42c",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  hostCardButtons: {
+    flexDirection: "row",
+    width: "100%",
+    alignItems: "center",
+
+    justifyContent: "space-around",
+  },
+  hostCardButton: {
+    backgroundColor: "#fca42c",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    width: "45%",
+    height: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  hostCardButtonText: {
+    color: "#fff",
+    fontSize: 14,
     fontWeight: "600",
   },
 })
