@@ -16,7 +16,7 @@ import { Modalize } from "react-native-modalize";
 import { Calendar } from "react-native-calendars";
 import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { Plus, Minus } from "lucide-react-native";
+// import { Plus, Minus } from "lucide-react-native";
 import { useCouponStore } from "@/store/coupon-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useTravellerStore } from "@/store/traveller-store";
@@ -376,7 +376,8 @@ export default function ReservationScreen() {
           onPress={() => updateGuestCount(type, false)}
           disabled={type === "adults" ? value <= 1 : value <= 0}
         >
-          <Minus
+          <Ionicons
+            name="remove"
             size={20}
             color={
               value === (type === "adults" ? 1 : 0) ? "#A1A1AA" : "#ff7900"
@@ -388,7 +389,7 @@ export default function ReservationScreen() {
           style={styles.guestTypeButton}
           onPress={() => updateGuestCount(type, true)}
         >
-          <Plus size={20} color="#ff7900" />
+          <Ionicons name="add" size={20} color="#ff7900" />
         </TouchableOpacity>
       </View>
     </View>
@@ -636,20 +637,21 @@ export default function ReservationScreen() {
             pastSwipeRange={0}
             futureSwipeRange={12}
             theme={{
-              selectedDayTextColor: "#ffffff",
-              textDayFontSize: 16,
-              textMonthFontSize: 18,
-              arrowColor: "#ff7900",
-              textDayHeaderFontSize: 14,
-              "stylesheet.calendar.main": {
-                week: {
-                  marginTop: 4,
-                  marginBottom: 4,
-                  flexDirection: "row",
-                  justifyContent: "space-around",
-                },
-              },
-            }}
+  selectedDayTextColor: "#ffffff",
+  textDayFontSize: 16,
+  textMonthFontSize: 18,
+  arrowColor: "#ff7900",
+  textDayHeaderFontSize: 14,
+  // @ts-ignore
+  "stylesheet.calendar.main": {
+    week: {
+      marginTop: 4,
+      marginBottom: 4,
+      flexDirection: "row",
+      justifyContent: "space-around",
+    },
+  },
+}}
           />
           <View style={styles.legend}>
             <View style={styles.legendItem}>

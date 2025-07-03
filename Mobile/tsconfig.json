@@ -8,7 +8,7 @@
       ]
     },
     "jsx": "react-native",  // Ensure JSX is set to react-native
-    "moduleResolution": "node"  // Ensure module resolution is set to node
+    "moduleResolution": "node16"  // Ensure module resolution is set to node
   },
   "include": [
     "**/*.ts",
