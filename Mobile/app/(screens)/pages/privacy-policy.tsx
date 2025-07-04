@@ -52,9 +52,9 @@ const PrivacyPolicy = () => {
     })
   }
 
-  const backgroundColor = isDarkMode ? "#121212" : "#f8f9fa"
-  const textColor = isDarkMode ? "#ffffff" : "#333333"
-  const cardBg = isDarkMode ? "#1e1e1e" : "#ffffff"
+  const backgroundColor =  "#f8f9fa"
+  const textColor = "#333333"
+  const cardBg =  "#ffffff"
   const accentColor = "#ff9f43"
   const secondaryColor = "#a29bfe"
 
@@ -65,7 +65,7 @@ const PrivacyPolicy = () => {
       <View style={[styles.card, { backgroundColor: cardBg }]}>
         <TouchableOpacity style={styles.cardHeader} onPress={() => toggleSection(sectionKey)} activeOpacity={0.7}>
           <View style={styles.headerLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? "#2d2d2d" : "#f0f0f7" }]}>{icon}</View>
+            <View style={[styles.iconContainer, { backgroundColor:  "#f0f0f7" }]}>{icon}</View>
           </View>
             <Text style={styles.headerTitle}>{title}</Text>
           {isExpanded ? (
@@ -94,7 +94,7 @@ const PrivacyPolicy = () => {
         <View style={styles.content}>
           <View style={styles.headerContainer}>
             <LinearGradient
-              colors={isDarkMode ? ["#6c5ce7", "#4834d4"] : ["#ffb86b", "#ff9f43"]}
+              colors={["#ffb86b", "#ff9f43"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.headerGradient}
@@ -110,12 +110,12 @@ const PrivacyPolicy = () => {
           {renderSection(
             "Introduction",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color: "#444444" }]}>
                 The term "Users" and "customers" refers to people who use our website to find a suitable rental as well
                 as to those who list their property with us. Your personal information will be collected and stored in
                 our database and will not be shared with any third party.
               </Text>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
                 By using our website, you consent to the collection and transfer of your data, including to other
                 countries where we have branches.
               </Text>
@@ -130,19 +130,19 @@ const PrivacyPolicy = () => {
               <View style={styles.bulletPoints}>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color: "#444444" }]}>
                     Your personal information is collected and stored in our database.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     We will not share your information with any third party.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color: "#444444" }]}>
                     We do not knowingly collect data from users under 18.
                   </Text>
                 </View>
@@ -155,24 +155,24 @@ const PrivacyPolicy = () => {
           {renderSection(
             "Third-Party Agreements",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
                 We are not responsible for any agreements between users, including:
               </Text>
               <View style={styles.bulletPoints}>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     Disputes over property quality or condition.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     Reservation agreements between travelers and property owners.
                   </Text>
                 </View>
               </View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
                 We act as a middleman to facilitate smooth transaction between the holiday maker and the property owner.
               </Text>
             </View>,
@@ -183,11 +183,11 @@ const PrivacyPolicy = () => {
           {renderSection(
             "Intellectual Property and Usage Rights",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
                 The content on our website belongs solely to us. You may download it for personal use but cannot copy or
                 reuse it without our consent.
               </Text>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
                 Users are granted a limited license to access the content and services provided by us.
               </Text>
             </View>,
@@ -201,37 +201,37 @@ const PrivacyPolicy = () => {
               <View style={styles.bulletPoints}>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     Using the website for unauthorized purposes.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     Modifying, translating, or altering any content on the website.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color: "#444444" }]}>
                     Selling, offering to sell, transferring, or licensing the website to any third party.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color: "#444444" }]}>
                     Posting abusive, unlawful, or defamatory content on the website.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     Infringing upon or violating the rights of the company or any third party.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color: "#444444" }]}>
                     Transmitting fraudulent, false, or misleading information.
                   </Text>
                 </View>
@@ -246,42 +246,42 @@ const PrivacyPolicy = () => {
               <View style={styles.bulletPoints}>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color: "#444444" }]}>
                     We do not make any exclusive contract with our registered property owners and registered travelers
                     which means you are totally free to work with other companies while working with our company.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     We may provide you with an online payment portal for your convenience but we are not liable for any
                     losses you suffer due to the decision of PayPal and bank.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color: "#444444" }]}>
                     You agree to indemnify us from or against any or all the claims or legal fees incurred by you
                     against an action brought by you against the payment gateway.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     In case you find any content, video or photos defamatory or against public policy, you can notify us
                     on the email address provided on the website.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     We provide advertising services for our registered customers and we also serve as an accommodation
                     search system to our travelers, we don't assure personal inspections of the property.
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
                     We shall only be liable for any direct loss incurred by you due to our website and not for any
                     indirect losses.
                   </Text>
@@ -291,9 +291,9 @@ const PrivacyPolicy = () => {
             <Info width={24} height={24} color={accentColor} />,
             "important",
           )}
-          <View style={[styles.footer, { borderTopColor: isDarkMode ? "#333333" : "#e0e0e0" }]}>
-            <Text style={[styles.footerText, { color: isDarkMode ? "#999999" : "#777777" }]}>
-              Last Updated: April 8, 2025
+          <View style={[styles.footer, { borderTopColor:  "#e0e0e0" }]}>
+            <Text style={[styles.footerText, { color: "#777777" }]}>
+              Last Updated:  2025
             </Text>
           </View>
         </View>

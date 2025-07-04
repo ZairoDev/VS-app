@@ -61,9 +61,9 @@ const TermsAndConditions = () => {
     })
   }
 
-  const backgroundColor = isDarkMode ? "#121212" : "#f8f9fa"
-  const textColor = isDarkMode ? "#ffffff" : "#333333"
-  const cardBg = isDarkMode ? "#1e1e1e" : "#ffffff"
+  const backgroundColor =  "#f8f9fa"
+  const textColor = "black"
+  const cardBg = "#ffffff"
   const accentColor = "#ff9f43"
   const secondaryColor = "#a29bfe"
 
@@ -74,7 +74,7 @@ const TermsAndConditions = () => {
       <View style={[styles.card, { backgroundColor: cardBg }]}>
         <TouchableOpacity style={styles.cardHeader} onPress={() => toggleSection(sectionKey)} activeOpacity={0.7}>
           <View style={styles.headerLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? "#2d2d2d" : "#f0f0f7" }]}>{icon}</View>
+            <View style={[styles.iconContainer, { backgroundColor:  "#f0f0f7" }]}>{icon}</View>
           </View>
             <Text style={styles.headerTitle}>{title}</Text>
           {isExpanded ? (
@@ -103,7 +103,7 @@ const TermsAndConditions = () => {
         <View style={styles.content}>
           <View style={styles.headerContainer}>
             <LinearGradient
-              colors={isDarkMode ? ["#6c5ce7", "#4834d4"] : ["#ffb86b", "#ff9f43"]}
+              colors={  ["#ffb86b", "#ff9f43"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.headerGradient}
@@ -119,7 +119,7 @@ const TermsAndConditions = () => {
           {renderSection(
           "Contract",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color: "#444444" }]}>
               Vacation Saga is not liable for any contract made between the travelers and property owners. Any amount paid by the traveler shall be received by the owner and in case of cancellation, the owner shall refund the amount directly to the traveler according to the cancellation policies provided by the owner and Vacation Saga shall have no involvement in such transactions.
               </Text>
               
@@ -131,7 +131,7 @@ const TermsAndConditions = () => {
           {renderSection(
             "Booking Denied",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:"#444444" }]}>
               If a customer is working with other websites also and receives a booking through us and through the other site also and the booking request received through Vacation Saga is cancelled by the owner due to non-availability, such booking request shall be considered as booking provided. Since we have provided a booking request and such booking is denied by the owner, then Vacation Saga shall not be liable for not providing booking or charge back or money back guarantee.
               </Text>
             </View>,
@@ -142,7 +142,7 @@ const TermsAndConditions = () => {
           {renderSection(
             "Pricing",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
               The subscription price offered by us may vary according to the offers introduced by us from time to time. A customer availing an offer cannot claim the same benefits that are promised to the customer taking our regular subscription package. The results may vary according to the plan since we have different marketing strategies for different subscriptions and properties.
               </Text>
               
@@ -155,7 +155,7 @@ const TermsAndConditions = () => {
           {renderSection(
             "Discount",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color: "#444444" }]}>
               A customer availing discount cannot claim the same discount on their renewal of the same description since we give discounted rates only when the company introduces offers. Thus, the chances of availing the same offer on the expiration of the subscription are very less. The discount totally depends on the offer introduced by the company at that time and on the offer that is expired or availed by the customer before. If no offer is ongoing at the time of the expiry of the subscription, the customer will have to pay the regular price for the renewal of the subscription.
               </Text>
             </View>,
@@ -165,7 +165,7 @@ const TermsAndConditions = () => {
           {renderSection(
             "Inquiries",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
               Once a property owner receives an inquiry through us, he shall be solely responsible for answering such inquiry. Vacation Saga will have no role in entertaining such inquiry. Our role is limited to forwarding the inquiry so received to the customers.
               </Text>
             </View>,
@@ -175,7 +175,7 @@ const TermsAndConditions = () => {
           {renderSection(
             "Payments",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color: "#444444" }]}>
               Where any customer's property is listed for free under any offer for the time period provided in the offer, such property shall be removed after the expiry of the offer and shall be visible on the site only when the customer pays for the amount subscription package opted by him.
               </Text>
             </View>,
@@ -185,7 +185,7 @@ const TermsAndConditions = () => {
           {renderSection(
             "Personal website",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
               Where a person takes a subscription which includes a personal website, then the customer shall provide us with the domain to be used for his personal website. The credentials for such domain shall be shared by the customers and the website shall be made on the domain so provided.
               </Text>
             </View>,
@@ -195,7 +195,7 @@ const TermsAndConditions = () => {
           {renderSection(
             "Reviews",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color:  "#444444" }]}>
               In case two bad reviews are given by our registered travelers regarding the condition of the property, Vacation Saga shall remove the Property from the site and the same shall not be visible for 45 days.
               </Text>
             </View>,
@@ -205,7 +205,7 @@ const TermsAndConditions = () => {
           {renderSection(
             "Returing Investments",
             <View>
-              <Text style={[styles.paragraph, { color: isDarkMode ? "#cccccc" : "#444444" }]}>
+              <Text style={[styles.paragraph, { color: "#444444" }]}>
               In case a property does not receive a booking guaranteed by us in the time period according to subscription,
 then we shall promote such property for another nine months on the cost incurred by vacation saga and still
 if such owner does not receive any inquires, then investment shall be returned to him, provided that customer
@@ -216,9 +216,9 @@ should have
             <PieChart width={24} height={24} color={accentColor} />,
             "return",
           )}
-          <View style={[styles.footer, { borderTopColor: isDarkMode ? "#333333" : "#e0e0e0" }]}>
-            <Text style={[styles.footerText, { color: isDarkMode ? "#999999" : "#777777" }]}>
-              Last Updated: April 8, 2025
+          <View style={[styles.footer, { borderTopColor:  "#e0e0e0" }]}>
+            <Text style={[styles.footerText, { color:  "#777777" }]}>
+              Last Updated:  2025
             </Text>
           </View>
         </View>
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#333333",
+    color: "black",
     flex: 1,
     
   },
@@ -301,10 +301,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
+    
+    
+
   },
   cardContent: {
     padding: 16,
     paddingTop: 0,
+    // borderWidth: 1,
   },
   sectionTitle: {
     fontSize: 15,

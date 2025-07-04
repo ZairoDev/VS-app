@@ -145,8 +145,9 @@ const ProfilePage = () => {
           <ProfileCard
             icon="smile"
             label="Preferred first name"
-            value={ user?.name || "Not provided"}
-            actionText={user?.name ? "Edit" : "Add"}
+            value={ user?.preferredName || "Not provided"}
+            actionText={user?.preferredName ? "Edit" : "Add"}
+            onEdit={() => handleEdit("Preffered name", "preferredName", user?.preferredName || "")}
           />
           <ProfileCard
             icon="phone"
@@ -154,6 +155,7 @@ const ProfilePage = () => {
             value={user?.phone || "Not provided"}
             actionText={user?.phone ? "Edit" : "Add"}
             description="Contact number (for confirmed guests and service providers to get in touch)."
+            onEdit={() => handleEdit("Phone number", "phone", user?.phone || "")}
           />
           <ProfileCard
             icon="mail"
@@ -166,13 +168,9 @@ const ProfilePage = () => {
             label="Address"
             value={ user?.address || "Not provided"}
             actionText={user?.address ? "Edit" : "Add"}
+            onEdit={() => handleEdit("Address", "address", user?.address || "")}
           />
-          <ProfileCard
-            icon="alert-circle"
-            label="Emergency contact"
-            value={user?.emergencyContact || "Not provided"}
-            actionText={user?.emergencyContact ? "Edit" : "Add"}
-          />
+          
         </View>
       </ScrollView>
 

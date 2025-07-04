@@ -85,6 +85,7 @@ export interface nearbyLocationInterface {
 export interface UserDataType {
   _id: string;
   name: string;
+  preferredName: string;
   email: string;
   profilePic?: string;
   picture?: string;

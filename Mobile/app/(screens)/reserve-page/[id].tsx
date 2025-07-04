@@ -18,9 +18,9 @@ import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 // import { Plus, Minus } from "lucide-react-native";
 import { useCouponStore } from "@/store/coupon-store";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "../../../store/auth-store";
 import { useTravellerStore } from "@/store/traveller-store";
-import { PropertyInterface , Traveller} from "@/types";
+import { PropertyInterface , Traveller} from "../../../types"
 import axios from "axios";
 import { useSearchParams } from "expo-router/build/hooks";
 
@@ -587,7 +587,7 @@ export default function ReservationScreen() {
             <View style={styles.dateDisplay}>
               <View>
                 <Text style={styles.label}>Traveller Details</Text>
-                <Text style={styles.selectedText}>Abhay lacks skill</Text>
+                <Text style={styles.selectedText}>Enter traveller details</Text>
               </View>
             </View>
 

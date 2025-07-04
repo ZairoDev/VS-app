@@ -11,6 +11,10 @@ const travellerSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please enter your name"],
     },
+    preferredName: {
+      type: String,
+      default: "",
+    },
     email: {
       type: String,
       required: [true, "Please enter your email"],

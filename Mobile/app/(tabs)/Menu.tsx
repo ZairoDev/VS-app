@@ -354,7 +354,7 @@ const Menu = () => {
             ))}
           </View>
 
-          <Text style={styles.versionText}>Version 1.0.0</Text>
+          <Text style={styles.versionText}>Version 1.2.0</Text>
         </ScrollView>
       ) : (
         renderAuthForm()

@@ -7,8 +7,8 @@
         "./*"
       ]
     },
-    "jsx": "react-native",  // Ensure JSX is set to react-native
-    "moduleResolution": "nodenext"  // Ensure module resolution is set to node
+    "jsx": "react-native",
+    "moduleResolution": "node"
   },
   "include": [
     "**/*.ts",

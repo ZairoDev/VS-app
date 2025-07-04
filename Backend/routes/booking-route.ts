@@ -11,13 +11,3 @@ router.get("/:travellerId", getBookingsByUser);
 
 export default router;
 
-/*
- ______
-|      |
-|      |
-|______|
-|
-|
-|         
-
-*/
