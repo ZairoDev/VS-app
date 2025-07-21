@@ -116,3 +116,53 @@ export const getBookingsByUser = async (req: Request, res: Response) => {
           res.status(500).json({ message: 'Internal server error' });
         }
     };
+
+    export const cancelBooking = async (req:Request, res:Response) => {
+  try {
+    const { id } = req.params
+    const booking = await Bookings.findById(id)
+    if (!booking) {
+    
+      res.status(404).json({ message: "Booking not found" })
+    }
+
+    if (booking.bookingStatus === "cancelled") {
+      res.status(400).json({ message: "Booking is already cancelled." })
+    }
+
+    const today = new Date()
+    const startDate = new Date(booking.startDate)
+    const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+
+    let refundPercentage = 0
+    if (booking.paymentStatus === "paid") {
+      if (daysUntilBooking > 7) {
+        refundPercentage = 100
+      } else if (daysUntilBooking > 0) {
+        refundPercentage = 70
+      } else {
+        refundPercentage = 50
+      }
+    }
+
+    const refundAmount = Math.round((booking.price * refundPercentage) / 100)
+
+    booking.bookingStatus = "cancelled"
+
+    if (booking.paymentStatus === "paid") {
+      booking.paymentStatus = "refunded"
+    }
+
+    await booking.save()
+
+    res.status(200).json({
+      message: "Booking cancelled successfully.",
+      refundAmount,
+      refundPercentage,
+    })
+  } catch (error) {
+    console.error("Error cancelling booking:", error)
+    res.status(500).json({ message: "Failed to cancel booking." })
+  }
+}

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "vacationsaga",
-    "slug": "vacationsaga",
+    "slug": "Mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
@@ -48,7 +48,9 @@
       },
       "eas": {
         "projectId": "132058a9-91c7-465e-986a-bc84a6cb37f9"
-      }
-    }
+      },
+      "EXPO_PUBLIC_Maps_API_KEY": "AIzaSyYourActualAPIKey"
+    },
+    "owner": "anuket123"
   }
 }

@@ -97,7 +97,7 @@ const Wishlist = () => {
         <Image source={{ uri: item.propertyCoverFileUrl || "https://vacationsaga.b-cdn.net/assets/suitcase.png" }} style={styles.image} />
         <LinearGradient colors={["transparent", "rgba(0,0,0,0.7)"]} style={styles.gradient} />
         <View style={styles.priceTag}>
-          <Text style={styles.price}>₹{item.basePrice}</Text>
+          <Text style={styles.price}>€{item.basePrice}</Text>
           <Text style={styles.perNight}>/night</Text>
         </View>
         <Pressable onPress={() => handleRemoveFromWishlist(item._id)} style={styles.deleteIcon}>

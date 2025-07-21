@@ -22,7 +22,7 @@ import axios from "axios"
 import { useAuthStore } from "@/store/auth-store"
 import type { Booking } from "@/types"
 import { router } from "expo-router"
-
+import RazorpayCheckout from 'react-native-razorpay';
 const { width, height } = Dimensions.get("window")
 const CARD_WIDTH = width * 0.85
 
@@ -97,243 +97,313 @@ const BookingHubScreen = () => {
   }
 
   // Handle pay platform fees
-  const handlePayPlatformFees = async (booking: Booking) => {
-    Alert.alert(
-      "Pay Platform Fees",
-      "You are about to pay the platform fees for this booking.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Continue to Payment",
-          onPress: async () => {
-            try {
-              const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/pay/create-order`, {
-                amount: booking.price,
+ const handlePayPlatformFees = async (booking: Booking) => {
+  Alert.alert(
+    "Pay Platform Fees",
+    "You are about to pay the platform fees for this booking.",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Continue to Payment",
+        onPress: async () => {
+          try {
+            // 1️⃣ Create order on backend with bookingId too
+            const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/pay/create-order`, {
+              amount: booking.price,
+              bookingId: booking._id
+            });
+
+            const orderId = response.data.order.id;
+
+            // 2️⃣ Setup payment options
+            const options = {
+              key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID!, 
+              amount: booking.price,  // in paise
+              currency: 'INR',
+              name: 'Vacation Saga',
+              description: 'Booking Platform Fees',
+              order_id: orderId,
+              prefill: {
+                email: "johndoe@example.com",
+                contact: "+91999999999",
+                name: "John Doe"
+              },
+              theme: {
+                color: '#FF9933'
+              }
+            };
+
+            // 3️⃣ Open Razorpay native checkout
+            RazorpayCheckout.open(options)
+              .then(async (data: any) => {
+                console.log('Payment Success:', data);
+
+                Alert.alert("Success", "Payment completed successfully!");
+
+                // ✅ Call backend to verify and update booking/payment status
+                await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/pay/verify`, {
+                  razorpay_order_id: data.razorpay_order_id,
+                  razorpay_payment_id: data.razorpay_payment_id,
+                  razorpay_signature: data.razorpay_signature
+                });
+
+              })
+              .catch((error: any) => {
+                console.error('Payment Failed:', error);
+                Alert.alert("Payment Failed", error.description || "Something went wrong.");
               });
-              const orderId = response.data.order.id;
-  
-              router.push({
-                pathname: "/(screens)/pages/payment-webview-screen",
-                params: {
-                  orderId,
-                  amount: booking.price.toString(),
-                  bookingId: booking._id,
-                },
-              });
-  
-            } catch (error) {
-              console.error("Payment order creation failed", error);
-              Alert.alert("Error", "Failed to create payment order.");
-            }
+
+          } catch (error) {
+            console.error("Payment order creation failed", error);
+            Alert.alert("Error", "Failed to create payment order.");
           }
         }
-      ]
-    );
-  };
-
-  const handleCancelBooking = (id: string) => {
-    if (!selectedBooking) {
-      // If called from the main list view, find the booking
-      const booking = bookings.find((b) => b._id === id)
-      if (!booking) {
-        Alert.alert("Error", "Booking not found")
-        return
       }
+    ]
+  );
+};
 
-      // If user hasn't paid, just cancel without mentioning refunds
-      if (booking.paymentStatus !== "paid") {
-        Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
-          { text: "No", style: "cancel" },
-          {
-            text: "Yes, Cancel",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                setLoading(true)
-                await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-                  bookingStatus: "cancelled",
-                })
-                getBookings()
-                if (detailsModalVisible) {
-                  setDetailsModalVisible(false)
-                }
-                Alert.alert("Success", "Your booking has been cancelled")
-              } catch (error) {
-                console.error("Error cancelling booking:", error)
-                Alert.alert("Error", "Failed to cancel booking. Please try again.")
-              } finally {
-                setLoading(false)
-              }
-            },
-          },
-        ])
-        return
-      }
+  // const handleCancelBooking = (id: string) => {
+  //   if (!selectedBooking) {
+  //     // If called from the main list view, find the booking
+  //     const booking = bookings.find((b) => b._id === id)
+  //     if (!booking) {
+  //       Alert.alert("Error", "Booking not found")
+  //       return
+  //     }
 
-      // Calculate days until booking
-      const today = new Date()
-      const startDate = new Date(booking.startDate)
-      const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  //     // If user hasn't paid, just cancel without mentioning refunds
+  //     if (booking.paymentStatus !== "paid") {
+  //       Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
+  //         { text: "No", style: "cancel" },
+  //         {
+  //           text: "Yes, Cancel",
+  //           style: "destructive",
+  //           onPress: async () => {
+  //             try {
+  //               setLoading(true)
+  //               await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+  //                 bookingStatus: "cancelled",
+  //               })
+  //               getBookings()
+  //               if (detailsModalVisible) {
+  //                 setDetailsModalVisible(false)
+  //               }
+  //               Alert.alert("Success", "Your booking has been cancelled")
+  //             } catch (error) {
+  //               console.error("Error cancelling booking:", error)
+  //               Alert.alert("Error", "Failed to cancel booking. Please try again.")
+  //             } finally {
+  //               setLoading(false)
+  //             }
+  //           },
+  //         },
+  //       ])
+  //       return
+  //     }
 
-      // Determine refund percentage based on cancellation timing
-      let refundPercentage = 0
-      let refundMessage = ""
+  //     // Calculate days until booking
+  //     const today = new Date()
+  //     const startDate = new Date(booking.startDate)
+  //     const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
-      if (daysUntilBooking > 7) {
-        // More than a week before booking
-        refundPercentage = 100
-        refundMessage = "You will receive a 100% refund as you're cancelling more than a week before your booking."
-      } else if (daysUntilBooking > 0) {
-        // Between booking date and one week before
-        refundPercentage = 70
-        refundMessage =
-          "You will receive a 70% refund as you're cancelling between your booking date and one week prior."
-      } else {
-        // On the booking date
-        refundPercentage = 50
-        refundMessage = "You will receive a 50% refund as you're cancelling on your booking date."
-      }
+  //     // Determine refund percentage based on cancellation timing
+  //     let refundPercentage = 0
+  //     let refundMessage = ""
 
-      // Calculate refund amount
-      const refundAmount = (booking.price * refundPercentage) / 100
+  //     if (daysUntilBooking > 7) {
+  //       // More than a week before booking
+  //       refundPercentage = 100
+  //       refundMessage = "You will receive a 100% refund as you're cancelling more than a week before your booking."
+  //     } else if (daysUntilBooking > 0) {
+  //       // Between booking date and one week before
+  //       refundPercentage = 70
+  //       refundMessage =
+  //         "You will receive a 70% refund as you're cancelling between your booking date and one week prior."
+  //     } else {
+  //       // On the booking date
+  //       refundPercentage = 50
+  //       refundMessage = "You will receive a 50% refund as you're cancelling on your booking date."
+  //     }
 
-      Alert.alert(
-        "Cancel Booking",
-        `${refundMessage}\n\nRefund Amount: €${refundAmount.toLocaleString("en-IN")}\n\nAre you sure you want to cancel this booking?`,
-        [
-          { text: "No", style: "cancel" },
-          {
-            text: "Yes, Cancel",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                setLoading(true)
-                await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-                  bookingStatus: "cancelled",
-                  refundAmount: refundAmount,
-                  refundPercentage: refundPercentage,
-                  paymentStatus: "refunded",
-                })
-                getBookings()
-                if (detailsModalVisible) {
-                  setDetailsModalVisible(false)
-                }
-                Alert.alert(
-                  "Success",
-                  `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`,
-                )
-              } catch (error) {
-                console.error("Error cancelling booking:", error)
-                Alert.alert("Error", "Failed to cancel booking. Please try again.")
-              } finally {
-                setLoading(false)
-              }
-            },
-          },
-        ],
-      )
-      return
-    } else {
-      // If called from the details modal, use the selectedBooking
-      // If user hasn't paid, just cancel without mentioning refunds
-      if (selectedBooking.paymentStatus !== "paid") {
-        Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
-          { text: "No", style: "cancel" },
-          {
-            text: "Yes, Cancel",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                setLoading(true)
-                await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-                  bookingStatus: "cancelled",
-                })
-                getBookings()
-                if (detailsModalVisible) {
-                  setDetailsModalVisible(false)
-                }
-                Alert.alert("Success", "Your booking has been cancelled")
-              } catch (error) {
-                console.error("Error cancelling booking:", error)
-                Alert.alert("Error", "Failed to cancel booking. Please try again.")
-              } finally {
-                setLoading(false)
-              }
-            },
-          },
-        ])
-        return
-      }
+  //     // Calculate refund amount
+  //     const refundAmount = (booking.price * refundPercentage) / 100
 
-      // Calculate days until booking
-      const today = new Date()
-      const startDate = new Date(selectedBooking.startDate)
-      const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  //     Alert.alert(
+  //       "Cancel Booking",
+  //       `${refundMessage}\n\nRefund Amount: €${refundAmount.toLocaleString("en-IN")}\n\nAre you sure you want to cancel this booking?`,
+  //       [
+  //         { text: "No", style: "cancel" },
+  //         {
+  //           text: "Yes, Cancel",
+  //           style: "destructive",
+  //           onPress: async () => {
+  //             try {
+  //               setLoading(true)
+  //               await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+  //                 bookingStatus: "cancelled",
+  //                 refundAmount: refundAmount,
+  //                 refundPercentage: refundPercentage,
+  //                 paymentStatus: "refunded",
+  //               })
+  //               getBookings()
+  //               if (detailsModalVisible) {
+  //                 setDetailsModalVisible(false)
+  //               }
+  //               Alert.alert(
+  //                 "Success",
+  //                 `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`,
+  //               )
+  //             } catch (error) {
+  //               console.error("Error cancelling booking:", error)
+  //               Alert.alert("Error", "Failed to cancel booking. Please try again.")
+  //             } finally {
+  //               setLoading(false)
+  //             }
+  //           },
+  //         },
+  //       ],
+  //     )
+  //     return
+  //   } else {
+     
+  //     if (selectedBooking.paymentStatus !== "paid") {
+  //       Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
+  //         { text: "No", style: "cancel" },
+  //         {
+  //           text: "Yes, Cancel",
+  //           style: "destructive",
+  //           onPress: async () => {
+  //             try {
+  //               setLoading(true)
+  //               await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+  //                 bookingStatus: "cancelled",
+  //               })
+  //               getBookings()
+  //               if (detailsModalVisible) {
+  //                 setDetailsModalVisible(false)
+  //               }
+  //               Alert.alert("Success", "Your booking has been cancelled")
+  //             } catch (error) {
+  //               console.error("Error cancelling booking:", error)
+  //               Alert.alert("Error", "Failed to cancel booking. Please try again.")
+  //             } finally {
+  //               setLoading(false)
+  //             }
+  //           },
+  //         },
+  //       ])
+  //       return
+  //     }
 
-      // Determine refund percentage based on cancellation timing
-      let refundPercentage = 0
-      let refundMessage = ""
+  //     // Calculate days until booking
+  //     const today = new Date()
+  //     const startDate = new Date(selectedBooking.startDate)
+  //     const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
-      if (daysUntilBooking > 7) {
-        // More than a week before booking
-        refundPercentage = 100
-        refundMessage = "You will receive a 100% refund as you're cancelling more than a week before your booking."
-      } else if (daysUntilBooking > 0) {
-        // Between booking date and one week before
-        refundPercentage = 70
-        refundMessage =
-          "You will receive a 70% refund as you're cancelling between your booking date and one week prior."
-      } else {
-        // On the booking date
-        refundPercentage = 50
-        refundMessage = "You will receive a 50% refund as you're cancelling on your booking date."
-      }
+  //     // Determine refund percentage based on cancellation timing
+  //     let refundPercentage = 0
+  //     let refundMessage = ""
 
-      // Calculate refund amount
-      const refundAmount = (selectedBooking.price * refundPercentage) / 100
+  //     if (daysUntilBooking > 7) {
+  //       // More than a week before booking
+  //       refundPercentage = 100
+  //       refundMessage = "You will receive a 100% refund as you're cancelling more than a week before your booking."
+  //     } else if (daysUntilBooking > 0) {
+  //       // Between booking date and one week before
+  //       refundPercentage = 70
+  //       refundMessage =
+  //         "You will receive a 70% refund as you're cancelling between your booking date and one week prior."
+  //     } else {
+  //       // On the booking date
+  //       refundPercentage = 50
+  //       refundMessage = "You will receive a 50% refund as you're cancelling on your booking date."
+  //     }
 
-      Alert.alert(
-        "Cancel Booking",
-        `${refundMessage}\n\nRefund Amount: €${refundAmount.toLocaleString("en-IN")}\n\nAre you sure you want to cancel this booking?`,
-        [
-          { text: "No", style: "cancel" },
-          {
-            text: "Yes, Cancel",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                setLoading(true)
-                await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-                  bookingStatus: "cancelled",
-                  refundAmount: refundAmount,
-                  refundPercentage: refundPercentage,
-                  paymentStatus: "refunded",
-                })
-                getBookings()
-                if (detailsModalVisible) {
-                  setDetailsModalVisible(false)
-                }
-                Alert.alert(
-                  "Success",
-                  `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`,
-                )
-              } catch (error) {
-                console.error("Error cancelling booking:", error)
-                Alert.alert("Error", "Failed to cancel booking. Please try again.")
-              } finally {
-                setLoading(false)
-              }
-            },
-          },
-        ],
-      )
-    }
-  }
+  //     // Calculate refund amount
+  //     const refundAmount = (selectedBooking.price * refundPercentage) / 100
+
+  //     Alert.alert(
+  //       "Cancel Booking",
+  //       `${refundMessage}\n\nRefund Amount: €${refundAmount.toLocaleString("en-IN")}\n\nAre you sure you want to cancel this booking?`,
+  //       [
+  //         { text: "No", style: "cancel" },
+  //         {
+  //           text: "Yes, Cancel",
+  //           style: "destructive",
+  //           onPress: async () => {
+  //             try {
+  //               setLoading(true)
+  //               await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
+  //                 bookingStatus: "cancelled",
+  //                 refundAmount: refundAmount,
+  //                 refundPercentage: refundPercentage,
+  //                 paymentStatus: "refunded",
+  //               })
+  //               getBookings()
+  //               if (detailsModalVisible) {
+  //                 setDetailsModalVisible(false)
+  //               }
+  //               Alert.alert(
+  //                 "Success",
+  //                 `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`,
+  //               )
+  //             } catch (error) {
+  //               console.error("Error cancelling booking:", error)
+  //               Alert.alert("Error", "Failed to cancel booking. Please try again.")
+  //             } finally {
+  //               setLoading(false)
+  //             }
+  //           },
+  //         },
+  //       ],
+  //     )
+  //   }
+  // }
+
+const handleCancelBooking = (id: string) => {
+  Alert.alert(
+    "Cancel Booking",
+    "Are you sure you want to cancel this booking?",
+    [
+      { text: "No", style: "cancel" },
+      {
+        text: "Yes, Cancel",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setLoading(true)
+            const response = await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/cancel/${id}`)
+            getBookings()
+            if (detailsModalVisible) {
+              setDetailsModalVisible(false)
+            }
+
+            const { refundAmount, refundPercentage } = response.data
+
+            if (refundAmount > 0) {
+              Alert.alert(
+                "Booking Cancelled",
+                `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`
+              )
+            } else {
+              Alert.alert("Booking Cancelled", "Your booking has been cancelled.")
+            }
+          } catch (error) {
+            console.error("Cancel booking failed:", error)
+            Alert.alert("Error", "Failed to cancel booking. Please try again.")
+          } finally {
+            setLoading(false)
+          }
+        },
+      },
+    ]
+  )
+}
 
   // Handle rebook
   const handleRebook = (booking: Booking) => {
-    // Placeholder for rebooking functionality
-    // You'll implement this part yourself
+    
     Alert.alert(
       "Rebook Property",
       `You're about to rebook ${booking.propertyId.placeName}. This functionality will be implemented by you.`,
@@ -589,10 +659,7 @@ const BookingHubScreen = () => {
           >
             <View style={styles.headerTop}>
               <Text style={styles.heading}>My Bookings</Text>
-              {/* <TouchableOpacity style={styles.supportButton} onPress={handleContactSupport}>
-                <Feather name="headphones" size={20} color="#fff" />
-                <Text style={styles.supportButtonText}>Support</Text>
-              </TouchableOpacity> */}
+              
             </View>
             <View style={styles.tabContainer}>
               <TouchableOpacity
@@ -766,45 +833,7 @@ const BookingHubScreen = () => {
                     </View>
                   </View>
 
-                  {/* <View style={styles.detailsSection}>
-                    <View style={styles.notesHeader}>
-                      <Text style={styles.detailsSectionTitle}>Notes</Text>
-                      {!isEditingNotes && (
-                        <TouchableOpacity onPress={() => setIsEditingNotes(true)}>
-                          <Feather name="edit-2" size={18} color="#5E72E4" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-
-                    {isEditingNotes ? (
-                      <View style={styles.notesEditContainer}>
-                        <TextInput
-                          style={styles.notesInput}
-                          value={notes}
-                          onChangeText={setNotes}
-                          placeholder="Add notes about your stay..."
-                          multiline
-                          numberOfLines={4}
-                        />
-                        <View style={styles.notesActions}>
-                          <TouchableOpacity
-                            style={styles.notesCancelButton}
-                            onPress={() => {
-                              setNotes(selectedBooking.notes || "")
-                              setIsEditingNotes(false)
-                            }}
-                          >
-                            <Text style={styles.notesCancelText}>Cancel</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={styles.notesSaveButton} onPress={handleSaveNotes} disabled={loading}>
-                            <Text style={styles.notesSaveText}>Save</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ) : (
-                      <Text style={styles.notesText}>{notes ? notes : "No notes added yet."}</Text>
-                    )}
-                  </View> */}
+                  
 
                   <View style={styles.hostSection}>
                     <Text style={styles.detailsSectionTitle}>Host Information</Text>

@@ -13,7 +13,7 @@ import axios from "axios";
 import { Link, Route, router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState, useEffect, useRef } from "react";
-// import { SafeAreaView } from "react-native-safe-area-context";.
+
 
 import useStore from "@/store/filter-store";
 import { Countries } from "@/Constants/Country";
@@ -123,7 +123,7 @@ export default function Index() {
           : [...prev, value]
       );
     }
-  };
+  };  
 
   useEffect(() => {
     setWishlist(user?.wishlist || []);
@@ -315,7 +315,7 @@ export default function Index() {
                     onPress={() =>
                       handleSelect(SelectedType.PROPERTY_TYPE, item.name)
                     }
-                  >
+            >
                     <View
                       style={[
                         styles.propertyTypeItem,
@@ -404,17 +404,25 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   imageWrapper: {
-    position: "relative",
+    width: '100%',
+  aspectRatio: 4/3, 
+ 
+  borderRadius: 10,
+  overflow: 'hidden',
+  position: 'relative',
   },
   imageContainer: {
-    width: 300,
-    height: 300,
-
-    borderRadius: 10,
-    borderWidth: 0.3,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    // borderRadius: 10,
+    // borderWidth: 0.3,
   },
   propertyContainer: {
-    margin: 15,
+     margin: 15,
+  width: '80%',  // or 100% minus padding
+  height: '60%',
+  alignSelf: 'center',
   },
   propertyText: {
     color: "gray",
