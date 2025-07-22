@@ -3,11 +3,12 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Fontisto } from "@expo/vector-icons";
+import { jsx, jsxs } from "react/jsx-runtime";
 
 type FeaturedPropertyTypes = {
   id: number;
   name: string;
-  icon: (color:string)=>JSX.Element;
+  icon: (color:string)=>jsx.Element;
 };
 
 export const Countries = [

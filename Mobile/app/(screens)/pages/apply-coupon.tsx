@@ -11,6 +11,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useCouponStore } from "@/store/coupon-store";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Define the Coupon interface
 interface Coupon {
@@ -70,7 +71,7 @@ const ApplyCoupon = () => {
     }
   };
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="black" />
@@ -155,7 +156,7 @@ const ApplyCoupon = () => {
           <Text style={styles.noCoupons}>No coupons available.</Text>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

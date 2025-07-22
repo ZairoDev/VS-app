@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -14,48 +14,38 @@ import {
   Alert,
   Modal,
   Animated,
-} from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
-import { BlurView } from "expo-blur"
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { Feather, MaterialCommunityIcons, Ionicons, FontAwesome5, AntDesign } from "@expo/vector-icons"
-import axios from "axios"
-import { useAuthStore } from "@/store/auth-store"
-import type { Booking } from "@/types"
-import { router } from "expo-router"
+import axios from "axios";
+import { useAuthStore } from "@/store/auth-store";
+import type { Booking } from "@/types";
+import { router } from "expo-router";
 import RazorpayCheckout from 'react-native-razorpay';
-const { width, height } = Dimensions.get("window")
-const CARD_WIDTH = width * 0.85
-
+const { width, height } = Dimensions.get("window");
+const CARD_WIDTH = width * 0.85;
 const formatDate = (dateString: string): string => {
   const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }
-  return new Date(dateString).toLocaleDateString("en-IN", options)
+  return new Date(dateString).toLocaleDateString("en-IN", options);
 }
-
 const formatFullDate = (dateString: string): string => {
   const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" }
-  return new Date(dateString).toLocaleDateString("en-IN", options)
+  return new Date(dateString).toLocaleDateString("en-IN", options);
 }
-
 const BookingHubScreen = () => {
-  // Main state
   const [activeTab, setActiveTab] = useState("upcoming")
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuthStore()
   const travellerId = user?._id
   const scrollViewRef = useRef<ScrollView>(null)
-
-  // Modal states
   const [detailsModalVisible, setDetailsModalVisible] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isEditingNotes, setIsEditingNotes] = useState(false)
   const [notes, setNotes] = useState("")
-
-  // Animation values
   const slideAnimation = useRef(new Animated.Value(0)).current
   const fadeAnimation = useRef(new Animated.Value(0)).current
-
-  // Fetch bookings
   const getBookings = async () => {
     setLoading(true)
     try {
@@ -68,12 +58,9 @@ const BookingHubScreen = () => {
       setLoading(false)
     }
   }
-
   useEffect(() => {
     getBookings()
   }, [travellerId])
-
-  // Handle contact host via email or phone
   const handleContactHost = (email: string) => {
     if (email) {
       Linking.openURL(`mailto:${email}`)
@@ -81,8 +68,6 @@ const BookingHubScreen = () => {
       Alert.alert("Contact Info", "Host email is not available")
     }
   }
-
-  // Add a new function for calling the host
   const handleCallHost = (phone: string) => {
     if (phone) {
       Linking.openURL(`tel:${phone}`)
@@ -90,13 +75,9 @@ const BookingHubScreen = () => {
       Alert.alert("Contact Info", "Host phone number is not available")
     }
   }
-
-  // Handle contact customer support
   const handleContactSupport = () => {
     Linking.openURL(`tel:+447897037080 `)
   }
-
-  // Handle pay platform fees
  const handlePayPlatformFees = async (booking: Booking) => {
   Alert.alert(
     "Pay Platform Fees",
@@ -162,205 +143,6 @@ const BookingHubScreen = () => {
     ]
   );
 };
-
-  // const handleCancelBooking = (id: string) => {
-  //   if (!selectedBooking) {
-  //     // If called from the main list view, find the booking
-  //     const booking = bookings.find((b) => b._id === id)
-  //     if (!booking) {
-  //       Alert.alert("Error", "Booking not found")
-  //       return
-  //     }
-
-  //     // If user hasn't paid, just cancel without mentioning refunds
-  //     if (booking.paymentStatus !== "paid") {
-  //       Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
-  //         { text: "No", style: "cancel" },
-  //         {
-  //           text: "Yes, Cancel",
-  //           style: "destructive",
-  //           onPress: async () => {
-  //             try {
-  //               setLoading(true)
-  //               await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-  //                 bookingStatus: "cancelled",
-  //               })
-  //               getBookings()
-  //               if (detailsModalVisible) {
-  //                 setDetailsModalVisible(false)
-  //               }
-  //               Alert.alert("Success", "Your booking has been cancelled")
-  //             } catch (error) {
-  //               console.error("Error cancelling booking:", error)
-  //               Alert.alert("Error", "Failed to cancel booking. Please try again.")
-  //             } finally {
-  //               setLoading(false)
-  //             }
-  //           },
-  //         },
-  //       ])
-  //       return
-  //     }
-
-  //     // Calculate days until booking
-  //     const today = new Date()
-  //     const startDate = new Date(booking.startDate)
-  //     const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-  //     // Determine refund percentage based on cancellation timing
-  //     let refundPercentage = 0
-  //     let refundMessage = ""
-
-  //     if (daysUntilBooking > 7) {
-  //       // More than a week before booking
-  //       refundPercentage = 100
-  //       refundMessage = "You will receive a 100% refund as you're cancelling more than a week before your booking."
-  //     } else if (daysUntilBooking > 0) {
-  //       // Between booking date and one week before
-  //       refundPercentage = 70
-  //       refundMessage =
-  //         "You will receive a 70% refund as you're cancelling between your booking date and one week prior."
-  //     } else {
-  //       // On the booking date
-  //       refundPercentage = 50
-  //       refundMessage = "You will receive a 50% refund as you're cancelling on your booking date."
-  //     }
-
-  //     // Calculate refund amount
-  //     const refundAmount = (booking.price * refundPercentage) / 100
-
-  //     Alert.alert(
-  //       "Cancel Booking",
-  //       `${refundMessage}\n\nRefund Amount: €${refundAmount.toLocaleString("en-IN")}\n\nAre you sure you want to cancel this booking?`,
-  //       [
-  //         { text: "No", style: "cancel" },
-  //         {
-  //           text: "Yes, Cancel",
-  //           style: "destructive",
-  //           onPress: async () => {
-  //             try {
-  //               setLoading(true)
-  //               await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-  //                 bookingStatus: "cancelled",
-  //                 refundAmount: refundAmount,
-  //                 refundPercentage: refundPercentage,
-  //                 paymentStatus: "refunded",
-  //               })
-  //               getBookings()
-  //               if (detailsModalVisible) {
-  //                 setDetailsModalVisible(false)
-  //               }
-  //               Alert.alert(
-  //                 "Success",
-  //                 `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`,
-  //               )
-  //             } catch (error) {
-  //               console.error("Error cancelling booking:", error)
-  //               Alert.alert("Error", "Failed to cancel booking. Please try again.")
-  //             } finally {
-  //               setLoading(false)
-  //             }
-  //           },
-  //         },
-  //       ],
-  //     )
-  //     return
-  //   } else {
-     
-  //     if (selectedBooking.paymentStatus !== "paid") {
-  //       Alert.alert("Cancel Booking", "Are you sure you want to cancel this booking?", [
-  //         { text: "No", style: "cancel" },
-  //         {
-  //           text: "Yes, Cancel",
-  //           style: "destructive",
-  //           onPress: async () => {
-  //             try {
-  //               setLoading(true)
-  //               await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-  //                 bookingStatus: "cancelled",
-  //               })
-  //               getBookings()
-  //               if (detailsModalVisible) {
-  //                 setDetailsModalVisible(false)
-  //               }
-  //               Alert.alert("Success", "Your booking has been cancelled")
-  //             } catch (error) {
-  //               console.error("Error cancelling booking:", error)
-  //               Alert.alert("Error", "Failed to cancel booking. Please try again.")
-  //             } finally {
-  //               setLoading(false)
-  //             }
-  //           },
-  //         },
-  //       ])
-  //       return
-  //     }
-
-  //     // Calculate days until booking
-  //     const today = new Date()
-  //     const startDate = new Date(selectedBooking.startDate)
-  //     const daysUntilBooking = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-  //     // Determine refund percentage based on cancellation timing
-  //     let refundPercentage = 0
-  //     let refundMessage = ""
-
-  //     if (daysUntilBooking > 7) {
-  //       // More than a week before booking
-  //       refundPercentage = 100
-  //       refundMessage = "You will receive a 100% refund as you're cancelling more than a week before your booking."
-  //     } else if (daysUntilBooking > 0) {
-  //       // Between booking date and one week before
-  //       refundPercentage = 70
-  //       refundMessage =
-  //         "You will receive a 70% refund as you're cancelling between your booking date and one week prior."
-  //     } else {
-  //       // On the booking date
-  //       refundPercentage = 50
-  //       refundMessage = "You will receive a 50% refund as you're cancelling on your booking date."
-  //     }
-
-  //     // Calculate refund amount
-  //     const refundAmount = (selectedBooking.price * refundPercentage) / 100
-
-  //     Alert.alert(
-  //       "Cancel Booking",
-  //       `${refundMessage}\n\nRefund Amount: €${refundAmount.toLocaleString("en-IN")}\n\nAre you sure you want to cancel this booking?`,
-  //       [
-  //         { text: "No", style: "cancel" },
-  //         {
-  //           text: "Yes, Cancel",
-  //           style: "destructive",
-  //           onPress: async () => {
-  //             try {
-  //               setLoading(true)
-  //               await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${id}`, {
-  //                 bookingStatus: "cancelled",
-  //                 refundAmount: refundAmount,
-  //                 refundPercentage: refundPercentage,
-  //                 paymentStatus: "refunded",
-  //               })
-  //               getBookings()
-  //               if (detailsModalVisible) {
-  //                 setDetailsModalVisible(false)
-  //               }
-  //               Alert.alert(
-  //                 "Success",
-  //                 `Your booking has been cancelled and a refund of €${refundAmount.toLocaleString("en-IN")} (${refundPercentage}%) has been initiated.`,
-  //               )
-  //             } catch (error) {
-  //               console.error("Error cancelling booking:", error)
-  //               Alert.alert("Error", "Failed to cancel booking. Please try again.")
-  //             } finally {
-  //               setLoading(false)
-  //             }
-  //           },
-  //         },
-  //       ],
-  //     )
-  //   }
-  // }
-
 const handleCancelBooking = (id: string) => {
   Alert.alert(
     "Cancel Booking",
@@ -400,8 +182,6 @@ const handleCancelBooking = (id: string) => {
     ]
   )
 }
-
-  // Handle rebook
   const handleRebook = (booking: Booking) => {
     
     Alert.alert(
@@ -409,8 +189,6 @@ const handleCancelBooking = (id: string) => {
       `You're about to rebook ${booking.propertyId.placeName}. This functionality will be implemented by you.`,
     )
   }
-
-  // Handle view details
   const handleViewDetails = (booking: Booking) => {
     setSelectedBooking(booking)
     setNotes(booking.notes || "")
@@ -429,8 +207,6 @@ const handleCancelBooking = (id: string) => {
       useNativeDriver: true,
     }).start()
   }
-
-  // Handle save notes
   const handleSaveNotes = async () => {
     if (!selectedBooking) return
 
@@ -455,8 +231,6 @@ const handleCancelBooking = (id: string) => {
       setLoading(false)
     }
   }
-
-  // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
@@ -469,8 +243,6 @@ const handleCancelBooking = (id: string) => {
         return "#FFC107"
     }
   }
-
-  // Get payment status color
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case "paid":
@@ -483,21 +255,15 @@ const handleCancelBooking = (id: string) => {
         return "#FFC107"
     }
   }
-
-  // Filter bookings
   const upcomingBookings = bookings.filter(
     (item) => item.bookingStatus !== "cancelled" && new Date(item.endDate) >= new Date(),
   )
   const pastBookings = bookings.filter(
     (item) => item.bookingStatus === "cancelled" || new Date(item.endDate) < new Date(),
   )
-
-  // Check if contact host button should be enabled
   const isContactHostEnabled = (booking: Booking) => {
     return booking.bookingStatus === "confirmed" && booking.paymentStatus === "paid"
   }
-
-  // Render booking card
   const renderBookingCard = (item: Booking) => (
     <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => handleViewDetails(item)} key={item._id}>
       <View style={styles.imageContainer}>
@@ -509,14 +275,12 @@ const handleCancelBooking = (id: string) => {
         <Text style={styles.title} numberOfLines={1}>
           {item.propertyId.placeName}
         </Text>
-
         <View style={styles.locationRow}>
           <Feather name="map-pin" size={14} color="#666" />
           <Text style={styles.location} numberOfLines={1}>
             {item.propertyId.city}, {item.propertyId.country}
           </Text>
         </View>
-
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
             <MaterialCommunityIcons name="calendar-range" size={16} color="#fca42c" />
@@ -524,7 +288,6 @@ const handleCancelBooking = (id: string) => {
               {formatDate(item.startDate)} - {formatDate(item.endDate)}
             </Text>
           </View>
-
           <View style={styles.detailItem}>
             <Ionicons name="people" size={16} color="#fca42c" />
             <Text style={styles.detailText}>
@@ -532,7 +295,6 @@ const handleCancelBooking = (id: string) => {
             </Text>
           </View>
         </View>
-
         <View style={styles.priceRow}>
           <View style={styles.priceInfo}>
             <Text style={styles.priceLabel}>Total</Text>
@@ -544,14 +306,12 @@ const handleCancelBooking = (id: string) => {
           </View>
           <Text style={styles.price}>Є{item.price.toLocaleString("en-IN")}</Text>
         </View>
-
         <View style={styles.hostRow}>
           <View style={styles.hostInfo}>
             <FontAwesome5 name="user-circle" size={16} color="#666" />
             <Text style={styles.hostName}>{item.userId.name}</Text>
           </View>
         </View>
-
         <View style={styles.actions}>
           {item.bookingStatus !== "confirmed" ? (
             <View style={styles.waitingContainer}>
@@ -566,7 +326,6 @@ const handleCancelBooking = (id: string) => {
                       <Feather name="phone" size={16} color="#fff" />
                       <Text style={styles.buttonText}>Call Host</Text>
                     </TouchableOpacity>
-
                     <TouchableOpacity
                       style={styles.hostButton}
                       onPress={() => handleContactHost(item.userId.email || "")}
@@ -575,7 +334,6 @@ const handleCancelBooking = (id: string) => {
                       <Text style={styles.buttonText}>Email Host</Text>
                     </TouchableOpacity>
                   </View>
-
                   <TouchableOpacity style={styles.supportButton} onPress={handleContactSupport}>
                     <Feather name="headphones" size={16} color="#5E72E4" />
                     <Text style={styles.supportButtonText}>Contact Vacation Saga</Text>
@@ -588,36 +346,31 @@ const handleCancelBooking = (id: string) => {
                       <Feather name="phone" size={16} color="#fff" />
                       <Text style={styles.buttonText}>Call Host</Text>
                     </TouchableOpacity>
-
                     <TouchableOpacity style={styles.hostButton} disabled={true}>
                       <Feather name="mail" size={16} color="#fff" />
                       <Text style={styles.buttonText}>Email Host</Text>
                     </TouchableOpacity>
                   </View> */}
-
                   <TouchableOpacity style={styles.supportButton} disabled={true}>
                     {/* <Feather name="headphones" size={16} color="#5E72E4" /> */}
                     <Text style={styles.supportButtonText}>Contact Vacation Saga</Text>
                   </TouchableOpacity>
                 </View>
               )}
-
-              {item.paymentStatus !== "paid" && (
+              {/* {item.paymentStatus !== "paid" && (
                 <TouchableOpacity style={styles.outlineButton} onPress={() => handlePayPlatformFees(item)}>
                   <Feather name="credit-card" size={18} color="#5E72E4" />
                   <Text style={styles.outlineButtonText}>Pay Fees</Text>
                 </TouchableOpacity>
-              )}
+              )} */}
             </>
           )}
-
           {item.bookingStatus === "pending" && (
             <TouchableOpacity style={styles.dangerButton} onPress={() => handleCancelBooking(item._id)}>
               <Feather name="x-circle" size={18} color="#fff" />
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
           )}
-
           {item.bookingStatus === "confirmed" && new Date(item.endDate) < new Date() && (
             <TouchableOpacity style={styles.outlineButton} onPress={() => handleRebook(item)}>
               <Feather name="refresh-cw" size={18} color="#5E72E4" />
@@ -628,7 +381,6 @@ const handleCancelBooking = (id: string) => {
       </View>
     </TouchableOpacity>
   )
-
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="calendar" size={60} color="#ccc" />
@@ -638,14 +390,11 @@ const handleCancelBooking = (id: string) => {
       </Text>
     </View>
   )
-
-  // Render loading state
   const renderLoadingState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyStateTitle}>Loading bookings...</Text>
     </View>
   )
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -659,7 +408,6 @@ const handleCancelBooking = (id: string) => {
           >
             <View style={styles.headerTop}>
               <Text style={styles.heading}>My Bookings</Text>
-              
             </View>
             <View style={styles.tabContainer}>
               <TouchableOpacity
@@ -678,7 +426,6 @@ const handleCancelBooking = (id: string) => {
           </LinearGradient>
         </BlurView>
       </View>
-
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollContent}
@@ -695,8 +442,6 @@ const handleCancelBooking = (id: string) => {
               ? pastBookings.map((item) => renderBookingCard(item))
               : renderEmptyState()}
       </ScrollView>
-
-      {/* Booking Details Modal */}
       <Modal
         visible={detailsModalVisible}
         animationType="slide"
@@ -754,7 +499,6 @@ const handleCancelBooking = (id: string) => {
                       {selectedBooking.propertyId.city}, {selectedBooking.propertyId.country}
                     </Text>
                   </View>
-
                   <View style={styles.statusContainer}>
                     <View style={styles.statusItem}>
                       <Text style={styles.statusLabel}>Booking Status</Text>
@@ -764,7 +508,6 @@ const handleCancelBooking = (id: string) => {
                         <Text style={styles.statusText}>{selectedBooking.bookingStatus}</Text>
                       </View>
                     </View>
-
                     <View style={styles.statusItem}>
                       <Text style={styles.statusLabel}>Payment Status</Text>
                       <View
@@ -777,7 +520,6 @@ const handleCancelBooking = (id: string) => {
                       </View>
                     </View>
                   </View>
-
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsSectionTitle}>Booking Details</Text>
                     <View style={styles.detailsGrid}>
@@ -788,7 +530,6 @@ const handleCancelBooking = (id: string) => {
                           <Text style={styles.detailsGridItemValue}>{formatFullDate(selectedBooking.startDate)}</Text>
                         </View>
                       </View>
-
                       <View style={styles.detailsGridItem}>
                         <MaterialCommunityIcons name="calendar-range" size={20} color="#fca42c" />
                         <View style={styles.detailsGridItemContent}>
@@ -796,7 +537,6 @@ const handleCancelBooking = (id: string) => {
                           <Text style={styles.detailsGridItemValue}>{formatFullDate(selectedBooking.endDate)}</Text>
                         </View>
                       </View>
-
                       <View style={styles.detailsGridItem}>
                         <Ionicons name="time-outline" size={20} color="#fca42c" />
                         <View style={styles.detailsGridItemContent}>
@@ -806,7 +546,6 @@ const handleCancelBooking = (id: string) => {
                           </Text>
                         </View>
                       </View>
-
                       <View style={styles.detailsGridItem}>
                         <Ionicons name="people" size={20} color="#fca42c" />
                         <View style={styles.detailsGridItemContent}>
@@ -822,7 +561,6 @@ const handleCancelBooking = (id: string) => {
                       </View>
                     </View>
                   </View>
-
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsSectionTitle}>Price Details</Text>
                     <View style={styles.priceDetails}>
@@ -832,9 +570,6 @@ const handleCancelBooking = (id: string) => {
                       </View>
                     </View>
                   </View>
-
-                  
-
                   <View style={styles.hostSection}>
                     <Text style={styles.detailsSectionTitle}>Host Information</Text>
                     <View style={styles.hostCard}>
@@ -876,9 +611,7 @@ const handleCancelBooking = (id: string) => {
                       )}
                     </View>
                   </View>
-
                   <View style={styles.actionButtons}>
-                    {/* Show cancel button for pending, confirmed, or paid bookings */}
                     {(selectedBooking.bookingStatus === "pending" ||
                       selectedBooking.bookingStatus === "confirmed" ||
                       selectedBooking.paymentStatus === "paid") &&
@@ -892,7 +625,6 @@ const handleCancelBooking = (id: string) => {
                           <Text style={styles.actionButtonText}>Cancel Booking</Text>
                         </TouchableOpacity>
                       )}
-
                     {selectedBooking.bookingStatus === "confirmed" && selectedBooking.paymentStatus !== "paid" && (
                       <TouchableOpacity
                         style={styles.rebookButton}
@@ -902,7 +634,6 @@ const handleCancelBooking = (id: string) => {
                         <Text style={styles.actionButtonText}>Pay Platform Fees</Text>
                       </TouchableOpacity>
                     )}
-
                     {selectedBooking.bookingStatus === "confirmed" &&
                       new Date(selectedBooking.endDate) < new Date() && (
                         <TouchableOpacity
@@ -926,9 +657,7 @@ const handleCancelBooking = (id: string) => {
     </View>
   )
 }
-
 export default BookingHubScreen
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1224,8 +953,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
-
-  // Modal styles
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -1260,8 +987,6 @@ const styles = StyleSheet.create({
   modalScrollContent: {
     flex: 1,
   },
-
-  // Details modal styles
   detailsHeader: {
     height: 200,
     position: "relative",
@@ -1513,9 +1238,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     paddingVertical: 10,
     borderRadius: 12,
-    // flexDirection: "row",
     justifyContent: "center",
-    // alignItems: "center",
     borderWidth: 1,
     borderColor: "#5E72E4",
   },
