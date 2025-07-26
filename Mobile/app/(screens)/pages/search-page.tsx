@@ -12,9 +12,10 @@ import { Ionicons, AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GooglePlacesInput from '@/components/GooglePlacesInput';
 import { useNavigation } from '@react-navigation/native';
-
+import  useSearchStore  from '@/store/location-search-store';
 const RECENT_SEARCHES_KEY = 'recentsearch';
 
+ 
 
 const SearchPage = () => {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -23,7 +24,6 @@ const SearchPage = () => {
   useEffect(() => {
     loadRecentSearches();
   }, []);
-
   const loadRecentSearches = async () => {
     try {
       const data = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
@@ -55,7 +55,10 @@ const SearchPage = () => {
 
   const handlePlaceSelected = (place: { name: string; address: string }) => {
     saveSearch(place.name);
-    Alert.alert('Selected Location', `${place.name}\n${place.address}`);
+    // Alert.alert('Selected Location', `${place.name}\n${place.address}`);
+
+    useSearchStore.getState().setSelectedPlace(place);
+    navigation.goBack();
   };
 
   return (

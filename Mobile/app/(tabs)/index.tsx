@@ -13,13 +13,12 @@ import axios from "axios";
 import { Link, Route, router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState, useEffect, useRef } from "react";
-
-
 import useStore from "@/store/filter-store";
 import { Countries } from "@/Constants/Country";
 import { PropertyInterface } from "@/data/types";
 import { propertyTypes } from "@/Constants/Country";
 import { useAuthStore } from "@/store/auth-store";
+import useSearchStore from "@/store/location-search-store";
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -51,6 +50,7 @@ enum SelectedType {
   BATHROOMS = "bathroom",
 }
 
+
 export default function Index() {
   const { user } = useAuthStore();
   const [skip, setSkip] = useState(0);
@@ -73,6 +73,10 @@ export default function Index() {
     handleCount,
     applyFilters,
   } = useStore();
+
+  const {
+    selectedPlace
+  } =useSearchStore()
 
   const fetchProperties = async () => {
     try {
@@ -107,6 +111,11 @@ export default function Index() {
     }
   };
 
+  
+  // if (selectedPlace) {
+  //  console.log("selectedPlace: ", selectedPlace);
+  // }
+
   const handleSelect = (type: string, value: string) => {
     setProperties([]);
     setSkip(0);
@@ -125,6 +134,12 @@ export default function Index() {
     }
   };  
 
+  useEffect(()=>{
+    if(selectedPlace){
+     console.log("selectedPlace index page me : ", selectedPlace);
+    }
+  },[selectedPlace])
+
   useEffect(() => {
     setWishlist(user?.wishlist || []);
   }, [user]);
@@ -140,6 +155,7 @@ export default function Index() {
 
   useEffect(() => {
     console.log("property array: ", properties.length);
+    console.log("selectedPlace: ", selectedPlace);
   }, [properties]);
 
   const handleWishlistToggle = async (propertyId: string) => {

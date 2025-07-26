@@ -107,7 +107,7 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
         location: result.geometry.location,
       };
 
-      console.log("📍 Selected place details:", details);
+      // console.log("📍 Selected place details:", details);
       onPlaceSelected(details);
     } catch (error: any) {
       console.error('❌ Place details API error:', error.message);
