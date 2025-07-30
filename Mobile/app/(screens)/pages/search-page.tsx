@@ -55,8 +55,6 @@ const SearchPage = () => {
 
   const handlePlaceSelected = (place: { name: string; address: string }) => {
     saveSearch(place.name);
-    // Alert.alert('Selected Location', `${place.name}\n${place.address}`);
-
     useSearchStore.getState().setSelectedPlace(place);
     navigation.goBack();
   };

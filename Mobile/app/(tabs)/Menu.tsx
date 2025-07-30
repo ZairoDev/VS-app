@@ -1,6 +1,5 @@
 "use client"
-
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,21 +10,20 @@ import {
   Image,
   ScrollView,
   SafeAreaView,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
   Animated,
-} from "react-native"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import axios from "axios"
-import * as ImagePicker from "expo-image-picker"
-import * as FileSystem from "expo-file-system"
-import { Buffer } from "buffer"
-import type { UserDataType } from "@/types"
-import { MaterialIcons, Ionicons, Feather } from "@expo/vector-icons"
-import { LinearGradient } from "expo-linear-gradient"
-import { router } from "expo-router"
-import { useAuthStore } from "@/store/auth-store"
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import { Buffer } from "buffer";
+import type { UserDataType } from "@/types";
+import { MaterialIcons, Ionicons, Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { useAuthStore } from "@/store/auth-store";
 
 const Menu = () => {
   const [name, setName] = useState("")
@@ -39,7 +37,7 @@ const Menu = () => {
   const { user, login, register, logout, setUser } = useAuthStore()
   const BUNNY_ACCESS_KEY = process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY
 
-  // Animation values
+ 
   const fadeAnim = React.useRef(new Animated.Value(0)).current
   const slideAnim = React.useRef(new Animated.Value(50)).current
 

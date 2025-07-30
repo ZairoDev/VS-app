@@ -1,7 +1,6 @@
 import { Document } from "mongodb";
 import { FilterQuery } from "mongoose";
 import { Request, Response, RequestHandler } from "express";
-
 import { PropertyInterface } from "@/types";
 import { Properties } from "@/models/Properties";
 
@@ -16,7 +15,7 @@ export interface FetchPropertiesRequest {
   isEnabled: boolean;
   allowCooking: boolean;
   allowParty: boolean;
-  allowPets: boolean; 
+  allowPets: boolean;
   minPrice: number;
   maxPrice: number;
 }
@@ -28,10 +27,7 @@ const getAllProperties: RequestHandler = async (
   try {
     const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets,minPrice,maxPrice} =
       (await req.body) as FetchPropertiesRequest;
-
     console.log("request body: ", skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets);
-
-    //! created query to filter properties based on propertyType and selectedCountry
     const query: FilterQuery<Document> = {};
     if (propertyType.length) {
       query["propertyType"] = { $in: propertyType };
@@ -48,14 +44,12 @@ const getAllProperties: RequestHandler = async (
     if(bedrooms !== undefined && bedrooms !== null && bedrooms>0){
       query["bedrooms"] =  { $gte: bedrooms }  ;
     }
-
     if (minPrice !== undefined && minPrice !== null && minPrice>10) {
       query["basePrice"] = { $gte: minPrice };
     }
     if (maxPrice !== undefined && maxPrice !== null && maxPrice<5000) {
       query["basePrice"] = { $lte: maxPrice };
     }
-
     if(isEnabled){
       query['rentalType']="Long Term";
     }
@@ -68,11 +62,7 @@ const getAllProperties: RequestHandler = async (
     if(allowPets){
       query['pet']="Allow";
     }
- 
-
-    console.log("query: ", query);
-
-    //! created pipeline to fetch properties if query is empty then fetch random properties else fetch properties based on query in a sequential order
+    console.log("query: ", query)
     const pipeline = [];
     if (Object.keys(query).length > 0) {
       pipeline.push({ $match: query }, { $skip: skip });
@@ -80,13 +70,10 @@ const getAllProperties: RequestHandler = async (
       pipeline.push({ $sample: { size: limit } });
     }
     pipeline.push({ $limit: limit });
-
     const properties: PropertyInterface[] = await Properties.aggregate(
       pipeline
     );
-
     console.log("properties: ", properties.length);
-
     res.json({ success: true, data: properties });
   } catch (err) {
     res.json({ error: "Unable to fetch Properties", status: 400 });
@@ -96,28 +83,22 @@ const getAllProperties: RequestHandler = async (
 const getParticularProperty = async (req: Request, res: Response) => {
   try {
     const { propertyId } = req.body;
-
     const particularProperty = await Properties.findById(propertyId);
-
     res.send({ data: particularProperty, status: 200 });
   } catch (err) {
     res.json({ error: "Unable to fetch Particular Property", status: 400 });
   }
 };
 
-
 const getProperties = async (req: Request, res: Response) => {
   try {
     const property = await Properties.find({},{center:1});
-    
     if (!property) {
        res.status(404).json({ error: "No property found", status: 404 });
     }
-
     res.json({ data:property, status: 200 });
   } catch (err) {
     res.status(500).json({ error: "Unable to fetch property", status: 500 });
   }
 };
-
 export { getAllProperties, getParticularProperty ,getProperties};
