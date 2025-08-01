@@ -129,17 +129,17 @@ const ApplyCoupon = () => {
               <Text style={styles.saveText}>
                 Save{" "}
                 {c.discountType === "percentage"
-                  ? `₹${(
+                  ? `€${(
                       (c.discountValue / 100) *
                       c.minOrderValue
                     ).toFixed(2)}`
-                  : `₹${c.discountValue}`}
+                  : `€${c.discountValue}`}
               </Text>
 
               <Text style={styles.discountText}>
                 {c.discountType === "percentage"
-                  ? `${c.discountValue}% off on minimum purchase of ₹${c.minOrderValue}`
-                  : `Flat ₹${c.discountValue} off on minimum purchase of ₹${c.minOrderValue}`}
+                  ? `${c.discountValue}% off on minimum purchase of €${c.minOrderValue}`
+                  : `Flat €${c.discountValue} off on minimum purchase of €${c.minOrderValue}`}
               </Text>
 
               <Text style={styles.expiryText}>

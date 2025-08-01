@@ -10,12 +10,22 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyATr11LECo9hnbdn7gYGYu-ew6mnWvLczw"
+        }
+      },
       "bundleIdentifier": "com.vacationsaga.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/app-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyATr11LECo9hnbdn7gYGYu-ew6mnWvLczw"
+        }
       },
       "package": "com.vacationsaga.mobile"
     },
@@ -48,8 +58,8 @@
       },
       "eas": {
         "projectId": "132058a9-91c7-465e-986a-bc84a6cb37f9"
-      },
-      "EXPO_PUBLIC_Maps_API_KEY": "AIzaSyYourActualAPIKey"
+      }
+      
     },
     "owner": "anuket123"
   }

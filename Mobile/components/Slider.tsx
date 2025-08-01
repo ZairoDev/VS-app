@@ -47,7 +47,7 @@ const Slider = ({ min = 0, max = 100, step = 1 }) => {
             strokeWidth="5"
           />
 
-          {/* Thumb (Animated View) */}
+          {/*Thumb(Animated View)*/}
           <Animated.View
             style={[
               styles.thumb,

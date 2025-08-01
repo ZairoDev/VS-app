@@ -50,7 +50,7 @@ export const applyCoupon = async (req: Request, res: Response) => {
       res.status(400).json({ message: 'Coupon usage limit exceeded' });
     } else if (orderValue < coupon.minOrderValue) {
       res.status(400).json({
-        message: `Minimum order value should be ₹${coupon.minOrderValue}`,
+        message: `Minimum order value should be €${coupon.minOrderValue}`,
       });
     } else {
       let discountAmount = 0;

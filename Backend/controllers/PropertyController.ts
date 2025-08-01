@@ -18,6 +18,9 @@ export interface FetchPropertiesRequest {
   allowPets: boolean;
   minPrice: number;
   maxPrice: number;
+  city: string;
+  state: string;
+  country: string;
 }
 
 const getAllProperties: RequestHandler = async (
@@ -25,8 +28,9 @@ const getAllProperties: RequestHandler = async (
   res: Response
 ) => {
   try {
-    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets,minPrice,maxPrice} =
+    const {skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets,minPrice,maxPrice, city, state, country} =
       (await req.body) as FetchPropertiesRequest;
+      
     console.log("request body: ", skip, limit, propertyType, selectedCountry,beds,bedrooms,bathroom,isEnabled,allowCooking,allowParty,allowPets);
     const query: FilterQuery<Document> = {};
     if (propertyType.length) {
@@ -62,6 +66,13 @@ const getAllProperties: RequestHandler = async (
     if(allowPets){
       query['pet']="Allow";
     }
+    if (city) {
+  query["city"] = { $regex: new RegExp(city, "i") }; // case-insensitive
+} else if (state) {
+  query["state"] = { $regex: new RegExp(state, "i") };
+} else if (country) {
+  query["country"] = { $regex: new RegExp(country, "i") };
+}
     console.log("query: ", query)
     const pipeline = [];
     if (Object.keys(query).length > 0) {

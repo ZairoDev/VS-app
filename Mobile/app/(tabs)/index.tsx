@@ -19,6 +19,7 @@ import { PropertyInterface } from "@/data/types";
 import { propertyTypes } from "@/Constants/Country";
 import { useAuthStore } from "@/store/auth-store";
 import useSearchStore from "@/store/location-search-store";
+import { extractLocationParts } from "@/utils/extractLocation"; // adjust path if needed
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -34,6 +35,9 @@ export interface FetchPropertiesRequest {
   allowPets: boolean;
   minPrice: number;
   maxPrice: number;
+  city: string;
+  state: string;
+  country: string;
 }
 
 export interface FetchPropertiesResponse {
@@ -82,6 +86,23 @@ export default function Index() {
     try {
       setLoading(true);
 
+      let city="";
+      let state="";
+      let country="";
+
+      if(selectedPlace?.address){
+        console.log("selectedPlace: ", selectedPlace.address);
+        const location= extractLocationParts(selectedPlace.address);
+        city=location.city;
+        state=location.state;
+        country=location.country;
+
+        console.log("city: ", city);
+        console.log("state: ", state);
+        console.log("country: ", country);  
+
+      }
+
       const requestBody: FetchPropertiesRequest = {
         skip,
         limit,
@@ -96,6 +117,9 @@ export default function Index() {
         allowPets,
         maxPrice,
         minPrice,
+        city,
+      state,
+      country,
       };
       console.log("requestBody");
       const response = await axios.post<FetchPropertiesResponse>(
@@ -110,6 +134,7 @@ export default function Index() {
       setLoading(false);
     }
   };
+
 
   
   // if (selectedPlace) {
@@ -147,7 +172,7 @@ export default function Index() {
   useEffect(() => {
     setProperties([]);
     setSkip(0);
-  }, [applyFilters]);
+  }, [applyFilters,selectedPlace]);
 
   useEffect(() => {
     fetchProperties();
