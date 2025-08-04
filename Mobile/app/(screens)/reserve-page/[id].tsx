@@ -16,7 +16,6 @@ import { Modalize } from "react-native-modalize";
 import { Calendar } from "react-native-calendars";
 import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-// import { Plus, Minus } from "lucide-react-native";
 import { useCouponStore } from "@/store/coupon-store";
 import { useAuthStore } from "../../../store/auth-store";
 import { useTravellerStore } from "@/store/traveller-store";

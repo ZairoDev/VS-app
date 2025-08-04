@@ -24,6 +24,8 @@ import type { Booking } from "@/types";
 import { router } from "expo-router";
 import RazorpayCheckout from 'react-native-razorpay';
 const { width, height } = Dimensions.get("window");
+import BookingDetailsModal from "@/components/BookingDetailsModal";
+import BookingCard from "@/components/BookingCard";
 const CARD_WIDTH = width * 0.85;
 const formatDate = (dateString: string): string => {
   const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }
@@ -242,7 +244,7 @@ const handleCancelBooking = (id: string) => {
       default:
         return "#FFC107"
     }
-  }
+  } 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case "paid":
@@ -264,123 +266,6 @@ const handleCancelBooking = (id: string) => {
   const isContactHostEnabled = (booking: Booking) => {
     return booking.bookingStatus === "confirmed" && booking.paymentStatus === "paid"
   }
-  const renderBookingCard = (item: Booking) => (
-    <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => handleViewDetails(item)} key={item._id}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: item.propertyId.propertyCoverFileUrl }} style={styles.image} />
-        <LinearGradient colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.6)"]} style={styles.gradient} />
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={1}>
-          {item.propertyId.placeName}
-        </Text>
-        <View style={styles.locationRow}>
-          <Feather name="map-pin" size={14} color="#666" />
-          <Text style={styles.location} numberOfLines={1}>
-            {item.propertyId.city}, {item.propertyId.country}
-          </Text>
-        </View>
-        <View style={styles.detailsRow}>
-          <View style={styles.detailItem}>
-            <MaterialCommunityIcons name="calendar-range" size={16} color="#fca42c" />
-            <Text style={styles.detailText}>
-              {formatDate(item.startDate)} - {formatDate(item.endDate)}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="people" size={16} color="#fca42c" />
-            <Text style={styles.detailText}>
-              {item.guests.adults + item.guests.children + item.guests.infants} guests
-            </Text>
-          </View>
-        </View>
-        <View style={styles.priceRow}>
-          <View style={styles.priceInfo}>
-            <Text style={styles.priceLabel}>Total</Text>
-            {item.totalNights > 0 && (
-              <Text style={styles.nightsText}>
-                {item.totalNights} {item.totalNights === 1 ? "night" : "nights"}
-              </Text>
-            )}
-          </View>
-          <Text style={styles.price}>Є{item.price.toLocaleString("en-IN")}</Text>
-        </View>
-        <View style={styles.hostRow}>
-          <View style={styles.hostInfo}>
-            <FontAwesome5 name="user-circle" size={16} color="#666" />
-            <Text style={styles.hostName}>{item.userId.name}</Text>
-          </View>
-        </View>
-        <View style={styles.actions}>
-          {item.bookingStatus !== "confirmed" ? (
-            <View style={styles.waitingContainer}>
-              <Text style={styles.waitingText}>Pending request confirmation</Text>
-            </View>
-          ) : (
-            <>
-              {isContactHostEnabled(item) ? (
-                <View style={styles.contactButtonsContainer}>
-                  <View style={styles.hostButtonsRow}>
-                    <TouchableOpacity style={styles.hostButton} onPress={() => handleCallHost(item.userId.phone || "")}>
-                      <Feather name="phone" size={16} color="#fff" />
-                      <Text style={styles.buttonText}>Call Host</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.hostButton}
-                      onPress={() => handleContactHost(item.userId.email || "")}
-                    >
-                      <Feather name="mail" size={16} color="#fff" />
-                      <Text style={styles.buttonText}>Email Host</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity style={styles.supportButton} onPress={handleContactSupport}>
-                    <Feather name="headphones" size={16} color="#5E72E4" />
-                    <Text style={styles.supportButtonText}>Contact Vacation Saga</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={[styles.contactButtonsContainer, { opacity: 0.5 }]}>
-                  {/* <View style={styles.hostButtonsRow}>
-                    <TouchableOpacity style={styles.hostButton} disabled={true}>
-                      <Feather name="phone" size={16} color="#fff" />
-                      <Text style={styles.buttonText}>Call Host</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.hostButton} disabled={true}>
-                      <Feather name="mail" size={16} color="#fff" />
-                      <Text style={styles.buttonText}>Email Host</Text>
-                    </TouchableOpacity>
-                  </View> */}
-                  <TouchableOpacity style={styles.supportButton} disabled={true}>
-                    {/* <Feather name="headphones" size={16} color="#5E72E4" /> */}
-                    <Text style={styles.supportButtonText}>Contact Vacation Saga</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              {/* {item.paymentStatus !== "paid" && (
-                <TouchableOpacity style={styles.outlineButton} onPress={() => handlePayPlatformFees(item)}>
-                  <Feather name="credit-card" size={18} color="#5E72E4" />
-                  <Text style={styles.outlineButtonText}>Pay Fees</Text>
-                </TouchableOpacity>
-              )} */}
-            </>
-          )}
-          {item.bookingStatus === "pending" && (
-            <TouchableOpacity style={styles.dangerButton} onPress={() => handleCancelBooking(item._id)}>
-              <Feather name="x-circle" size={18} color="#fff" />
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-          )}
-          {item.bookingStatus === "confirmed" && new Date(item.endDate) < new Date() && (
-            <TouchableOpacity style={styles.outlineButton} onPress={() => handleRebook(item)}>
-              <Feather name="refresh-cw" size={18} color="#5E72E4" />
-              <Text style={styles.outlineButtonText}>Rebook</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
-  )
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="calendar" size={60} color="#ccc" />
@@ -436,229 +321,59 @@ const handleCancelBooking = (id: string) => {
           ? renderLoadingState()
           : activeTab === "upcoming"
             ? upcomingBookings.length > 0
-              ? upcomingBookings.map((item) => renderBookingCard(item))
+              ? upcomingBookings.map((booking) => (
+ <BookingCard
+  key={booking._id}
+  booking={booking}
+  loading={loading}
+  onPress={handleViewDetails}
+  onCancel={handleCancelBooking}
+  onPayFees={handlePayPlatformFees}
+  onRebook={handleRebook}
+  onCallHost={(phone) => handleCallHost(phone)}
+  onEmailHost={(email) => handleContactHost(email)}
+  onContactSupport={handleContactSupport}
+/>
+))
               : renderEmptyState()
             : pastBookings.length > 0
-              ? pastBookings.map((item) => renderBookingCard(item))
-              : renderEmptyState()}
+              ? pastBookings.map((booking) => (
+  <BookingCard
+  key={booking._id}
+  booking={booking}
+  loading={loading}
+  onPress={handleViewDetails}
+  onCancel={handleCancelBooking}
+  onPayFees={handlePayPlatformFees}
+  onRebook={handleRebook}
+  onCallHost={(phone) => handleCallHost(phone)}
+  onEmailHost={(email) => handleContactHost(email)}
+  onContactSupport={handleContactSupport}
+/>
+))
+      : renderEmptyState()}
       </ScrollView>
-      <Modal
-        visible={detailsModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setDetailsModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <Animated.View
-            style={[
-              styles.modalContent,
-              {
-                transform: [
-                  {
-                    translateY: slideAnimation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [height, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => {
-                  setDetailsModalVisible(false)
-                  setIsEditingNotes(false)
-                }}
-              >
-                <AntDesign name="close" size={24} color="#333" />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Booking Details</Text>
-              <View style={styles.modalHeaderSpacer} />
-            </View>
-
-            {selectedBooking && (
-              <ScrollView style={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.detailsHeader}>
-                  <Image
-                    source={{ uri: selectedBooking.propertyId.propertyCoverFileUrl }}
-                    style={styles.detailsHeaderImage}
-                  />
-                  <LinearGradient
-                    colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.6)"]}
-                    style={styles.detailsHeaderGradient}
-                  />
-                </View>
-
-                <View style={styles.detailsContent}>
-                  <Text style={styles.detailsTitle}>{selectedBooking.propertyId.placeName}</Text>
-                  <View style={styles.detailsLocationRow}>
-                    <Feather name="map-pin" size={14} color="#666" />
-                    <Text style={styles.detailsLocation}>
-                      {selectedBooking.propertyId.city}, {selectedBooking.propertyId.country}
-                    </Text>
-                  </View>
-                  <View style={styles.statusContainer}>
-                    <View style={styles.statusItem}>
-                      <Text style={styles.statusLabel}>Booking Status</Text>
-                      <View
-                        style={[styles.statusBadge, { backgroundColor: getStatusColor(selectedBooking.bookingStatus) }]}
-                      >
-                        <Text style={styles.statusText}>{selectedBooking.bookingStatus}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.statusItem}>
-                      <Text style={styles.statusLabel}>Payment Status</Text>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: getPaymentStatusColor(selectedBooking.paymentStatus) },
-                        ]}
-                      >
-                        <Text style={styles.statusText}>{selectedBooking.paymentStatus}</Text>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.detailsSection}>
-                    <Text style={styles.detailsSectionTitle}>Booking Details</Text>
-                    <View style={styles.detailsGrid}>
-                      <View style={styles.detailsGridItem}>
-                        <MaterialCommunityIcons name="calendar-range" size={20} color="#fca42c" />
-                        <View style={styles.detailsGridItemContent}>
-                          <Text style={styles.detailsGridItemLabel}>Check-in</Text>
-                          <Text style={styles.detailsGridItemValue}>{formatFullDate(selectedBooking.startDate)}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.detailsGridItem}>
-                        <MaterialCommunityIcons name="calendar-range" size={20} color="#fca42c" />
-                        <View style={styles.detailsGridItemContent}>
-                          <Text style={styles.detailsGridItemLabel}>Check-out</Text>
-                          <Text style={styles.detailsGridItemValue}>{formatFullDate(selectedBooking.endDate)}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.detailsGridItem}>
-                        <Ionicons name="time-outline" size={20} color="#fca42c" />
-                        <View style={styles.detailsGridItemContent}>
-                          <Text style={styles.detailsGridItemLabel}>Duration</Text>
-                          <Text style={styles.detailsGridItemValue}>
-                            {selectedBooking.totalNights} {selectedBooking.totalNights === 1 ? "night" : "nights"}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.detailsGridItem}>
-                        <Ionicons name="people" size={20} color="#fca42c" />
-                        <View style={styles.detailsGridItemContent}>
-                          <Text style={styles.detailsGridItemLabel}>Guests</Text>
-                          <Text style={styles.detailsGridItemValue}>
-                            {selectedBooking.guests.adults} {selectedBooking.guests.adults === 1 ? "adult" : "adults"}
-                            {selectedBooking.guests.children > 0 &&
-                              `, ${selectedBooking.guests.children} ${selectedBooking.guests.children === 1 ? "child" : "children"}`}
-                            {selectedBooking.guests.infants > 0 &&
-                              `, ${selectedBooking.guests.infants} ${selectedBooking.guests.infants === 1 ? "infant" : "infants"}`}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.detailsSection}>
-                    <Text style={styles.detailsSectionTitle}>Price Details</Text>
-                    <View style={styles.priceDetails}>
-                      <View style={styles.priceDetailRow}>
-                        <Text style={styles.priceDetailLabel}>Total Amount</Text>
-                        <Text style={styles.priceDetailValue}>Є{selectedBooking.price.toLocaleString("en-IN")}</Text>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.hostSection}>
-                    <Text style={styles.detailsSectionTitle}>Host Information</Text>
-                    <View style={styles.hostCard}>
-                      <View style={styles.hostCardInfo}>
-                        <FontAwesome5 name="user-circle" size={40} color="#666" />
-                        <View style={styles.hostCardDetails}>
-                          <Text style={styles.hostCardName}>{selectedBooking.userId.name}</Text>
-                          <Text style={styles.hostCardJoined}>Host</Text>
-                        </View>
-                      </View>
-                      {isContactHostEnabled(selectedBooking) ? (
-                        <View style={styles.hostCardButtons}>
-                          <TouchableOpacity
-                            style={styles.hostCardButton}
-                            onPress={() => handleCallHost(selectedBooking.userId.phone || "")}
-                          >
-                            <Feather name="phone" size={16} color="#fff" />
-                            <Text style={styles.hostCardButtonText}>Call</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.hostCardButton}
-                            onPress={() => handleContactHost(selectedBooking.userId.email || "")}
-                          >
-                            <Feather name="mail" size={16} color="#fff" />
-                            <Text style={styles.hostCardButtonText}>Email</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <View style={[styles.hostCardButtons, { opacity: 0.5 }]}>
-                          <TouchableOpacity style={styles.hostCardButton} disabled={true}>
-                            <Feather name="phone" size={16} color="#fff" />
-                            <Text style={styles.hostCardButtonText}>Call</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={styles.hostCardButton} disabled={true}>
-                            <Feather name="mail" size={16} color="#fff" />
-                            <Text style={styles.hostCardButtonText}>Email</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                  <View style={styles.actionButtons}>
-                    {(selectedBooking.bookingStatus === "pending" ||
-                      selectedBooking.bookingStatus === "confirmed" ||
-                      selectedBooking.paymentStatus === "paid") &&
-                      selectedBooking.bookingStatus !== "cancelled" && (
-                        <TouchableOpacity
-                          style={styles.cancelButton}
-                          onPress={() => handleCancelBooking(selectedBooking._id)}
-                          disabled={loading}
-                        >
-                          <Feather name="x-circle" size={20} color="#fff" />
-                          <Text style={styles.actionButtonText}>Cancel Booking</Text>
-                        </TouchableOpacity>
-                      )}
-                    {selectedBooking.bookingStatus === "confirmed" && selectedBooking.paymentStatus !== "paid" && (
-                      <TouchableOpacity
-                        style={styles.rebookButton}
-                        onPress={() => handlePayPlatformFees(selectedBooking)}
-                      >
-                        <Feather name="credit-card" size={20} color="#fff" />
-                        <Text style={styles.actionButtonText}>Pay Platform Fees</Text>
-                      </TouchableOpacity>
-                    )}
-                    {selectedBooking.bookingStatus === "confirmed" &&
-                      new Date(selectedBooking.endDate) < new Date() && (
-                        <TouchableOpacity
-                          style={styles.rebookButton}
-                          onPress={() => {
-                            setDetailsModalVisible(false)
-                            handleRebook(selectedBooking)
-                          }}
-                        >
-                          <Feather name="refresh-cw" size={20} color="#fff" />
-                          <Text style={styles.actionButtonText}>Book Again</Text>
-                        </TouchableOpacity>
-                      )}
-                  </View>
-                </View>
-              </ScrollView>
-            )}
-          </Animated.View>
-        </View>
-      </Modal>
+      <BookingDetailsModal
+  visible={detailsModalVisible}
+  booking={selectedBooking}
+  loading={loading}
+  onClose={() => {
+    setDetailsModalVisible(false);
+    setIsEditingNotes(false);
+  }}
+  onCancelBooking={handleCancelBooking}
+  onPayPlatformFees={handlePayPlatformFees}
+  onCallHost={handleCallHost}       
+  onEmailHost={handleContactHost}   
+  onRebook={handleRebook}
+/>
     </View>
   )
 }
 export default BookingHubScreen
 const styles = StyleSheet.create({
+
+
   container: {
     flex: 1,
     backgroundColor: "#f8f9fa",
@@ -953,344 +668,346 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: height * 0.9,
-    maxHeight: height * 0.9,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  closeButton: {
-    padding: 4,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-  },
-  modalHeaderSpacer: {
-    width: 28,
-  },
-  modalScrollContent: {
-    flex: 1,
-  },
-  detailsHeader: {
-    height: 200,
-    position: "relative",
-  },
-  detailsHeaderImage: {
-    width: "100%",
-    height: "100%",
-  },
-  detailsHeaderGradient: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  detailsContent: {
-    padding: 20,
-  },
-  detailsTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 8,
-  },
-  detailsLocationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  detailsLocation: {
-    color: "#666",
-    marginLeft: 4,
-    fontSize: 14,
-  },
-  statusContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  statusItem: {
-    alignItems: "center",
-  },
-  statusLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
-  },
-  detailsSection: {
-    marginBottom: 24,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  detailsSectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 16,
-  },
-  detailsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  detailsGridItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    width: "48%",
-    marginBottom: 16,
-  },
-  detailsGridItemContent: {
-    marginLeft: 8,
-  },
-  detailsGridItemLabel: {
-    fontSize: 12,
-    color: "#666",
-  },
-  detailsGridItemValue: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#333",
-  },
-  priceDetails: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 16,
-  },
-  priceDetailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  priceDetailLabel: {
-    fontSize: 14,
-    color: "#666",
-  },
-  priceDetailValue: {
-    fontSize: 14,
-    color: "#333",
-  },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingTop: 12,
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
-  },
-  notesHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  notesText: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
-  },
-  notesEditContainer: {
-    gap: 12,
-  },
-  notesInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: "#333",
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
-  notesActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-  },
-  notesCancelButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  notesCancelText: {
-    color: "#666",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  notesSaveButton: {
-    backgroundColor: "#5E72E4",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  notesSaveText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  hostSection: {
-    marginBottom: 24,
-  },
-  hostCard: {
-    display: "flex",
-    gap: 10,
-    flexDirection: "column",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    borderRadius: 16,
-    padding: 10,
-    borderColor: "#5E72E4",
-  },
-  hostCardInfo: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  hostCardDetails: {
-    marginLeft: 12,
-  },
-  hostCardName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  hostCardJoined: {
-    fontSize: 12,
-    color: "#666",
-  },
-  contactHostButton: {
-    backgroundColor: "#fca42c",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  contactHostText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  actionButtons: {
-    marginTop: 8,
-    marginBottom: 40,
-  },
-  cancelButton: {
-    backgroundColor: "#EF5350",
-    paddingVertical: 14,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
-  rebookButton: {
-    backgroundColor: "#fca42c",
-    paddingVertical: 14,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
-  actionButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  supportButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "transparent",
-    paddingVertical: 10,
-    borderRadius: 12,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#5E72E4",
-  },
-  supportButtonText: {
-    color: "#5E72E4",
-    fontWeight: "600",
-    fontSize: 14,
-    marginLeft: 6,
-  },
-  contactButtonsContainer: {
-    flex: 1,
-    gap: 10,
-  },
-  hostButtonsRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  hostButton: {
-    flex: 1,
-    backgroundColor: "#fca42c",
-    paddingVertical: 10,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#fca42c",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  hostCardButtons: {
-    flexDirection: "row",
-    width: "100%",
-    alignItems: "center",
+  });
+  // modalContainer: {
+  //   flex: 1,
+  //   backgroundColor: "rgba(0, 0, 0, 0.5)",
+  //   justifyContent: "flex-end",
+  // },
+  // modalContent: {
+  //   backgroundColor: "#fff",
+  //   borderTopLeftRadius: 20,
+  //   borderTopRightRadius: 20,
+  //   height: height * 0.9,
+  //   maxHeight: height * 0.9,
+  // },
+  // modalHeader: {
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   justifyContent: "space-between",
+  //   padding: 16,
+  //   borderBottomWidth: 1,
+  //   borderBottomColor: "#f0f0f0",
+  // },
+  // closeButton: {
+  //   padding: 4,
+  // },
+  // modalTitle: {
+  //   fontSize: 18,
+  //   fontWeight: "600",
+  //   color: "#333",
+  // },
+  // modalHeaderSpacer: {
+  //   width: 28,
+  // },
+  // modalScrollContent: {
+  //   flex: 1,
+  // },
+  // detailsHeader: {
+  //   height: 200,
+  //   position: "relative",
+  // },
+  // detailsHeaderImage: {
+  //   width: "100%",
+  //   height: "100%",
+  // },
+  // detailsHeaderGradient: {
+  //   position: "absolute",
+  //   top: 0,
+  //   left: 0,
+  //   right: 0,
+  //   bottom: 0,
+  // },
+  // detailsContent: {
+  //   padding: 20,
+  // },
+  // detailsTitle: {
+  //   fontSize: 24,
+  //   fontWeight: "700",
+  //   color: "#333",
+  //   marginBottom: 8,
+  // },
+  // detailsLocationRow: {
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   marginBottom: 20,
+  // },
+  // detailsLocation: {
+  //   color: "#666",
+  //   marginLeft: 4,
+  //   fontSize: 14,
+  // },
+  // statusContainer: {
+  //   flexDirection: "row",
+  //   justifyContent: "space-between",
+  //   marginBottom: 20,
+  // },
+  // statusItem: {
+  //   alignItems: "center",
+  // },
+  // statusLabel: {
+  //   fontSize: 12,
+  //   color: "#666",
+  //   marginBottom: 4,
+  // },
+  // detailsSection: {
+  //   marginBottom: 24,
+  //   backgroundColor: "#fff",
+  //   borderRadius: 16,
+  //   padding: 16,
+  //   shadowColor: "#000",
+  //   shadowOffset: { width: 0, height: 2 },
+  //   shadowOpacity: 0.05,
+  //   shadowRadius: 4,
+  //   elevation: 2,
+  // },
+  // detailsSectionTitle: {
+  //   fontSize: 18,
+  //   fontWeight: "600",
+  //   color: "#333",
+  //   marginBottom: 16,
+  // },
+  // detailsGrid: {
+  //   flexDirection: "row",
+  //   flexWrap: "wrap",
+  //   justifyContent: "space-between",
+  // },
+  // detailsGridItem: {
+  //   flexDirection: "row",
+  //   alignItems: "flex-start",
+  //   width: "48%",
+  //   marginBottom: 16,
+  // },
+  // detailsGridItemContent: {
+  //   marginLeft: 8,
+  // },
+  // detailsGridItemLabel: {
+  //   fontSize: 12,
+  //   color: "#666",
+  // },
+  // detailsGridItemValue: {
+  //   fontSize: 14,
+  //   fontWeight: "500",
+  //   color: "#333",
+  // },
+  // priceDetails: {
+  //   backgroundColor: "#f8f9fa",
+  //   borderRadius: 12,
+  //   padding: 16,
+  // },
+  // priceDetailRow: {
+  //   flexDirection: "row",
+  //   justifyContent: "space-between",
+  //   alignItems: "center",
+  //   marginBottom: 8,
+  // },
+  // priceDetailLabel: {
+  //   fontSize: 14,
+  //   color: "#666",
+  // },
+  // priceDetailValue: {
+  //   fontSize: 14,
+  //   color: "#333",
+  // },
+  // totalRow: {
+  //   flexDirection: "row",
+  //   justifyContent: "space-between",
+  //   alignItems: "center",
+  //   borderTopWidth: 1,
+  //   borderTopColor: "#eee",
+  //   paddingTop: 12,
+  // },
+  // totalLabel: {
+  //   fontSize: 16,
+  //   fontWeight: "600",
+  //   color: "#333",
+  // },
+  // totalValue: {
+  //   fontSize: 18,
+  //   fontWeight: "700",
+  //   color: "#333",
+  // },
+  // notesHeader: {
+  //   flexDirection: "row",
+  //   justifyContent: "space-between",
+  //   alignItems: "center",
+  //   marginBottom: 12,
+  // },
+  // notesText: {
+  //   fontSize: 14,
+  //   color: "#666",
+  //   lineHeight: 20,
+  // },
+  // notesEditContainer: {
+  //   gap: 12,
+  // },
+  // notesInput: {
+  //   borderWidth: 1,
+  //   borderColor: "#ddd",
+  //   borderRadius: 8,
+  //   padding: 12,
+  //   fontSize: 14,
+  //   color: "#333",
+  //   minHeight: 100,
+  //   textAlignVertical: "top",
+  // },
+  // notesActions: {
+  //   flexDirection: "row",
+  //   justifyContent: "flex-end",
+  //   gap: 12,
+  // },
+  // notesCancelButton: {
+  //   paddingVertical: 8,
+  //   paddingHorizontal: 16,
+  // },
+  // notesCancelText: {
+  //   color: "#666",
+  //   fontSize: 14,
+  //   fontWeight: "500",
+  // },
+  // notesSaveButton: {
+  //   backgroundColor: "#5E72E4",
+  //   paddingVertical: 8,
+  //   paddingHorizontal: 16,
+  //   borderRadius: 8,
+  // },
+  // notesSaveText: {
+  //   color: "#fff",
+  //   fontSize: 14,
+  //   fontWeight: "500",
+  // },
+  // hostSection: {
+  //   marginBottom: 24,
+  // },
+  // hostCard: {
+  //   display: "flex",
+  //   gap: 10,
+  //   flexDirection: "column",
+  //   justifyContent: "space-between",
+  //   alignItems: "center",
+  //   backgroundColor: "#f8f9fa",
+  //   borderRadius: 16,
+  //   padding: 10,
+  //   borderColor: "#5E72E4",
+  // },
+  // hostCardInfo: {
+  //   width: "100%",
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  // },
+  // hostCardDetails: {
+  //   marginLeft: 12,
+  // },
+  // hostCardName: {
+  //   fontSize: 16,
+  //   fontWeight: "600",
+  //   color: "#333",
+  // },
+  // hostCardJoined: {
+  //   fontSize: 12,
+  //   color: "#666",
+  // },
+  // contactHostButton: {
+  //   backgroundColor: "#fca42c",
+  //   paddingVertical: 8,
+  //   paddingHorizontal: 16,
+  //   borderRadius: 12,
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   gap: 6,
+  // },
+  // contactHostText: {
+  //   color: "#fff",
+  //   fontSize: 14,
+  //   fontWeight: "600",
+  // },
+  // actionButtons: {
+  //   marginTop: 8,
+  //   marginBottom: 40,
+  // },
+  // cancelButton: {
+  //   backgroundColor: "#EF5350",
+  //   paddingVertical: 14,
+  //   borderRadius: 12,
+  //   flexDirection: "row",
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   gap: 8,
+  // },
+  // rebookButton: {
+  //   backgroundColor: "#fca42c",
+  //   paddingVertical: 14,
+  //   borderRadius: 12,
+  //   flexDirection: "row",
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   gap: 8,
+  // },
+  // actionButtonText: {
+  //   color: "#fff",
+  //   fontSize: 16,
+  //   fontWeight: "600",
+  // },
+  // supportButton: {
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   backgroundColor: "transparent",
+  //   paddingVertical: 10,
+  //   borderRadius: 12,
+  //   justifyContent: "center",
+  //   borderWidth: 1,
+  //   borderColor: "#5E72E4",
+  // },
+  // supportButtonText: {
+  //   color: "#5E72E4",
+  //   fontWeight: "600",
+  //   fontSize: 14,
+  //   marginLeft: 6,
+  // },
+  // contactButtonsContainer: {
+  //   flex: 1,
+  //   gap: 10,
+  // },
+  // hostButtonsRow: {
+  //   flexDirection: "row",
+  //   gap: 10,
+  // },
+  // hostButton: {
+  //   flex: 1,
+  //   backgroundColor: "#fca42c",
+  //   paddingVertical: 10,
+  //   borderRadius: 12,
+  //   flexDirection: "row",
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   shadowColor: "#fca42c",
+  //   shadowOffset: { width: 0, height: 2 },
+  //   shadowOpacity: 0.3,
+  //   shadowRadius: 4,
+  //   elevation: 3,
+  // },
+  // hostCardButtons: {
+  //   flexDirection: "row",
+  //   width: "100%",
+  //   alignItems: "center",
 
-    justifyContent: "space-around",
-  },
-  hostCardButton: {
-    backgroundColor: "#fca42c",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    width: "45%",
-    height: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  hostCardButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-})
+  //   justifyContent: "space-around",
+  // },
+  // hostCardButton: {
+  //   backgroundColor: "#fca42c",
+  //   paddingVertical: 8,
+  //   paddingHorizontal: 12,
+  //   borderRadius: 12,
+  //   width: "45%",
+  //   height: 40,
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   gap: 6,
+  // },
+  // hostCardButtonText: {
+  //   color: "#fff",
+  //   fontSize: 14,
+  //   fontWeight: "600",
+  // },
+
+
