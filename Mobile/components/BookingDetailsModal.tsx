@@ -46,7 +46,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
     if (visible) {
       Animated.timing(slideAnimation, {
         toValue: 1,
-        duration: 300,
+        duration: 350,
         useNativeDriver: true,
       }).start();
     } else {
@@ -57,6 +57,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
   if (!booking) return null;
 
   const isContactHostEnabled = booking.bookingStatus === "confirmed" && booking.paymentStatus === "paid";
+  const hasEnded = new Date(booking.endDate) < new Date();
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
@@ -69,137 +70,119 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                 {
                   translateY: slideAnimation.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [1000, 0],
+                    outputRange: [height, 0],
                   }),
                 },
               ],
             },
           ]}
         >
-          <View style={styles.modalHeader}>
+          {/* Header */}
+          <View style={styles.header}>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <AntDesign name="close" size={24} color="#333" />
+              <View style={styles.closeButtonBackground}>
+                <Feather name="x" size={20} color="#666" />
+              </View>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Booking Details</Text>
-            <View style={styles.modalHeaderSpacer} />
           </View>
 
-          <ScrollView style={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.detailsHeader}>
-              <Image source={{ uri: booking.propertyId.propertyCoverFileUrl }} style={styles.detailsHeaderImage} />
-              <LinearGradient colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.6)"]} style={styles.detailsHeaderGradient} />
+          <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* Hero Image */}
+            <View style={styles.imageContainer}>
+              <Image 
+                source={{ uri: booking.propertyId.propertyCoverFileUrl }} 
+                style={styles.heroImage}
+                resizeMode="cover"
+              />
+              <LinearGradient 
+                colors={["transparent", "rgba(0,0,0,0.1)"]} 
+                style={styles.imageGradient} 
+              />
             </View>
 
-            <View style={styles.detailsContent}>
-              <Text style={styles.detailsTitle}>{booking.propertyId.placeName}</Text>
-              <View style={styles.detailsLocationRow}>
-                <Feather name="map-pin" size={14} color="#666" />
-                <Text style={styles.detailsLocation}>{booking.propertyId.city}, {booking.propertyId.country}</Text>
+            {/* Content */}
+            <View style={styles.content}>
+              {/* Title Section */}
+              <View style={styles.titleSection}>
+                <Text style={styles.propertyTitle}>{booking.propertyId.placeName}</Text>
+                <View style={styles.locationContainer}>
+                  <Feather name="map-pin" size={16} color="#9CA3AF" />
+                  <Text style={styles.locationText}>
+                    {booking.propertyId.city}, {booking.propertyId.country}
+                  </Text>
+                </View>
               </View>
 
+              {/* Status Pills */}
               <View style={styles.statusContainer}>
-                <View style={styles.statusItem}>
-                  <Text style={styles.statusLabel}>Booking Status</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.bookingStatus) }]}>
-                    <Text style={styles.statusText}>{booking.bookingStatus}</Text>
-                  </View>
+                <View style={[styles.statusPill, getStatusStyle(booking.bookingStatus)]}>
+                  <View style={[styles.statusDot, { backgroundColor: getStatusColor(booking.bookingStatus) }]} />
+                  <Text style={[styles.statusText, { color: getStatusColor(booking.bookingStatus) }]}>
+                    {booking.bookingStatus}
+                  </Text>
                 </View>
-
-                <View style={styles.statusItem}>
-                  <Text style={styles.statusLabel}>Payment Status</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getPaymentStatusColor(booking.paymentStatus) }]}>
-                    <Text style={styles.statusText}>{booking.paymentStatus}</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Booking Details Grid */}
-              <View style={styles.detailsSection}>
-                <Text style={styles.detailsSectionTitle}>Booking Details</Text>
-                <View style={styles.detailsGrid}>
-                  <View style={styles.detailsGridItem}>
-                    <MaterialCommunityIcons name="calendar-range" size={20} color="#fca42c" />
-                    <View style={styles.detailsGridItemContent}>
-                      <Text style={styles.detailsGridItemLabel}>Check-in</Text>
-                      <Text style={styles.detailsGridItemValue}>{formatFullDate(booking.startDate)}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailsGridItem}>
-                    <MaterialCommunityIcons name="calendar-range" size={20} color="#fca42c" />
-                    <View style={styles.detailsGridItemContent}>
-                      <Text style={styles.detailsGridItemLabel}>Check-out</Text>
-                      <Text style={styles.detailsGridItemValue}>{formatFullDate(booking.endDate)}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailsGridItem}>
-                    <Ionicons name="time-outline" size={20} color="#fca42c" />
-                    <View style={styles.detailsGridItemContent}>
-                      <Text style={styles.detailsGridItemLabel}>Duration</Text>
-                      <Text style={styles.detailsGridItemValue}>
-                        {booking.totalNights} {booking.totalNights === 1 ? "night" : "nights"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailsGridItem}>
-                    <Ionicons name="people" size={20} color="#fca42c" />
-                    <View style={styles.detailsGridItemContent}>
-                      <Text style={styles.detailsGridItemLabel}>Guests</Text>
-                      <Text style={styles.detailsGridItemValue}>
-                        {booking.guests.adults} {booking.guests.adults === 1 ? "adult" : "adults"}
-                        {booking.guests.children > 0 && `, ${booking.guests.children} ${booking.guests.children === 1 ? "child" : "children"}`}
-                        {booking.guests.infants > 0 && `, ${booking.guests.infants} ${booking.guests.infants === 1 ? "infant" : "infants"}`}
-                      </Text>
-                    </View>
-                  </View>
+                <View style={[styles.statusPill, getPaymentStatusStyle(booking.paymentStatus)]}>
+                  <View style={[styles.statusDot, { backgroundColor: getPaymentStatusColor(booking.paymentStatus) }]} />
+                  <Text style={[styles.statusText, { color: getPaymentStatusColor(booking.paymentStatus) }]}>
+                    {booking.paymentStatus}
+                  </Text>
                 </View>
               </View>
 
-              {/* Price Details */}
-              <View style={styles.detailsSection}>
-                <Text style={styles.detailsSectionTitle}>Price Details</Text>
-                <View style={styles.priceDetails}>
-                  <View style={styles.priceDetailRow}>
-                    <Text style={styles.priceDetailLabel}>Total Amount</Text>
-                    <Text style={styles.priceDetailValue}>Є{booking.price.toLocaleString("en-IN")}</Text>
-                  </View>
-                </View>
+              {/* Details Grid */}
+              <View style={styles.detailsContainer}>
+                <DetailItem
+                  icon={<MaterialCommunityIcons name="calendar-check" size={20} color="#6B7280" />}
+                  label="Check-in"
+                  value={formatFullDate(booking.startDate)}
+                />
+                <DetailItem
+                  icon={<MaterialCommunityIcons name="calendar-remove" size={20} color="#6B7280" />}
+                  label="Check-out"
+                  value={formatFullDate(booking.endDate)}
+                />
+                <DetailItem
+                  icon={<Ionicons name="time-outline" size={20} color="#6B7280" />}
+                  label="Duration"
+                  value={`${booking.totalNights} ${booking.totalNights === 1 ? "night" : "nights"}`}
+                />
+                <DetailItem
+                  icon={<Ionicons name="people-outline" size={20} color="#6B7280" />}
+                  label="Guests"
+                  value={`${booking.guests.adults + booking.guests.children + booking.guests.infants} guests`}
+                />
               </View>
 
-              {/* Host Info */}
-              <View style={styles.hostSection}>
-                <Text style={styles.detailsSectionTitle}>Host Information</Text>
+              {/* Price Section */}
+              <View style={styles.priceContainer}>
+                <Text style={styles.priceLabel}>Total Amount</Text>
+                <Text style={styles.priceValue}>€{booking.price.toLocaleString("en-IN")}</Text>
+              </View>
+
+              {/* Host Section */}
+              <View style={styles.hostContainer}>
+                <Text style={styles.sectionTitle}>Host</Text>
                 <View style={styles.hostCard}>
-                  <View style={styles.hostCardInfo}>
-                    <FontAwesome5 name="user-circle" size={40} color="#666" />
-                    <View style={styles.hostCardDetails}>
-                      <Text style={styles.hostCardName}>{booking.userId.name}</Text>
-                      <Text style={styles.hostCardJoined}>Host</Text>
+                  <View style={styles.hostInfo}>
+                    <View style={styles.hostAvatar}>
+                      <FontAwesome5 name="user" size={18} color="#9CA3AF" />
                     </View>
+                    <Text style={styles.hostName}>{booking.userId.name}</Text>
                   </View>
-
-                  {isContactHostEnabled ? (
-                    <View style={styles.hostCardButtons}>
-                      <TouchableOpacity style={styles.hostCardButton} onPress={() => onCallHost(booking.userId.phone || "")}>
-                        <Feather name="phone" size={16} color="#fff" />
-                        <Text style={styles.hostCardButtonText}>Call</Text>
+                  
+                  {isContactHostEnabled && (
+                    <View style={styles.hostActions}>
+                      <TouchableOpacity 
+                        style={styles.hostActionButton}
+                        onPress={() => onCallHost(booking.userId.phone || "")}
+                      >
+                        <Feather name="phone" size={16} color="#6B7280" />
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.hostCardButton} onPress={() => onEmailHost(booking.userId.email || "")}>
-                        <Feather name="mail" size={16} color="#fff" />
-                        <Text style={styles.hostCardButtonText}>Email</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={[styles.hostCardButtons, { opacity: 0.5 }]}>
-                      <TouchableOpacity style={styles.hostCardButton} disabled>
-                        <Feather name="phone" size={16} color="#fff" />
-                        <Text style={styles.hostCardButtonText}>Call</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.hostCardButton} disabled>
-                        <Feather name="mail" size={16} color="#fff" />
-                        <Text style={styles.hostCardButtonText}>Email</Text>
+                      <TouchableOpacity 
+                        style={styles.hostActionButton}
+                        onPress={() => onEmailHost(booking.userId.email || "")}
+                      >
+                        <Feather name="mail" size={16} color="#6B7280" />
                       </TouchableOpacity>
                     </View>
                   )}
@@ -207,40 +190,40 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
               </View>
 
               {/* Action Buttons */}
-              <View style={styles.actionButtons}>
-                {(booking.bookingStatus === "pending" || booking.bookingStatus === "confirmed" || booking.paymentStatus === "paid") &&
-                  booking.bookingStatus !== "cancelled" && (
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => onCancelBooking(booking._id)}
-                      disabled={loading}
-                    >
-                      <Feather name="x-circle" size={20} color="#fff" />
-                      <Text style={styles.actionButtonText}>Cancel Booking</Text>
-                    </TouchableOpacity>
-                  )}
-
-                {booking.bookingStatus === "confirmed" && booking.paymentStatus !== "paid" && (
+              <View style={styles.actionsContainer}>
+                {booking.paymentStatus !== "paid" && booking.bookingStatus === "confirmed" && (
                   <TouchableOpacity
-                    style={styles.rebookButton}
+                    style={[styles.actionButton, styles.primaryButton]}
                     onPress={() => onPayPlatformFees(booking)}
                     disabled={loading}
                   >
-                    <Feather name="credit-card" size={20} color="#fff" />
-                    <Text style={styles.actionButtonText}>Pay Platform Fees</Text>
+                    <Feather name="credit-card" size={18} color="#fff" />
+                    <Text style={styles.primaryButtonText}>Pay Platform Fees</Text>
                   </TouchableOpacity>
                 )}
 
-                {booking.bookingStatus === "confirmed" && new Date(booking.endDate) < new Date() && (
+                {hasEnded && booking.bookingStatus === "confirmed" && (
                   <TouchableOpacity
-                    style={styles.rebookButton}
+                    style={[styles.actionButton, styles.secondaryButton]}
                     onPress={() => {
                       onClose();
                       onRebook(booking);
                     }}
                   >
-                    <Feather name="refresh-cw" size={20} color="#fff" />
-                    <Text style={styles.actionButtonText}>Book Again</Text>
+                    <Feather name="refresh-cw" size={18} color="#374151" />
+                    <Text style={styles.secondaryButtonText}>Book Again</Text>
+                  </TouchableOpacity>
+                )}
+
+                {(booking.bookingStatus === "pending" || booking.bookingStatus === "confirmed")
+                  && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.dangerButton]}
+                    onPress={() => onCancelBooking(booking._id)}
+                    disabled={loading}
+                  >
+                    <Feather name="x" size={18} color="#EF4444" />
+                    <Text style={styles.dangerButtonText}>Cancel Booking</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -252,250 +235,290 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
   );
 };
 
+// Detail Item Component
+const DetailItem: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}> = ({ icon, label, value }) => (
+  <View style={styles.detailItem}>
+    <View style={styles.detailIcon}>{icon}</View>
+    <View style={styles.detailContent}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  </View>
+);
+
 export default BookingDetailsModal;
 
 // Utility Functions
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "confirmed": return "#4CAF50";
-    case "pending": return "#FFC107";
-    case "cancelled": return "#F44336";
-    default: return "#FFC107";
+    case "confirmed": return "#10B981";
+    case "pending": return "#F59E0B";
+    case "cancelled": return "#EF4444";
+    default: return "#6B7280";
   }
 };
 
 const getPaymentStatusColor = (status: string) => {
   switch (status) {
-    case "paid": return "#4CAF50";
-    case "refunded": return "#2196F3";
-    case "pending": return "#FFC107";
-    default: return "#FFC107";
+    case "paid": return "#10B981";
+    case "refunded": return "#3B82F6";
+    case "pending": return "#F59E0B";
+    default: return "#6B7280";
   }
 };
 
+const getStatusStyle = (status: string) => ({
+  backgroundColor: `${getStatusColor(status)}15`,
+});
 
+const getPaymentStatusStyle = (status: string) => ({
+  backgroundColor: `${getPaymentStatusColor(status)}15`,
+});
 
 const styles = StyleSheet.create({
-
-
-  
   modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: height * 0.9,
-    maxHeight: height * 0.9,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: height * 0.92,
+    maxHeight: height * 0.92,
   },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+  header: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 10,
   },
   closeButton: {
     padding: 4,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+  closeButtonBackground: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  modalHeaderSpacer: {
-    width: 28,
-  },
-  modalScrollContent: {
+  scrollContent: {
     flex: 1,
   },
-  detailsHeader: {
-    height: 200,
+  imageContainer: {
+    height: 280,
     position: "relative",
   },
-  detailsHeaderImage: {
+  heroImage: {
     width: "100%",
     height: "100%",
   },
-  detailsHeaderGradient: {
+  imageGradient: {
     position: "absolute",
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    height: 60,
   },
-  detailsContent: {
-    padding: 20,
+  content: {
+    padding: 24,
+    paddingBottom: 40,
   },
-  detailsTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 8,
-  },
-  detailsLocationRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  titleSection: {
     marginBottom: 20,
   },
-  detailsLocation: {
-    color: "#666",
-    marginLeft: 4,
-    fontSize: 14,
+  propertyTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+    lineHeight: 34,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  locationText: {
+    fontSize: 16,
+    color: "#6B7280",
+    fontWeight: "500",
   },
   statusContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
+    gap: 12,
+    marginBottom: 32,
   },
-  statusItem: {
+  statusPill: {
+    flexDirection: "row",
     alignItems: "center",
-  },
-  statusLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
-  },
-  statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    // Note: "backdropFilter" is a web-only style; you can ignore or remove
-    // backdropFilter: "blur(4px)",
+    gap: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusText: {
-    color: "#fff",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     textTransform: "capitalize",
   },
-  detailsSection: {
-    marginBottom: 24,
+  detailsContainer: {
+    gap: 20,
+    marginBottom: 32,
   },
-  detailsSectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 12,
-  },
-  detailsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  detailsGridItem: {
-    width: "48%",
+  detailItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 16,
+    gap: 16,
   },
-  detailsGridItemContent: {
-    marginLeft: 10,
+  detailIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F9FAFB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  detailContent: {
     flex: 1,
+    paddingTop: 2,
   },
-  detailsGridItemLabel: {
-    fontSize: 12,
-    color: "#666",
+  detailLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
     marginBottom: 2,
   },
-  detailsGridItemValue: {
-    fontSize: 14,
-    color: "#333",
+  detailValue: {
+    fontSize: 16,
+    color: "#111827",
     fontWeight: "600",
   },
-  priceDetails: {
-    marginTop: 8,
-  },
-  priceDetailRow: {
+  priceContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 8,
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 16,
+    marginBottom: 32,
   },
-  priceDetailLabel: {
-    fontSize: 14,
-    color: "#666",
+  priceLabel: {
+    fontSize: 16,
+    color: "#6B7280",
+    fontWeight: "500",
   },
-  priceDetailValue: {
-    fontSize: 14,
+  priceValue: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  hostContainer: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: "600",
-    color: "#333",
-  },
-  hostSection: {
-    marginBottom: 24,
+    color: "#111827",
+    marginBottom: 16,
   },
   hostCard: {
-    flexDirection: "column",
-    padding: 16,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 12,
-  },
-  hostCardInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  hostCardDetails: {
-    marginLeft: 12,
-  },
-  hostCardName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#333",
-  },
-  hostCardJoined: {
-    fontSize: 12,
-    color: "#888",
-  },
-  hostCardButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 16,
   },
-  hostCardButton: {
-    flex: 1,
-    backgroundColor: "#5E72E4",
-    paddingVertical: 10,
-    borderRadius: 8,
+  hostInfo: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  hostAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#E5E7EB",
     justifyContent: "center",
     alignItems: "center",
+  },
+  hostName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  hostActions: {
+    flexDirection: "row",
     gap: 8,
   },
-  hostCardButtonText: {
+  hostActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  actionsContainer: {
+    gap: 12,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 10,
+  },
+  primaryButton: {
+    backgroundColor: "#111827",
+  },
+  primaryButtonText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
   },
-  actionButtons: {
-    marginTop: 8,
-    marginBottom: 40,
+  secondaryButton: {
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
-  cancelButton: {
-    backgroundColor: "#EF5350",
-    paddingVertical: 14,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
+  secondaryButtonText: {
+    color: "#374151",
+    fontSize: 16,
+    fontWeight: "600",
   },
-  rebookButton: {
-    backgroundColor: "#fca42c",
-    paddingVertical: 14,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
+  dangerButton: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
   },
-  actionButtonText: {
-    color: "#fff",
+  dangerButtonText: {
+    color: "#EF4444",
     fontSize: 16,
     fontWeight: "600",
   },

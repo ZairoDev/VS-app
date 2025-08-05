@@ -12,8 +12,10 @@ import { Feather, MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/v
 import { LinearGradient } from 'expo-linear-gradient';
 import { Booking } from '@/types';
 import { formatDate } from '@/utils/dateFormatters';
+
 const { width, height } = Dimensions.get("window");
-const CARD_WIDTH = width * 0.85;
+const CARD_WIDTH = width * 0.9; // Increased from 0.85 for better use of space
+
 interface BookingCardProps {
   booking: Booking;
   onPress: (booking: Booking) => void;
@@ -39,149 +41,183 @@ const BookingCard: React.FC<BookingCardProps> = ({
 }) => {
   const isContactHostEnabled =
     booking.bookingStatus === 'confirmed' && booking.paymentStatus === 'paid';
-
   const hasEnded = new Date(booking.endDate) < new Date();
 
   return (
     <TouchableOpacity
       style={styles.card}
-      activeOpacity={0.9}
+      activeOpacity={0.95}
       onPress={() => onPress(booking)}
     >
-      {/* Image */}
+      {/* Image with Status Badge */}
       <View style={styles.imageContainer}>
-        <Image source={{ uri: booking.propertyId.propertyCoverFileUrl }} style={styles.image} />
+        <Image 
+          source={{ uri: booking.propertyId.propertyCoverFileUrl }} 
+          style={styles.image}
+          resizeMode="cover"
+        />
         <LinearGradient
-          colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)']}
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.3)']}
           style={styles.gradient}
         />
+        
+        {/* Status Badge */}
+        <View style={[
+          styles.statusBadge,
+          booking.bookingStatus === 'confirmed' 
+            ? styles.confirmedBadge 
+            : styles.pendingBadge
+        ]}>
+          <Text style={[
+            styles.statusText,
+            booking.bookingStatus === 'confirmed' 
+              ? styles.confirmedText 
+              : styles.pendingText
+          ]}>
+            {booking.bookingStatus === 'confirmed' ? 'Confirmed' : 'Pending'}
+          </Text>
+        </View>
       </View>
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={1}>
-          {booking.propertyId.placeName}
-        </Text>
-
-        <View style={styles.locationRow}>
-          <Feather name="map-pin" size={14} color="#666" />
-          <Text style={styles.location} numberOfLines={1}>
-            {booking.propertyId.city}, {booking.propertyId.country}
+        {/* Title and Location */}
+        <View style={styles.headerSection}>
+          <Text style={styles.title} numberOfLines={2}>
+            {booking.propertyId.placeName}
           </Text>
+          <View style={styles.locationRow}>
+            <Feather name="map-pin" size={14} color="#666" />
+            <Text style={styles.location} numberOfLines={1}>
+              {booking.propertyId.city}, {booking.propertyId.country}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.detailsRow}>
+        {/* Details Grid */}
+        <View style={styles.detailsGrid}>
           <View style={styles.detailItem}>
             <MaterialCommunityIcons name="calendar-range" size={16} color="#fca42c" />
-            <Text style={styles.detailText}>
-              {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
-            </Text>
+            <View style={styles.detailTextContainer}>
+              <Text style={styles.detailLabel}>Dates</Text>
+              <Text style={styles.detailText}>
+                {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
+              </Text>
+            </View>
           </View>
+
           <View style={styles.detailItem}>
             <Ionicons name="people" size={16} color="#fca42c" />
-            <Text style={styles.detailText}>
-              {booking.guests.adults + booking.guests.children + booking.guests.infants} guests
-            </Text>
+            <View style={styles.detailTextContainer}>
+              <Text style={styles.detailLabel}>Guests</Text>
+              <Text style={styles.detailText}>
+                {booking.guests.adults + booking.guests.children + booking.guests.infants} guests
+              </Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.priceRow}>
+        {/* Price Section */}
+        <View style={styles.priceSection}>
           <View style={styles.priceInfo}>
-            <Text style={styles.priceLabel}>Total</Text>
+            <Text style={styles.priceLabel}>Total Price</Text>
             {booking.totalNights > 0 && (
               <Text style={styles.nightsText}>
                 {booking.totalNights} {booking.totalNights === 1 ? 'night' : 'nights'}
               </Text>
             )}
           </View>
-          <Text style={styles.price}>Є{booking.price.toLocaleString('en-IN')}</Text>
+          <Text style={styles.price}>€{booking.price.toLocaleString('en-IN')}</Text>
         </View>
 
-        <View style={styles.hostRow}>
-          <View style={styles.hostInfo}>
-            <FontAwesome5 name="user-circle" size={16} color="#666" />
-            <Text style={styles.hostName}>{booking.userId.name}</Text>
-          </View>
+        {/* Host Info */}
+        <View style={styles.hostSection}>
+          <FontAwesome5 name="user-circle" size={18} color="#666" />
+          <Text style={styles.hostLabel}>Host:</Text>
+          <Text style={styles.hostName}>{booking.userId.name}</Text>
         </View>
 
         {/* Actions */}
-        <View style={styles.actions}>
+        <View style={styles.actionsContainer}>
           {booking.bookingStatus !== 'confirmed' ? (
             <View style={styles.waitingContainer}>
-              <Text style={styles.waitingText}>Pending request confirmation</Text>
+              <Feather name="clock" size={16} color="#7A5800" />
+              <Text style={styles.waitingText}>Pending host confirmation</Text>
             </View>
           ) : (
             <>
-              
-              <View
-                style={[
-                  styles.contactButtonsContainer,
-                  !isContactHostEnabled && { opacity: 0.5 }
-                ]}
-              >
-                <View style={styles.hostButtonsRow}>
+              {/* Contact Buttons */}
+              <View style={[
+                styles.contactSection,
+                !isContactHostEnabled && styles.disabledSection
+              ]}>
+                <Text style={styles.sectionTitle}>Contact Host</Text>
+                <View style={styles.contactButtonsRow}>
                   <TouchableOpacity
-                    style={styles.hostButton}
+                    style={[styles.contactButton, styles.callButton]}
                     onPress={() => onCallHost(booking.userId.phone || '')}
                     disabled={!isContactHostEnabled || loading}
                   >
                     <Feather name="phone" size={16} color="#fff" />
-                    <Text style={styles.buttonText}>Call Host</Text>
+                    <Text style={styles.contactButtonText}>Call</Text>
                   </TouchableOpacity>
+
                   <TouchableOpacity
-                    style={styles.hostButton}
+                    style={[styles.contactButton, styles.emailButton]}
                     onPress={() => onEmailHost(booking.userId.email || '')}
                     disabled={!isContactHostEnabled || loading}
                   >
                     <Feather name="mail" size={16} color="#fff" />
-                    <Text style={styles.buttonText}>Email Host</Text>
+                    <Text style={styles.contactButtonText}>Email</Text>
                   </TouchableOpacity>
                 </View>
+
                 <TouchableOpacity
                   style={styles.supportButton}
                   onPress={onContactSupport}
                   disabled={!isContactHostEnabled || loading}
                 >
                   <Feather name="headphones" size={16} color="#5E72E4" />
-                  <Text style={styles.supportButtonText}>Contact Vacation Saga</Text>
+                  <Text style={styles.supportButtonText}>Contact Support</Text>
                 </TouchableOpacity>
               </View>
 
-              
-              {booking.paymentStatus !== 'paid' && (
-                <TouchableOpacity
-                  style={styles.outlineButton}
-                  onPress={() => onPayFees(booking)}
-                  disabled={loading}
-                >
-                  <Feather name="credit-card" size={18} color="#5E72E4" />
-                  <Text style={styles.outlineButtonText}>Pay Fees</Text>
-                </TouchableOpacity>
-              )}
+              {/* Action Buttons */}
+              <View style={styles.actionButtonsRow}>
+                {booking.paymentStatus !== 'paid' && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.payButton]}
+                    onPress={() => onPayFees(booking)}
+                    disabled={loading}
+                  >
+                    <Feather name="credit-card" size={16} color="#fff" />
+                    <Text style={styles.actionButtonText}>Pay Fees</Text>
+                  </TouchableOpacity>
+                )}
 
-              
-              {hasEnded && (
-                <TouchableOpacity
-                  style={styles.outlineButton}
-                  onPress={() => onRebook(booking)}
-                  disabled={loading}
-                >
-                  <Feather name="refresh-cw" size={18} color="#5E72E4" />
-                  <Text style={styles.outlineButtonText}>Rebook</Text>
-                </TouchableOpacity>
-              )}
+                {hasEnded && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.rebookButton]}
+                    onPress={() => onRebook(booking)}
+                    disabled={loading}
+                  >
+                    <Feather name="refresh-cw" size={16} color="#5E72E4" />
+                    <Text style={styles.rebookButtonText}>Rebook</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </>
           )}
 
           {/* Cancel Button */}
           {booking.bookingStatus === 'pending' && (
             <TouchableOpacity
-              style={styles.dangerButton}
+              style={styles.cancelButton}
               onPress={() => onCancel(booking._id)}
               disabled={loading}
             >
-              <Feather name="x-circle" size={18} color="#fff" />
-              <Text style={styles.buttonText}>Cancel</Text>
+              <Feather name="x-circle" size={16} color="#fff" />
+              <Text style={styles.cancelButtonText}>Cancel Booking</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -192,24 +228,22 @@ const BookingCard: React.FC<BookingCardProps> = ({
 
 export default BookingCard;
 
-
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    marginTop: 18,
-    marginBottom: 18,
+    borderRadius: 20,
+    marginVertical: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
     width: CARD_WIDTH,
     alignSelf: "center",
     overflow: "hidden",
   },
   imageContainer: {
-    height: 180,
+    height: 200,
     position: "relative",
   },
   image: {
@@ -221,57 +255,94 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: "100%",
+    height: "50%",
+  },
+  statusBadge: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  confirmedBadge: {
+    backgroundColor: "rgba(76, 175, 80, 0.9)",
+  },
+  pendingBadge: {
+    backgroundColor: "rgba(255, 193, 7, 0.9)",
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  confirmedText: {
+    color: "#fff",
+  },
+  pendingText: {
+    color: "#fff",
   },
   content: {
-    padding: 16,
+    padding: 20,
+  },
+  headerSection: {
+    marginBottom: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
-    color: "#333",
+    color: "#1a1a1a",
     marginBottom: 8,
+    lineHeight: 28,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
   },
   location: {
     color: "#666",
-    marginLeft: 4,
-    fontSize: 14,
+    marginLeft: 6,
+    fontSize: 15,
   },
-  detailsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
+  detailsGrid: {
+    marginBottom: 20,
+    gap: 16,
   },
   detailItem: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  detailTextContainer: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: "#888",
+    fontWeight: "500",
+    marginBottom: 2,
   },
   detailText: {
-    marginLeft: 6,
-    color: "#444",
     fontSize: 14,
+    color: "#333",
+    fontWeight: "500",
   },
-  priceRow: {
+  priceSection: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "#f0f0f0",
-    marginBottom: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    marginBottom: 20,
   },
   priceInfo: {
-    flexDirection: "column",
+    flex: 1,
   },
   priceLabel: {
     fontSize: 14,
     color: "#666",
+    fontWeight: "500",
   },
   nightsText: {
     fontSize: 12,
@@ -279,116 +350,138 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   price: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "700",
+    color: "#1a1a1a",
   },
-  hostRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  hostInfo: {
+  hostSection: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 24,
+    gap: 8,
   },
-  hostName: {
-    marginLeft: 6,
+  hostLabel: {
     fontSize: 14,
     color: "#666",
+    fontWeight: "500",
   },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-    gap: 12,
+  hostName: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "600",
+  },
+  actionsContainer: {
+    gap: 16,
   },
   waitingContainer: {
-    flex: 1,
-    backgroundColor: "#FFC10780",
-    padding: 12,
-    borderRadius: 8,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFF3CD",
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
   },
   waitingText: {
-    color: "#7A5800",
+    color: "#856404",
     fontWeight: "600",
     fontSize: 14,
   },
-  contactButtonsContainer: {
-    flex: 1,
-    gap: 10,
+  contactSection: {
+    gap: 12,
   },
-  hostButtonsRow: {
-    flexDirection: "row",
-    gap: 10,
+  disabledSection: {
+    opacity: 0.6,
   },
-  hostButton: {
-    flex: 1,
-    backgroundColor: "#fca42c",
-    paddingVertical: 10,
-    borderRadius: 12,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  contactButtonsRow: {
     flexDirection: "row",
-    justifyContent: "center",
+    gap: 12,
+  },
+  contactButton: {
+    flex: 1,
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#fca42c",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
   },
-  buttonText: {
+  callButton: {
+    backgroundColor: "#4CAF50",
+  },
+  emailButton: {
+    backgroundColor: "#2196F3",
+  },
+  contactButtonText: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 14,
-    marginLeft: 8,
   },
   supportButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "transparent",
-    paddingVertical: 10,
-    borderRadius: 12,
     justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#5E72E4",
+    backgroundColor: "rgba(94, 114, 228, 0.05)",
+    gap: 8,
   },
   supportButtonText: {
     color: "#5E72E4",
     fontWeight: "600",
     fontSize: 14,
-    marginLeft: 6,
   },
-  outlineButton: {
+  actionButtonsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  actionButton: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  payButton: {
+    backgroundColor: "#FF9800",
+  },
+  actionButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  rebookButton: {
     borderWidth: 1.5,
     borderColor: "#5E72E4",
     backgroundColor: "rgba(94, 114, 228, 0.08)",
-    paddingVertical: 12,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
   },
-  outlineButtonText: {
+  rebookButtonText: {
     color: "#5E72E4",
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 14,
-    marginLeft: 8,
   },
-  dangerButton: {
-    flex: 1,
-    backgroundColor: "#EF5350",
-    paddingVertical: 12,
-    borderRadius: 12,
+  cancelButton: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#f5365c",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#f44336",
+    gap: 8,
   },
-})
+  cancelButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+});
