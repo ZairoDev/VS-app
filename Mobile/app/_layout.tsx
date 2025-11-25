@@ -22,10 +22,8 @@ export default function RootLayout() {
 
   return (
      <GestureHandlerRootView style={{ flex: 1 }}>
-      
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <Stack screenOptions={{ headerShown: false }} />
-   
     </GestureHandlerRootView>
   )
 }

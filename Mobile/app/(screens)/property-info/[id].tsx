@@ -1,11 +1,9 @@
 "use client"
-
 import axios from "axios"
 import { useEffect, useState, useRef } from "react"
 import { type Route, useLocalSearchParams, router } from "expo-router"
 import Carousel from "react-native-reanimated-carousel"
 import ImageViewer from "react-native-image-zoom-viewer"
-// import { SafeAreaView } from "react-native-safe-area-context"
 import { Modalize } from "react-native-modalize"
 import {
   Text,
@@ -21,23 +19,15 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from "react-native"
-
 import type { PropertyInterface, UserDataType } from "@/types"
 import { useAuthStore } from "@/store/auth-store"
 import { globalStyles } from "@/Constants/Styles"
 import { Ionicons, FontAwesome, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons"
 
+const { width: screenWidth } = Dimensions.get("window")
+
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams()
-
-  // Check if user is authenticated
-  // useEffect(() => {
-  //   if (!user) {
-  //     // Redirect to menu page if user is not logged in
-  //     router.replace("/(screens)/menu")
-  //   }
-  // }, [user])
-
   const { user } = useAuthStore()
   const [imagesModal, setImagesModal] = useState(false)
   const [imageIndex, setImageIndex] = useState(0)
@@ -52,6 +42,7 @@ export default function PropertyInfo() {
       modalizeRef.current.open()
     }
   }
+
   const getproperty = async () => {
     try {
       const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/properties/getParticularProperty`, {
@@ -62,6 +53,7 @@ export default function PropertyInfo() {
       console.log("error in fetching particular property")
     }
   }
+
   useEffect(() => {
     getproperty()
   }, [])
@@ -75,6 +67,7 @@ export default function PropertyInfo() {
       console.log("error in fetching user")
     }
   }
+
   useEffect(() => {
     getUser()
   }, [property])
@@ -85,13 +78,15 @@ export default function PropertyInfo() {
   }
 
   const bentoStyle = (index: number) => {
+    const spacing = 4
+    const availableWidth = screenWidth - (spacing * 3) // Account for padding and gaps
     const styles = [
-      { width: Dimensions.get("window").width, height: 200 },
-      { width: (Dimensions.get("window").width / 100) * 49, height: 200 },
-      { width: (Dimensions.get("window").width / 100) * 49, height: 200 },
-      { width: Dimensions.get("window").width, height: 300 },
-      { width: (Dimensions.get("window").width / 100) * 49, height: 150 },
-      { width: (Dimensions.get("window").width / 100) * 49, height: 150 },
+      { width: availableWidth, height: 200 },
+      { width: (availableWidth - spacing) / 2, height: 200 },
+      { width: (availableWidth - spacing) / 2, height: 200 },
+      { width: availableWidth, height: 300 },
+      { width: (availableWidth - spacing) / 2, height: 150 },
+      { width: (availableWidth - spacing) / 2, height: 150 },
     ]
     return styles[index % styles.length]
   }
@@ -112,18 +107,10 @@ export default function PropertyInfo() {
       </Modal>
     )
   }
+
   const renderAllPhotos = () => {
     return (
-      <View
-        style={{
-          backgroundColor: "white",
-          minWidth: "100%",
-          minHeight: "100%",
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View style={styles.allPhotosContainer}>
         <Modal
           animationType="fade"
           transparent={true}
@@ -132,35 +119,24 @@ export default function PropertyInfo() {
             setModalVisible(!modalVisible)
           }}
         >
-          <View style={{ display: "flex" }}>
+          <View style={styles.modalContainer}>
             <ScrollView
-              contentContainerStyle={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                justifyContent: "space-between",
-                backgroundColor: "white",
-              }}
+              contentContainerStyle={styles.photoGrid}
+              showsVerticalScrollIndicator={false}
             >
               {property?.propertyImages.map((item, index: number) => (
                 <TouchableOpacity key={index} onPress={() => openImageViewer(index)}>
-                  <View key={index} style={[styles.gridItem, bentoStyle(index)]}>
-                    <Image source={{ uri: item }} style={{ height: "100%", width: "100%" }} resizeMode="cover" />
+                  <View style={[styles.gridItem, bentoStyle(index)]}>
+                    <Image source={{ uri: item }} style={styles.gridImage} resizeMode="cover" />
                   </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
             <Pressable
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 30,
-                backgroundColor: "rgba(0,0,0,0.6)",
-                padding: 10,
-                borderRadius: 30,
-              }}
+              style={styles.closeButton}
               onPress={() => setModalVisible(!modalVisible)}
             >
-              <Text style={{ color: "white", fontSize: 16 }}>close</Text>
+              <Ionicons name="close" size={24} color="white" />
             </Pressable>
           </View>
         </Modal>
@@ -171,62 +147,59 @@ export default function PropertyInfo() {
 
   const renderPropertyInfo = () => {
     return (
-      <View style={styles.detailsContainer}>
-        <View
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-          }}
-        >
+      <View style={styles.section}>
+        <View style={styles.propertyHeader}>
           <View style={styles.propertyTypeTag}>
-            <Ionicons name="home-outline" color={"black"} size={12} />
-            <Text>{property?.propertyType}</Text>
+            <Ionicons name="home-outline" color="#666" size={14} />
+            <Text style={styles.propertyTypeText}>{property?.propertyType}</Text>
           </View>
         </View>
-        {/* VSID */}
-        <Text style={styles.infoContainer}>VS ID - {property?.VSID}</Text>
-        {/* country */}
-        <View style={styles.infoContainer}>
-          <Ionicons name="location" size={16} />
-          <Text>{property?.country}</Text>
+
+        <Text style={styles.vsidText}>VS ID - {property?.VSID}</Text>
+
+        <View style={styles.locationContainer}>
+          <Ionicons name="location" size={18} color="#666" />
+          <Text style={styles.locationText}>{property?.country}</Text>
         </View>
-        {/* hosted by */}
-        <View style={styles.infoContainer}>
-          <Ionicons name="person-circle-outline" size={28} />
-          <Text numberOfLines={1}>Hosted by {users?.name}</Text>
+
+        <View style={styles.hostContainer}>
+          <Ionicons name="person-circle-outline" size={24} color="#666" />
+          <Text style={styles.hostText} numberOfLines={1}>Hosted by {users?.name}</Text>
         </View>
-        {/* beds and Bathrooms */}
-        <View style={{ display: "flex", flexDirection: "row", gap: 15 }}>
+
+        <View style={styles.detailsRow}>
           <View style={styles.detailBox}>
-            <Ionicons name="person" size={20} />
-            <Text>{property?.guests}</Text>
+            <Ionicons name="person" size={18} color="#666" />
+            <Text style={styles.detailText}>{property?.guests}</Text>
           </View>
           <View style={styles.detailBox}>
-            <Ionicons name="bed" size={20} />
-            <Text>{property?.bedrooms} </Text>
+            <Ionicons name="bed" size={18} color="#666" />
+            <Text style={styles.detailText}>{property?.bedrooms}</Text>
           </View>
           <View style={styles.detailBox}>
-            <FontAwesome name="bath" size={20} />
-            <Text>{property?.bathroom} </Text>
+            <FontAwesome name="bath" size={18} color="#666" />
+            <Text style={styles.detailText}>{property?.bathroom}</Text>
           </View>
           <View style={styles.detailBox}>
-            <MaterialCommunityIcons name="floor-plan" size={20} />
-            <Text>{property?.size}</Text>
+            <MaterialCommunityIcons name="floor-plan" size={18} color="#666" />
+            <Text style={styles.detailText}>{property?.size}</Text>
           </View>
         </View>
-        {/* description */}
-        <View>
-          <Text style={globalStyles.Heading}>Stay Information</Text>
-          <Text style={globalStyles.Text}>{(property?.newReviews || property?.reviews)?.trim() ?? ""}</Text>
+
+        <View style={styles.descriptionContainer}>
+          <Text style={styles.sectionTitle}>Stay Information</Text>
+          <Text style={styles.descriptionText}>
+            {(property?.newReviews || property?.reviews)?.trim() ?? ""}
+          </Text>
         </View>
       </View>
     )
   }
+
   const renderAmenities = () => {
     return (
-      <View>
-        <Text style={globalStyles.Heading}>Amenities</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Amenities</Text>
         <View style={styles.amenitiesContainer}>
           {Object.keys({
             ...property?.generalAmenities,
@@ -243,66 +216,55 @@ export default function PropertyInfo() {
             )
             ?.map((amenity, ind) => (
               <View style={styles.amenityItem} key={ind}>
-                <Text>{amenity}</Text>
+                <Text style={styles.amenityText}>{amenity}</Text>
               </View>
             ))}
-          <View
-            style={{
-              backgroundColor: "orange",
-              borderRadius: 20,
-              borderColor: "#ff7f11",
-              padding: 5,
-              borderWidth: 1,
-            }}
-          >
-            <TouchableOpacity onPress={handleOpenBottomsheet}>
-              <Text style={{ color: "white" }}>View All..</Text>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.viewAllButton} onPress={handleOpenBottomsheet}>
+            <Text style={styles.viewAllText}>View All..</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
+  }
+
+  const renderPricingCard = () => {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Room Rates</Text>
+        <Text style={styles.subtitle}>Prices may increase on weekends and holidays</Text>
+        
+        <View style={styles.rateContainer}>
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Monday-Thursday</Text>
+            <Text style={styles.ratePrice}>€{property?.basePrice}</Text>
+          </View>
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Friday-Sunday</Text>
+            <Text style={styles.ratePrice}>€{property?.weekendPrice}</Text>
+          </View>
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Weekly Discount</Text>
+            <Text style={styles.ratePrice}>€{property?.weeklyDiscount ?? "------"}</Text>
+          </View>
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Minimum nights</Text>
+            <Text style={styles.rateValue}>{property?.night[0]} nights</Text>
+          </View>
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Maximum nights</Text>
+            <Text style={styles.rateValue}>{property?.night[1]} nights</Text>
           </View>
         </View>
       </View>
     )
   }
-  const renderPricingCard = () => {
-    return (
-      <View>
-        <Text style={globalStyles.Heading}>Room Rates</Text>
-        <Text style={globalStyles.MutedText}>Prices may increase in weekends and holidays</Text>
 
-        <View style={styles.rateItem}>
-          <Text>Monday-Thursday</Text>
-          <Text>€ {property?.basePrice}</Text>
-        </View>
-
-        <View style={styles.rateItem}>
-          <Text>Friday-Sunday</Text>
-          <Text>€ {property?.weekendPrice}</Text>
-        </View>
-
-        <View style={styles.rateItem}>
-          <Text>Weekly Discount</Text>
-          <Text>€ {property?.weeklyDiscount ?? "------"}</Text>
-        </View>
-
-        <View style={styles.rateItem}>
-          <Text>Minimum number of nights</Text>
-          <Text>{property?.night[0]} nights</Text>
-        </View>
-
-        <View style={styles.rateItem}>
-          <Text>Max number of nights</Text>
-          <Text>{property?.night[1]} nights</Text>
-        </View>
-      </View>
-    )
-  }
   const renderHostInfo = () => {
     return (
-      <View>
-        <Text style={globalStyles.Heading}>Host information</Text>
-
-        {/* host image and name */}
-        <View style={styles.hostImageView}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Host Information</Text>
+        
+        <View style={styles.hostProfile}>
           <Image
             style={styles.hostImage}
             source={{
@@ -311,75 +273,54 @@ export default function PropertyInfo() {
                 : "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png",
             }}
           />
-          <Text>{users?.name}</Text>
+          <Text style={styles.hostName}>{users?.name}</Text>
         </View>
 
-        {/* host details */}
-        <View style={styles.container}>
-          <View style={styles.hostItem}>
-            <MaterialIcons name="date-range" size={20} />
-            <Text style={globalStyles.MutedText}>
+        <View style={styles.hostDetails}>
+          <View style={styles.hostDetailItem}>
+            <MaterialIcons name="date-range" size={20} color="#666" />
+            <Text style={styles.hostDetailText}>
               Joined {users?.createdAt && new Date(users.createdAt).getFullYear()}
             </Text>
           </View>
-
-          <View style={styles.hostItem}>
-            <MaterialCommunityIcons name="message-text-outline" size={20} />
-            <Text style={globalStyles.MutedText}>Response rate - 100%</Text>
+          <View style={styles.hostDetailItem}>
+            <MaterialCommunityIcons name="message-text-outline" size={20} color="#666" />
+            <Text style={styles.hostDetailText}>Response rate - 100%</Text>
           </View>
-
-          <View style={styles.hostItem}>
-            <MaterialCommunityIcons name="clock-time-nine-outline" size={20} />
-            <Text style={globalStyles.MutedText}>Fast response - within a few hours</Text>
+          <View style={styles.hostDetailItem}>
+            <MaterialCommunityIcons name="clock-time-nine-outline" size={20} color="#666" />
+            <Text style={styles.hostDetailText}>Fast response - within a few hours</Text>
           </View>
-
-          <View style={styles.hostItem}>
-            <Ionicons name="language-outline" size={20} />
-            <Text style={globalStyles.MutedText}>Language Spoken - {users?.spokenLanguage || "English"}</Text>
+          <View style={styles.hostDetailItem}>
+            <Ionicons name="language-outline" size={20} color="#666" />
+            <Text style={styles.hostDetailText}>
+              Language Spoken - {users?.spokenLanguage || "English"}
+            </Text>
           </View>
         </View>
       </View>
     )
   }
+
   const renderThingsToKnow = () => {
     return (
-      <View>
-        <View>
-          <View
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              backgroundColor: "#c1c2c3",
-              padding: 8,
-              borderTopLeftRadius: 5,
-              borderTopRightRadius: 5,
-            }}
-          >
-            <Text style={{ fontSize: 17 }}>Check-in</Text>
-            <Text style={{ fontSize: 17 }}>Check-out</Text>
+      <View style={styles.section}>
+        <View style={styles.checkInOutContainer}>
+          <View style={styles.checkInOutHeader}>
+            <Text style={styles.checkInOutTitle}>Check-in</Text>
+            <Text style={styles.checkInOutTitle}>Check-out</Text>
           </View>
-          <View
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              backgroundColor: "#d3d3d3",
-              padding: 8,
-              borderBottomLeftRadius: 5,
-              borderBottomRightRadius: 5,
-            }}
-          >
-            <Text>{property?.time[0]}:00</Text>
-            <Text style={{ textAlign: "center" }}>{property?.time[1]}:00</Text>
+          <View style={styles.checkInOutTimes}>
+            <Text style={styles.checkInOutTime}>{property?.time[0]}:00</Text>
+            <Text style={styles.checkInOutTime}>{property?.time[1]}:00</Text>
           </View>
         </View>
 
-        <View style={styles.container}>
+        <View style={styles.rulesContainer}>
           {property?.additionalRules?.map((item, index) => (
-            <View style={{ display: "flex", flexDirection: "row", gap: 5 }} key={index}>
-              <Text style={globalStyles.Text}>•</Text>
-              <Text style={globalStyles.Text}>{item}</Text>
+            <View style={styles.ruleItem} key={index}>
+              <Text style={styles.bulletPoint}>•</Text>
+              <Text style={styles.ruleText}>{item}</Text>
             </View>
           ))}
         </View>
@@ -388,9 +329,8 @@ export default function PropertyInfo() {
   }
 
   return (
-    <SafeAreaView  style={styles.safeAreaView}>
+    <SafeAreaView style={styles.safeAreaView}>
       <StatusBar hidden={true} />
-
       <FlatList
         data={[1]}
         contentContainerStyle={styles.flatListContainer}
@@ -402,30 +342,26 @@ export default function PropertyInfo() {
                 <Carousel
                   loop
                   height={300}
-                  width={Dimensions.get("window").width}
+                  width={screenWidth}
                   data={property.propertyImages}
                   renderItem={({ item, index }) => (
                     <View key={index}>
-                      <Image source={{ uri: item }} resizeMode="cover" style={styles.image} />
+                      <Image source={{ uri: item }} resizeMode="cover" style={styles.carouselImage} />
                     </View>
                   )}
                 />
               </Pressable>
             ) : (
-              <Text>No images available</Text>
+              <Text style={styles.noImagesText}>No images available</Text>
             )}
           </View>
         }
         renderItem={() => (
-          <View style={globalStyles.Container} key={property?._id}>
+          <View style={styles.contentContainer} key={property?._id}>
             {renderPropertyInfo()}
-
             {renderAmenities()}
-
             {renderPricingCard()}
-
             {renderThingsToKnow()}
-
             {renderHostInfo()}
           </View>
         )}
@@ -438,7 +374,7 @@ export default function PropertyInfo() {
         onClose={() => setBottomsheetVisible(false)}
         onOpen={() => setBottomsheetVisible(true)}
       >
-        <View style={{ padding: 20 }}>
+        <View style={styles.modalizeContent}>
           <View style={styles.amenitiesContainer}>
             {Object.keys({
               ...property?.generalAmenities,
@@ -455,173 +391,347 @@ export default function PropertyInfo() {
               )
               ?.map((amenity, ind) => (
                 <View style={styles.amenityItem} key={ind}>
-                  <Text>{amenity}</Text>
+                  <Text style={styles.amenityText}>{amenity}</Text>
                 </View>
               ))}
           </View>
         </View>
       </Modalize>
-      <View style={globalStyles.footer}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <TouchableOpacity style={styles.footerText}>
+      <View style={styles.footer}>
+        <View style={styles.footerContent}>
+          <TouchableOpacity style={styles.priceContainer}>
             <Text style={styles.footerPrice}>€{property?.basePrice}</Text>
-            <Text>/night</Text>
+            <Text style={styles.perNight}>/night</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={() => {
               if (user) {
-                // If user is logged in, navigate to reserve page
                 router.push(`/(screens)/reserve-page/${id}` as Route)
               } else {
-                // If user is not logged in, redirect to login page
                 router.push("/(tabs)/Menu")
               }
             }}
+            style={[globalStyles.btn, styles.reserveButton]}
           >
-            <View style={[globalStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}>
-              <Text style={globalStyles.btnText}>Reserve</Text>
-            </View>
+            <Text style={[globalStyles.btnText, styles.reserveButtonText]}>Reserve</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
   )
 }
+
 const styles = StyleSheet.create({
-  safeAreaView: { flex: 1 },
-  imageContainer: {},
-  image: { height: 300, width: "100%" },
-  allPhotosTextContainer: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    height: 35,
-    width: "15%",
-    gap: 4,
-    top: 20,
-    right: 20,
-    backgroundColor: "black",
-    borderColor: "white",
-    borderWidth: 1,
-    borderRadius: 20,
+  safeAreaView: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  allPhotosText: { color: "white" },
+  flatListContainer: {
+    paddingBottom: 100,
+  },
+  imageContainer: {
+    backgroundColor: '#f8f9fa',
+  },
+  carouselImage: {
+    height: 300,
+    width: '100%',
+  },
+  noImagesText: {
+    textAlign: 'center',
+    padding: 40,
+    fontSize: 16,
+    color: '#666',
+  },
+  contentContainer: {
+    backgroundColor: '#fff',
+  },
+  section: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  propertyHeader: {
+    marginBottom: 16,
+  },
   propertyTypeTag: {
-    gap: 3,
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "40%",
-    borderColor: "black",
-    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
-    padding: 2,
-    marginTop: 10,
+    alignSelf: 'flex-start',
+    gap: 6,
   },
-  infoContainer: {
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    fontWeight: 700,
-    fontSize: 20,
+  propertyTypeText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
-  detailsContainer: {
-    width: "100%",
-    display: "flex",
-    gap: 10,
+  vsidText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '500',
+    marginBottom: 12,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  locationText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '500',
+  },
+  hostContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  hostText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
   },
   detailBox: {
-    borderWidth: 1,
-    borderColor: "black",
-    display: "flex",
-    padding: 3,
-    gap: 4,
-    borderRadius: 15,
-    flexDirection: "row",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 6,
   },
-  container: {
-    display: "flex",
-    gap: 10,
-    marginTop: 10,
-    fontSize: 20,
+  detailText: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    fontWeight: '500',
+  },
+  descriptionContainer: {
+    marginTop: 8,
+  },
+  descriptionText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#333',
   },
   amenitiesContainer: {
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   amenityItem: {
-    display: "flex",
-    gap: 4,
-    borderColor: "black",
-    borderWidth: 1,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 20,
-    padding: 5,
-    flexDirection: "row",
   },
-  hostItem: {
-    display: "flex",
-    gap: 4,
-    flexDirection: "row",
-    alignItems: "center",
+  amenityText: {
+    fontSize: 14,
+    color: '#333',
   },
-  flatListContainer: {
-    paddingBottom: "20%",
+  viewAllButton: {
+    backgroundColor: 'orange',
+    borderColor: '#ff7f11',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  viewAllText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  rateContainer: {
+    gap: 16,
   },
   rateItem: {
-    display: "flex",
-    flexDirection: "row",
-    gap: 4,
-    marginVertical: 5,
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  hostImageView: {
-    display: "flex",
-    gap: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
+  rateLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  ratePrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  rateValue: {
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+  hostProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
   },
   hostImage: {
-    height: 60,
     width: 60,
-    borderRadius: 100,
-    objectFit: "cover",
+    height: 60,
+    borderRadius: 30,
   },
-  subheading: {
-    fontSize: 20,
-    marginHorizontal: 15,
-    fontWeight: "400",
+  hostName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
   },
-  specialnote: {
-    fontSize: 20,
-    fontWeight: "400",
-    marginTop: 15,
+  hostDetails: {
+    gap: 16,
   },
-  gridItem: {
-    marginBottom: 7,
-    borderRadius: 8,
+  hostDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  hostDetailText: {
+    fontSize: 15,
+    color: '#666',
+  },
+  checkInOutContainer: {
+    marginBottom: 20,
+  },
+  checkInOutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  checkInOutTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  checkInOutTimes: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  checkInOutTime: {
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+  rulesContainer: {
+    gap: 8,
+  },
+  ruleItem: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  bulletPoint: {
+    fontSize: 16,
+    color: '#333',
+  },
+  ruleText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+    lineHeight: 22,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  footerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
   },
   footerPrice: {
-    fontSize: 18,
-    fontFamily: "mon-sb",
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
   },
-  footerText: {
-    height: "100%",
-    justifyContent: "center",
-    flexDirection: "row",
-    alignItems: "center",
+  perNight: {
+    fontSize: 16,
+    color: '#666',
+  },
+  reserveButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  reserveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Modal styles
+  allPhotosContainer: {
+    flex: 1,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    padding: 8,
+    gap: 4,
+  },
+  gridItem: {
+    marginBottom: 4,
+    borderRadius: 0, // Removed border radius
+    overflow: 'hidden',
+  },
+  gridImage: {
+    height: '100%',
+    width: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 12,
+    borderRadius: 24,
+  },
+  modalizeContent: {
+    padding: 20,
   },
 })

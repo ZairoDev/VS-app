@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Pressable,
   StatusBar,
-  SafeAreaView
+  SafeAreaView,
+  Platform
 } from "react-native";
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
@@ -19,7 +20,7 @@ import { PropertyInterface } from "@/data/types";
 import { propertyTypes } from "@/Constants/Country";
 import { useAuthStore } from "@/store/auth-store";
 import useSearchStore from "@/store/location-search-store";
-import { extractLocationParts } from "@/utils/extractLocation"; // adjust path if needed
+import { extractLocationParts } from "@/utils/extractLocation";
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -54,7 +55,6 @@ enum SelectedType {
   BATHROOMS = "bathroom",
 }
 
-
 export default function Index() {
   const { user } = useAuthStore();
   const [skip, setSkip] = useState(0);
@@ -64,6 +64,7 @@ export default function Index() {
   const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
   const [wishlist, setWishlist] = useState<string[]>(user?.wishlist || []);
+
   const {
     beds,
     bathroom,
@@ -78,31 +79,24 @@ export default function Index() {
     applyFilters,
   } = useStore();
 
-  const {
-    selectedPlace
-  } =useSearchStore()
+  const { selectedPlace } = useSearchStore();
 
   const fetchProperties = async () => {
     try {
       setLoading(true);
-
-      let city="";
-      let state="";
-      let country="";
-
-      if(selectedPlace?.address){
+      let city = "";
+      let state = "";
+      let country = "";
+      if (selectedPlace?.address) {
         console.log("selectedPlace: ", selectedPlace.address);
-        const location= extractLocationParts(selectedPlace.address);
-        city=location.city;
-        state=location.state;
-        country=location.country;
-
+        const location = extractLocationParts(selectedPlace.address);
+        city = location.city;
+        state = location.state;
+        country = location.country;
         console.log("city: ", city);
         console.log("state: ", state);
-        console.log("country: ", country);  
-
+        console.log("country: ", country);
       }
-
       const requestBody: FetchPropertiesRequest = {
         skip,
         limit,
@@ -118,8 +112,8 @@ export default function Index() {
         maxPrice,
         minPrice,
         city,
-      state,
-      country,
+        state,
+        country,
       };
       console.log("requestBody");
       const response = await axios.post<FetchPropertiesResponse>(
@@ -134,12 +128,6 @@ export default function Index() {
       setLoading(false);
     }
   };
-
-
-  
-  // if (selectedPlace) {
-  //  console.log("selectedPlace: ", selectedPlace);
-  // }
 
   const handleSelect = (type: string, value: string) => {
     setProperties([]);
@@ -157,13 +145,13 @@ export default function Index() {
           : [...prev, value]
       );
     }
-  };  
+  };
 
-  useEffect(()=>{
-    if(selectedPlace){
-     console.log("selectedPlace index page me : ", selectedPlace);
+  useEffect(() => {
+    if (selectedPlace) {
+      console.log("selectedPlace index page me : ", selectedPlace);
     }
-  },[selectedPlace])
+  }, [selectedPlace]);
 
   useEffect(() => {
     setWishlist(user?.wishlist || []);
@@ -172,7 +160,7 @@ export default function Index() {
   useEffect(() => {
     setProperties([]);
     setSkip(0);
-  }, [applyFilters,selectedPlace]);
+  }, [applyFilters, selectedPlace]);
 
   useEffect(() => {
     fetchProperties();
@@ -189,34 +177,27 @@ export default function Index() {
       console.log("User not logged in");
       return;
     }
-
     const isInWishlist = wishlist.includes(propertyId);
     const updatedWishlist = isInWishlist
       ? wishlist.filter((id) => id !== propertyId)
       : [...wishlist, propertyId];
 
-    // Update UI optimistically
     setWishlist(updatedWishlist);
-
     try {
       const endpoint = isInWishlist
         ? `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`
         : `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/add`;
-
       const response = await axios.post(endpoint, {
         userId: user._id,
         propertyId,
       });
-
       console.log("Success:", response.data.message);
     } catch (error) {
-      // Revert UI in case of error
       setWishlist((prev) =>
         isInWishlist
           ? [...prev, propertyId]
           : prev.filter((id) => id !== propertyId)
       );
-
       if (
         axios.isAxiosError(error) &&
         error.response &&
@@ -230,322 +211,348 @@ export default function Index() {
   };
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor="#Fff" />
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.mainContainer}>
       <FlatList
         data={properties}
         keyExtractor={(item) =>
           `${item._id.toString()}${Math.random().toFixed(5)}`
         }
         renderItem={({ item }) => (
-          <View style={styles.mainContainer}>
-            <View style={styles.propertyContainer}>
-              <View style={styles.imageWrapper}>
-                <Link href={`/(screens)/property-info/${item._id}` as Route}>
-                  <Image
-                    style={styles.imageContainer}
-                    source={{
-                      uri:
-                        item.propertyCoverFileUrl &&
-                        item.propertyCoverFileUrl !== ""
-                          ? item.propertyCoverFileUrl
-                          : "https://vacationsaga.b-cdn.net/assets/suitcase.png",
-                    }}
-                  />
-                </Link>
-
-                <Pressable
-                  style={styles.icon}
-                  onPress={() => handleWishlistToggle(item._id)}
-                >
-                  <Ionicons
-                    size={20}
-                    name={
-                      wishlist.includes(item._id) ? "heart" : "heart-outline"
-                    }
-                    color={wishlist.includes(item._id) ? "orange" : "white"}
-                  />
-                </Pressable>
-              </View>
-              <Text style={styles.propertyText}>{item.beds} beds</Text>
-              <Text style={styles.propertyTitle}>
-                VS ID - {item.VSID}, {item?.propertyType}
-              </Text>
-              <Text style={styles.locationText} numberOfLines={1}>
-                <Ionicons name="location-outline" size={15} color="gray" />
-                {item.postalCode}, {item.city}, {item.state}
-              </Text>
-              <Text style={{ color: "gray", fontWeight: 400, fontSize: 14 }}>
-                <Text style={{ color: "black", fontWeight: 600, fontSize: 18 }}>
-                  €{item.basePrice}
-                </Text>
-                /night
-              </Text>
-            </View>
-          </View>
-        )}
+  <View style={styles.mainContainer}>
+    <View style={styles.propertyContainer}>
+      <View style={styles.imageWrapper}>
+        <Link href={`/(screens)/property-info/${item._id}` as Route}>
+          <Image
+            style={styles.imageContainer}
+            source={{
+              uri:
+                item.propertyCoverFileUrl &&
+                item.propertyCoverFileUrl !== ""
+                  ? item.propertyCoverFileUrl
+                  : "https://vacationsaga.b-cdn.net/assets/suitcase.png",
+            }}
+          />
+        </Link>
+        <Pressable
+          style={styles.icon}
+          onPress={() => handleWishlistToggle(item._id)}
+        >
+          <Ionicons
+            size={20}
+            name={
+              wishlist.includes(item._id) ? "heart" : "heart-outline"
+            }
+            color={wishlist.includes(item._id) ? "orange" : "white"}
+          />
+        </Pressable>
+      </View>
+      <Text style={styles.propertyText}>{item.beds} beds</Text>
+      <Text style={styles.propertyTitle}>
+        VS ID - {item.VSID}, {item?.propertyType}
+      </Text>
+      <Text style={styles.locationText} numberOfLines={1}>
+        <Ionicons name="location-outline" size={15} color="gray" />
+        {item.postalCode}, {item.city}, {item.state}
+      </Text>
+      <Text style={{ color: "gray", fontWeight: 400, fontSize: 14 }}>
+        <Text style={{ color: "black", fontWeight: 600, fontSize: 18 }}>
+          €{item.basePrice}
+        </Text>
+        /night
+      </Text>
+    </View>
+  </View>
+)}
         onEndReached={() => {
           setSkip((prev) => prev + 10);
         }}
         onEndReachedThreshold={0.7}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContainer}
         ListHeaderComponent={
-          <View style={styles.mainContainer}>
-            <View style={styles.inputDiv}>
+          <View style={styles.headerContainer}>
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
               <Pressable
-                style={{
-                  width: "80%",
-                  height: 50,
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
+                style={styles.searchInput}
                 onPress={() => router.push("/(screens)/pages/search-page")}
               >
-                <Ionicons name="search" size={24} color={"gray"} />
-                <Text style={styles.input}>Start Search</Text>
+                <Ionicons name="search" size={20} color="#8E8E93" />
+                <Text style={styles.searchPlaceholder}>Where to?</Text>
               </Pressable>
               <TouchableOpacity
+                style={styles.filterButton}
                 onPress={() => router.push("/(screens)/pages/filter-page")}
               >
-                <Ionicons name="options" size={24} color={"gray"} />
+                <Ionicons name="options" size={20} color="#2C2C2E" />
               </TouchableOpacity>
             </View>
-            <FlatList
-              style={styles.horizontalList}
-              data={Countries}
-              keyExtractor={(item, index) => index.toString()}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => {
-                const isSelected = selectedCountry.includes(item.name);
-                return (
-                  <TouchableOpacity
-                    style={styles.countryItem}
-                    onPress={() =>
-                      handleSelect(SelectedType.COUNTRY, item.name)
-                    }
-                  >
-                    <Image
-                      source={{
-                        uri:
-                          item.imageUrl ??
-                          "https://picsum.photos/seed/picsum/200/300",
-                      }}
-                      style={[
-                        styles.countryImage,
-                        isSelected && styles.selectedcountryimage,
-                      ]}
-                    />
-                    <Text>{item.name}</Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
-            <FlatList
-              style={styles.propertyTypeList}
-              data={propertyTypes}
-              keyExtractor={(item) => item.id.toString()}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.propertyTypeContainer}
-              renderItem={({ item }) => {
-                const isSelected = propertyType.includes(item.name);
-                return (
-                  <TouchableOpacity
-                    onPress={() =>
-                      handleSelect(SelectedType.PROPERTY_TYPE, item.name)
-                    }
-            >
-                    <View
-                      style={[
-                        styles.propertyTypeItem,
-                        isSelected && styles.selectedPropertyTypeItem,
-                      ]}
+
+            {/* Countries List */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Explore by Country</Text>
+              <FlatList
+                style={styles.countriesList}
+                data={Countries}
+                keyExtractor={(item, index) => index.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.countriesContainer}
+                renderItem={({ item }) => {
+                  const isSelected = selectedCountry.includes(item.name);
+                  return (
+                    <TouchableOpacity
+                      style={styles.countryItem}
+                      onPress={() =>
+                        handleSelect(SelectedType.COUNTRY, item.name)
+                      }
                     >
-                      {item.icon(isSelected ? "white" : "gray")}
-                      <Text
-                        style={[
-                          styles.propertyTypeText,
-                          isSelected && styles.selectedPropertyTypeText,
-                        ]}
-                      >
+                      <View style={styles.countryImageContainer}>
+                        <Image
+                          source={{
+                            uri:
+                              item.imageUrl ??
+                              "https://picsum.photos/seed/picsum/200/300",
+                          }}
+                          style={[
+                            styles.countryImage,
+                            isSelected && styles.selectedCountryImage,
+                          ]}
+                        />
+                      </View>
+                      <Text style={[
+                        styles.countryName,
+                        isSelected && styles.selectedCountryName
+                      ]}>
                         {item.name}
                       </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
-            />
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
+
+            {/* Property Types */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>All Properties</Text>
+              <FlatList
+                data={propertyTypes}
+                keyExtractor={(item) => item.id.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.propertyTypesContainer}
+                renderItem={({ item }) => {
+                  const isSelected = propertyType.includes(item.name);
+                  return (
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleSelect(SelectedType.PROPERTY_TYPE, item.name)
+                      }
+                    >
+                      <View
+                        style={[
+                          styles.propertyTypeChip,
+                          isSelected && styles.selectedPropertyTypeChip,
+                        ]}
+                      >
+                        {item.icon(isSelected ? "#FFFFFF" : "#8E8E93")}
+                        <Text
+                          style={[
+                            styles.propertyTypeText,
+                            isSelected && styles.selectedPropertyTypeText,
+                          ]}
+                        >
+                          {item.name}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
           </View>
         }
       />
+    </View>
     </SafeAreaView>
+    </>
   );
 }
+
 const styles = StyleSheet.create({
+  safeArea: {
+     flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+  },
   mainContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
+  },
+  listContainer: {
+    paddingBottom: 20,
+  },
+  headerContainer: {
+    paddingTop: 10,
+    backgroundColor: "#FFFFFF",
+  },
+  
+  // Search Section
+  searchContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    width: "100%",
-    height: "100%",
+    paddingHorizontal: 20,
+    marginBottom: 24,
+    gap: 12,
   },
-  input: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "gray",
+  searchInput: {
     flex: 1,
-    textAlign: "center",
+    height: 52,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 26,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
   },
-  horizontalList: {
-    padding: 8,
-    height: 140,
+  searchPlaceholder: {
+    fontSize: 16,
+    color: "#8E8E93",
+    fontWeight: "500",
+  },
+  filterButton: {
+    width: 52,
+    height: 52,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+  },
+
+  // Section Headers
+  sectionContainer: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1C1C1E",
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+
+  // Countries Section
+  countriesList: {
+    paddingLeft: 20,
+  },
+  countriesContainer: {
+    paddingRight: 20,
   },
   countryItem: {
     alignItems: "center",
-    paddingHorizontal: 2,
+    marginRight: 16,
+    width: 80,
+  },
+  countryImageContainer: {
+    marginBottom: 8,
   },
   countryImage: {
-    width: 100,
-    height: 100,
-    marginBottom: 4,
-    borderRadius: 100,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#F8F9FA",
   },
-  propertyTypeList: {
-    paddingLeft: 20,
+  selectedCountryImage: {
+    borderWidth: 3,
+    borderColor: "orange",
   },
-  propertyTypeContainer: {
-    paddingRight: 20,
+  countryName: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#8E8E93",
+    textAlign: "center",
   },
-  propertyTypeItem: {
-    borderColor: "black",
-    borderWidth: 1,
-    flex: 1,
-    height: 32,
-    width: "auto",
+  selectedCountryName: {
+    color: "orange",
+    fontWeight: "600",
+  },
+
+  // Property Types Section
+  propertyTypesContainer: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  propertyTypeChip: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#F8F9FA",
     borderRadius: 20,
-    backgroundColor: "#e5e4e2",
-    padding: 4,
-    rowGap: 4,
-    margin: 4,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+    gap: 6,
+  },
+  selectedPropertyTypeChip: {
+    backgroundColor: "orange",
+    borderColor: "orange",
   },
   propertyTypeText: {
-    margin: 2,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#8E8E93",
   },
-  icon: {
-    position: "absolute",
-    top: 10,
-    left: "87%",
-    backgroundColor: "rgba(0,0,0,0.3)",
-    borderRadius: 100,
-    padding: 4,
+  selectedPropertyTypeText: {
+    color: "#FFFFFF",
   },
-  imageWrapper: {
-    width: '100%',
-  aspectRatio: 4/3, 
- 
+
+  // Property Cards
+  propertyContainer: {
+  margin: 15,
+  width: '80%',
+  height: '60%',
+  alignSelf: 'center',
+},
+imageWrapper: {
+  width: '100%',
+  aspectRatio: 4/3,
   borderRadius: 10,
   overflow: 'hidden',
   position: 'relative',
-  },
-  imageContainer: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-    // borderRadius: 10,
-    // borderWidth: 0.3,
-  },
-  propertyContainer: {
-     margin: 15,
-  width: '80%',  // or 100% minus padding
-  height: '60%',
-  alignSelf: 'center',
-  },
-  propertyText: {
-    color: "gray",
-    padding: 2,
-  },
-  propertyTitle: {
-    fontSize: 17,
-    fontWeight: 500,
-    padding: 2,
-  },
-  locationText: {
-    flexWrap: "wrap",
-    maxWidth: "80%",
-    color: "gray",
-    padding: 2,
-  },
-  selectedcountryimage: {
-    width: 100,
-    height: 100,
-    marginBottom: 4,
-    borderRadius: 100,
-    borderWidth: 4,
-    borderColor: "orange",
-  },
-  selectedPropertyTypeItem: {
-    backgroundColor: "orange",
-    borderColor: "orange",
-    fontWeight: 700,
-    borderWidth: 2,
-  },
-  selectedPropertyTypeText: {
-    color: "white",
-  },
-  filtersContainer: {
-    padding: 10,
-    borderWidth: 4,
-    borderColor: "pink",
-  },
-  filterText: {
-    fontSize: 16,
-    marginVertical: 5,
-  },
-  accordion: {
-    width: "90%",
-    backgroundColor: "blue",
-    display: "flex",
-    borderRadius: 20,
-    borderWidth: 2,
-  },
-  header: {
-    width: "100%",
-    height: 50,
-    display: "flex",
-    padding: 10,
-    justifyContent: "space-between",
-    flexDirection: "row",
-    borderRadius: 10,
-    backgroundColor: "orange",
-  },
-  container: {
-    width: "100%",
-    margin: 16,
-    paddingHorizontal: 10,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  inputDiv: {
-    height: 50,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 15,
-    margin: 16,
-    paddingHorizontal: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "lightgray",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 2, height: 2 },
-    shadowRadius: 4,
-    elevation: 5,
-  },
+},
+imageContainer: {
+  width: "100%",
+  height: "100%",
+  resizeMode: "cover",
+},
+icon: {
+  position: "absolute",
+  top: 10,
+  left: "87%",
+  backgroundColor: "rgba(0,0,0,0.3)",
+  borderRadius: 100,
+  padding: 4,
+},
+propertyText: {
+  color: "gray",
+  padding: 2,
+},
+propertyTitle: {
+  fontSize: 17,
+  fontWeight: 500,
+  padding: 2,
+},
+locationText: {
+  flexWrap: "wrap",
+  maxWidth: "80%",
+  color: "gray",
+  padding: 2,
+},
 });
