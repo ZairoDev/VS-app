@@ -22,10 +22,7 @@ import { propertyTypes } from "@/Constants/Country";
 import { useAuthStore } from "@/store/auth-store";
 import useSearchStore from "@/store/location-search-store";
 import { extractLocationParts } from "@/utils/extractLocation";
-<<<<<<< HEAD
-=======
 import AsyncStorage from "@react-native-async-storage/async-storage";
->>>>>>> 5657544 (bumb v-10)
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -98,14 +95,11 @@ export default function Index() {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-<<<<<<< HEAD
-=======
       if (!process.env.EXPO_PUBLIC_BASE_URL) {
         throw new Error(
           "Missing EXPO_PUBLIC_BASE_URL. Set it in Mobile/.env and restart Expo."
         );
       }
->>>>>>> 5657544 (bumb v-10)
       let city = "";
       let state = "";
       let country = "";
@@ -210,51 +204,12 @@ export default function Index() {
       console.log("User not logged in");
       return;
     }
-<<<<<<< HEAD
-    const isInWishlist = wishlist.includes(propertyId);
-=======
     const currentWishlist = currentUser.wishlist || [];
     const isInWishlist = currentWishlist.includes(propertyId);
->>>>>>> 5657544 (bumb v-10)
     const updatedWishlist = isInWishlist
       ? currentWishlist.filter((id) => id !== propertyId)
       : [...currentWishlist, propertyId];
 
-<<<<<<< HEAD
-    setWishlist(updatedWishlist);
-    try {
-      const endpoint = isInWishlist
-        ? `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`
-        : `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/add`;
-      const response = await axios.post(endpoint, {
-        userId: user._id,
-        propertyId,
-      });
-      console.log("Success:", response.data.message);
-    } catch (error) {
-      setWishlist((prev) =>
-        isInWishlist
-          ? [...prev, propertyId]
-          : prev.filter((id) => id !== propertyId)
-      );
-      if (
-        axios.isAxiosError(error) &&
-        error.response &&
-        error.response.data?.message
-      ) {
-        console.log("Error:", error.response.data.message);
-      } else {
-        console.log("Unknown error:", error);
-      }
-    }
-  };
-
-  return (
-    <>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <SafeAreaView style={styles.safeArea}>
-      <View style={styles.mainContainer}>
-=======
     // Single source of truth: update auth store + local state instantly.
     const updatedUser = { ...currentUser, wishlist: updatedWishlist };
     setUser(updatedUser);
@@ -303,7 +258,6 @@ export default function Index() {
   return (
     <SafeAreaView style={styles.mainContainer}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
->>>>>>> 5657544 (bumb v-10)
       <FlatList
         data={properties}
         keyExtractor={(item) =>
@@ -348,15 +302,9 @@ export default function Index() {
       </Text>
       <Text style={{ color: "gray", fontWeight: 400, fontSize: 14 }}>
         <Text style={{ color: "black", fontWeight: 600, fontSize: 18 }}>
-<<<<<<< HEAD
-          €{item.basePrice}
-        </Text>
-        /night
-=======
           €{getPropertyPriceDisplay(item).amount}
         </Text>
         {getPropertyPriceDisplay(item).suffix}
->>>>>>> 5657544 (bumb v-10)
       </Text>
     </View>
   </View>
@@ -471,9 +419,7 @@ export default function Index() {
           </View>
         }
       />
-    </View>
     </SafeAreaView>
-    </>
   );
 }
 

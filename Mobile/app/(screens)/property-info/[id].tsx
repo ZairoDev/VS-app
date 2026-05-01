@@ -27,8 +27,6 @@ import { Ionicons, FontAwesome, MaterialIcons, MaterialCommunityIcons } from "@e
 
 const { width: screenWidth } = Dimensions.get("window")
 
-<<<<<<< HEAD
-=======
 function getDisplayPrice(p?: PropertyInterface): { text: string; suffix?: string } {
   const rentalType = (p?.rentalType ?? "").toLowerCase()
   const isLongTerm = rentalType.includes("long")
@@ -44,7 +42,6 @@ function getDisplayPrice(p?: PropertyInterface): { text: string; suffix?: string
   return { text: `€${nightly}`, suffix: "/night" }
 }
 
->>>>>>> 5657544 (bumb v-10)
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams()
   const { user } = useAuthStore()
@@ -317,33 +314,6 @@ export default function PropertyInfo() {
   }
 
   const renderPricingCard = () => {
-<<<<<<< HEAD
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Room Rates</Text>
-        <Text style={styles.subtitle}>Prices may increase on weekends and holidays</Text>
-        
-        <View style={styles.rateContainer}>
-          <View style={styles.rateItem}>
-            <Text style={styles.rateLabel}>Monday-Thursday</Text>
-            <Text style={styles.ratePrice}>€{property?.basePrice}</Text>
-          </View>
-          <View style={styles.rateItem}>
-            <Text style={styles.rateLabel}>Friday-Sunday</Text>
-            <Text style={styles.ratePrice}>€{property?.weekendPrice}</Text>
-          </View>
-          <View style={styles.rateItem}>
-            <Text style={styles.rateLabel}>Weekly Discount</Text>
-            <Text style={styles.ratePrice}>€{property?.weeklyDiscount ?? "------"}</Text>
-          </View>
-          <View style={styles.rateItem}>
-            <Text style={styles.rateLabel}>Minimum nights</Text>
-            <Text style={styles.rateValue}>{property?.night[0]} nights</Text>
-          </View>
-          <View style={styles.rateItem}>
-            <Text style={styles.rateLabel}>Maximum nights</Text>
-            <Text style={styles.rateValue}>{property?.night[1]} nights</Text>
-=======
     const isLongTerm = (property?.rentalType ?? "").toLowerCase().includes("long")
     const monthly = property?.basePriceLongTerm
     const minNights = property?.night?.[0]
@@ -381,7 +351,6 @@ export default function PropertyInfo() {
               <Text style={styles.stayKicker}>MAX. STAY</Text>
               <Text style={styles.stayValue}>{maxNights ?? "—"} nights</Text>
             </View>
->>>>>>> 5657544 (bumb v-10)
           </View>
         </View>
       </View>
@@ -437,24 +406,6 @@ export default function PropertyInfo() {
     const ruleDotColors = ["#E04F5F", "#F0A020", "#2DA771", "#3B82F6"]
     return (
       <View style={styles.section}>
-<<<<<<< HEAD
-        <View style={styles.checkInOutContainer}>
-          <View style={styles.checkInOutHeader}>
-            <Text style={styles.checkInOutTitle}>Check-in</Text>
-            <Text style={styles.checkInOutTitle}>Check-out</Text>
-          </View>
-          <View style={styles.checkInOutTimes}>
-            <Text style={styles.checkInOutTime}>{property?.time[0]}:00</Text>
-            <Text style={styles.checkInOutTime}>{property?.time[1]}:00</Text>
-          </View>
-        </View>
-
-        <View style={styles.rulesContainer}>
-          {property?.additionalRules?.map((item, index) => (
-            <View style={styles.ruleItem} key={index}>
-              <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.ruleText}>{item}</Text>
-=======
         <Text style={styles.blockHeading}>CHECK-IN & CHECK-OUT</Text>
         <View style={styles.checkBlock}>
           <View style={styles.checkCol}>
@@ -481,7 +432,6 @@ export default function PropertyInfo() {
                 ]}
               />
               <Text style={styles.ruleRowText}>{item}</Text>
->>>>>>> 5657544 (bumb v-10)
             </View>
           ))}
         </View>
@@ -584,12 +534,6 @@ export default function PropertyInfo() {
       </Modalize>
       <View style={styles.footer}>
         <View style={styles.footerContent}>
-<<<<<<< HEAD
-          <TouchableOpacity style={styles.priceContainer}>
-            <Text style={styles.footerPrice}>€{property?.basePrice}</Text>
-            <Text style={styles.perNight}>/night</Text>
-          </TouchableOpacity>
-=======
           {(() => {
             const p = getDisplayPrice(property)
             return (
@@ -599,7 +543,6 @@ export default function PropertyInfo() {
           </TouchableOpacity>
             )
           })()}
->>>>>>> 5657544 (bumb v-10)
           <TouchableOpacity
             onPress={() => {
               if (user) {
@@ -628,10 +571,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     backgroundColor: '#f8f9fa',
-<<<<<<< HEAD
-=======
     position: "relative",
->>>>>>> 5657544 (bumb v-10)
   },
   carouselImage: {
     height: 300,
@@ -643,8 +583,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-<<<<<<< HEAD
-=======
   heroOverlayBottom: {
     position: "absolute",
     left: 12,
@@ -673,7 +611,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.18)",
   },
->>>>>>> 5657544 (bumb v-10)
   contentContainer: {
     backgroundColor: '#fff',
   },
@@ -781,24 +718,6 @@ const styles = StyleSheet.create({
   amenityText: {
     fontSize: 14,
     color: '#333',
-<<<<<<< HEAD
-  },
-  viewAllButton: {
-    backgroundColor: 'orange',
-    borderColor: '#ff7f11',
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  viewAllText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  rateContainer: {
-    gap: 16,
-=======
   },
   viewAllButton: {
     backgroundColor: 'orange',
@@ -865,7 +784,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "400",
     color: "#1a1a1a",
->>>>>>> 5657544 (bumb v-10)
   },
   rateItem: {
     flexDirection: 'row',
@@ -900,100 +818,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#1a1a1a',
-<<<<<<< HEAD
-  },
-  hostDetails: {
-    gap: 16,
-  },
-  hostDetailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  hostDetailText: {
-    fontSize: 15,
-    color: '#666',
-  },
-  checkInOutContainer: {
-    marginBottom: 20,
-  },
-  checkInOutHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-  },
-  checkInOutTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  checkInOutTimes: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  checkInOutTime: {
-    fontSize: 16,
-    color: '#1a1a1a',
-  },
-  rulesContainer: {
-    gap: 8,
-  },
-  ruleItem: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  bulletPoint: {
-    fontSize: 16,
-    color: '#333',
-  },
-  ruleText: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-    lineHeight: 22,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  footerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  footerPrice: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
-  },
-  perNight: {
-    fontSize: 16,
-    color: '#666',
-  },
-=======
   },
   hostDetails: {
     gap: 16,
@@ -1148,7 +972,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
->>>>>>> 5657544 (bumb v-10)
   reserveButton: {
     paddingHorizontal: 20,
     paddingVertical: 14,

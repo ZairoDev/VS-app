@@ -29,15 +29,9 @@ export default function RootLayout() {
   }, [])
 
   return (
-<<<<<<< HEAD
-     <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <Stack screenOptions={{ headerShown: false }} />
-=======
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
       <Stack screenOptions={{ headerShown: false }} />
->>>>>>> 5657544 (bumb v-10)
     </GestureHandlerRootView>
   )
 }
