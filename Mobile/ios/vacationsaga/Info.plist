@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>myapp</string>
-          <string>com.vacationsaga.mobile</string>
+          <string>com.vacationsaga.app</string>
         </array>
       </dict>
       <dict>

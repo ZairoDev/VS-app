@@ -1,4 +1,4 @@
-package com.vacationsaga.mobile
+package com.vacationsaga.app
 
 import android.app.Application
 import android.content.res.Configuration

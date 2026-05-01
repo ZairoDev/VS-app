@@ -1,6 +1,4 @@
-"use client"
-
-import React , {useState}from "react"
+import React, { useState } from "react"
 import {
   View,
   Text,
@@ -8,293 +6,192 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
-  useColorScheme,
-  Dimensions,
   TouchableOpacity,
 } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
 import { Shield, Database, Users, FileText, AlertTriangle, Info, ChevronDown, ChevronUp } from "react-native-feather"
 import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 
-const { width } = Dimensions.get("window")
+type SectionKey =
+  | "introduction"
+  | "dataCollection"
+  | "thirdParty"
+  | "intellectualProperty"
+  | "prohibited"
+  | "important"
+
+type PolicySection = {
+  key: SectionKey
+  title: string
+  icon: React.ReactNode
+  paragraphs?: string[]
+  bullets?: string[]
+}
 
 const PrivacyPolicy = () => {
-  const isDarkMode = useColorScheme() === "light"
-  const [expandedSections, setExpandedSections] = useState<{
-    introduction: boolean;
-    dataCollection: boolean;
-    thirdParty: boolean;
-    intellectualProperty: boolean;
-    prohibited: boolean;
-    important: boolean;
-  }>({
+  const [expandedSections, setExpandedSections] = useState<Record<SectionKey, boolean>>({
     introduction: false,
     dataCollection: false,
     thirdParty: false,
     intellectualProperty: false,
     prohibited: false,
     important: false,
-  });
+  })
 
-  type SectionKey =
-  | 'introduction'
-  | 'dataCollection'
-  | 'thirdParty'
-  | 'intellectualProperty'
-  | 'prohibited'
-  | 'important';
-
-  const toggleSection = (section:SectionKey) => {
-    setExpandedSections({
-      ...expandedSections,
-      [section]: !expandedSections[section],
-    })
+  const toggleSection = (section: SectionKey) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }))
   }
 
-  const backgroundColor =  "#f8f9fa"
-  const textColor = "#333333"
-  const cardBg =  "#ffffff"
-  const accentColor = "#ff9f43"
-  const secondaryColor = "#a29bfe"
+  const sections: PolicySection[] = [
+    {
+      key: "introduction",
+      title: "Introduction",
+      icon: <Info width={20} height={20} color="#ff9f43" />,
+      paragraphs: [
+        'The term "Users" and "customers" refers to people who use our website to find a suitable rental as well as to those who list their property with us. Your personal information will be collected and stored in our database and will not be shared with any third party.',
+        "By using our website, you consent to the collection and transfer of your data, including to other countries where we have branches.",
+      ],
+    },
+    {
+      key: "dataCollection",
+      title: "Data Collection and Storage",
+      icon: <Database width={20} height={20} color="#ff9f43" />,
+      bullets: [
+        "Your personal information is collected and stored in our database.",
+        "We will not share your information with any third party.",
+        "We do not knowingly collect data from users under 18.",
+      ],
+    },
+    {
+      key: "thirdParty",
+      title: "Third-Party Agreements",
+      icon: <Users width={20} height={20} color="#ff9f43" />,
+      paragraphs: [
+        "We are not responsible for any agreements between users, including:",
+        "We act as a middleman to facilitate smooth transaction between the holiday maker and the property owner.",
+      ],
+      bullets: [
+        "Disputes over property quality or condition.",
+        "Reservation agreements between travelers and property owners.",
+      ],
+    },
+    {
+      key: "intellectualProperty",
+      title: "Intellectual Property and Usage Rights",
+      icon: <FileText width={20} height={20} color="#ff9f43" />,
+      paragraphs: [
+        "The content on our website belongs solely to us. You may download it for personal use but cannot copy or reuse it without our consent.",
+        "Users are granted a limited license to access the content and services provided by us.",
+      ],
+    },
+    {
+      key: "prohibited",
+      title: "User Consent and Prohibited Activities",
+      icon: <AlertTriangle width={20} height={20} color="#ff9f43" />,
+      bullets: [
+        "Using the website for unauthorized purposes.",
+        "Modifying, translating, or altering any content on the website.",
+        "Selling, offering to sell, transferring, or licensing the website to any third party.",
+        "Posting abusive, unlawful, or defamatory content on the website.",
+        "Infringing upon or violating the rights of the company or any third party.",
+        "Transmitting fraudulent, false, or misleading information.",
+      ],
+    },
+    {
+      key: "important",
+      title: "Important Information",
+      icon: <Shield width={20} height={20} color="#ff9f43" />,
+      bullets: [
+        "We do not make any exclusive contract with our registered property owners and registered travelers which means you are totally free to work with other companies while working with our company.",
+        "We may provide you with an online payment portal for your convenience but we are not liable for any losses you suffer due to the decision of PayPal and bank.",
+        "You agree to indemnify us from or against any or all the claims or legal fees incurred by you against an action brought by you against the payment gateway.",
+        "In case you find any content, video or photos defamatory or against public policy, you can notify us on the email address provided on the website.",
+        "We provide advertising services for our registered customers and we also serve as an accommodation search system to our travelers, we don't assure personal inspections of the property.",
+        "We shall only be liable for any direct loss incurred by you due to our website and not for any indirect losses.",
+      ],
+    },
+  ]
 
-  const renderSection = (title:String, content:React.ReactNode, icon:React.ReactNode, sectionKey:SectionKey) => {
-    const isExpanded = expandedSections[sectionKey]
+  const renderSection = (section: PolicySection, index: number) => {
+    const isExpanded = expandedSections[section.key]
+    const isLast = index === sections.length - 1
 
     return (
-      <View style={[styles.card, { backgroundColor: cardBg }]}>
-        <TouchableOpacity style={styles.cardHeader} onPress={() => toggleSection(sectionKey)} activeOpacity={0.7}>
-          <View style={styles.headerLeft}>
-            <View style={[styles.iconContainer, { backgroundColor:  "#f0f0f7" }]}>{icon}</View>
+      <View key={section.key} style={[styles.sectionRow, isLast && styles.sectionRowLast]}>
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={() => toggleSection(section.key)}
+          activeOpacity={0.75}
+        >
+          <View style={styles.sectionHeaderLeft}>
+            <View style={styles.iconContainer}>{section.icon}</View>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
           </View>
-            <Text style={styles.headerTitle}>{title}</Text>
           {isExpanded ? (
-            <ChevronUp width={20} height={20} color={accentColor} />
+            <ChevronUp width={18} height={18} color="#ff9f43" />
           ) : (
-            <ChevronDown width={20} height={20} color={accentColor} />
+            <ChevronDown width={18} height={18} color="#ff9f43" />
           )}
         </TouchableOpacity>
 
-        {isExpanded && <View style={styles.cardContent}>{content}</View>}
+        {isExpanded ? (
+          <View style={styles.sectionContent}>
+            {section.paragraphs?.map((paragraph, paragraphIndex) => (
+              <Text key={`${section.key}-paragraph-${paragraphIndex}`} style={styles.paragraph}>
+                {paragraph}
+              </Text>
+            ))}
+
+            {section.bullets?.length ? (
+              <View style={styles.bulletList}>
+                {section.bullets.map((bullet, bulletIndex) => (
+                  <View key={`${section.key}-bullet-${bulletIndex}`} style={styles.bulletRow}>
+                    <View style={styles.bullet} />
+                    <Text style={styles.bulletText}>{bullet}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     )
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color="black" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      <View style={styles.topBar}>
+        <View style={styles.topBarBackdrop} pointerEvents="none">
+          <View style={styles.headerAuraPrimary} />
+          <View style={styles.headerAuraSecondary} />
+          <View style={styles.headerAccentLine} />
+        </View>
+
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.75}>
+          <Ionicons name="chevron-back" size={22} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Privacy Policy</Text>
+        <Text style={styles.topBarTitle}>Privacy Policy</Text>
       </View>
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <View style={styles.headerContainer}>
-            <LinearGradient
-              colors={["#ffb86b", "#ff9f43"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.headerGradient}
-            >
-              <View style={styles.headerContent}>
-                <Shield width={40} height={40} color="#ffffff" />
-                <Text style={styles.title}>Privacy Policy</Text>
-                <Text style={styles.subtitle}>Your data, your rights</Text>
-              </View>
-            </LinearGradient>
+          <View style={styles.heroBlock}>
+            <Text style={styles.heroEyebrow}>LEGAL</Text>
+            <Text style={styles.heroTitle}>Your data, your rights</Text>
+            <Text style={styles.heroSubtitle}>
+              Review how your information is handled, what responsibilities apply, and the important legal details connected to using the platform.
+            </Text>
           </View>
 
-          {renderSection(
-            "Introduction",
-            <View>
-              <Text style={[styles.paragraph, { color: "#444444" }]}>
-                The term "Users" and "customers" refers to people who use our website to find a suitable rental as well
-                as to those who list their property with us. Your personal information will be collected and stored in
-                our database and will not be shared with any third party.
-              </Text>
-              <Text style={[styles.paragraph, { color:  "#444444" }]}>
-                By using our website, you consent to the collection and transfer of your data, including to other
-                countries where we have branches.
-              </Text>
-            </View>,
-            <Info width={24} height={24} color={accentColor} />,
-            "introduction",
-          )}
+          <View style={styles.policyContainer}>{sections.map((section, index) => renderSection(section, index))}</View>
 
-          {renderSection(
-            "Data Collection and Storage",
-            <View>
-              <View style={styles.bulletPoints}>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: "#444444" }]}>
-                    Your personal information is collected and stored in our database.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    We will not share your information with any third party.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: "#444444" }]}>
-                    We do not knowingly collect data from users under 18.
-                  </Text>
-                </View>
-              </View>
-            </View>,
-            <Database width={24} height={24} color={accentColor} />,
-            "dataCollection",
-          )}
-
-          {renderSection(
-            "Third-Party Agreements",
-            <View>
-              <Text style={[styles.paragraph, { color:  "#444444" }]}>
-                We are not responsible for any agreements between users, including:
-              </Text>
-              <View style={styles.bulletPoints}>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    Disputes over property quality or condition.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    Reservation agreements between travelers and property owners.
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.paragraph, { color:  "#444444" }]}>
-                We act as a middleman to facilitate smooth transaction between the holiday maker and the property owner.
-              </Text>
-            </View>,
-            <Users width={24} height={24} color={accentColor} />,
-            "thirdParty",
-          )}
-
-          {renderSection(
-            "Intellectual Property and Usage Rights",
-            <View>
-              <Text style={[styles.paragraph, { color:  "#444444" }]}>
-                The content on our website belongs solely to us. You may download it for personal use but cannot copy or
-                reuse it without our consent.
-              </Text>
-              <Text style={[styles.paragraph, { color:  "#444444" }]}>
-                Users are granted a limited license to access the content and services provided by us.
-              </Text>
-            </View>,
-            <FileText width={24} height={24} color={accentColor} />,
-            "intellectualProperty",
-          )}
-
-          {renderSection(
-            "User Consent and Prohibited Activities",
-            <View>
-              <View style={styles.bulletPoints}>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    Using the website for unauthorized purposes.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    Modifying, translating, or altering any content on the website.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: "#444444" }]}>
-                    Selling, offering to sell, transferring, or licensing the website to any third party.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: "#444444" }]}>
-                    Posting abusive, unlawful, or defamatory content on the website.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    Infringing upon or violating the rights of the company or any third party.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: "#444444" }]}>
-                    Transmitting fraudulent, false, or misleading information.
-                  </Text>
-                </View>
-              </View>
-            </View>,
-            <AlertTriangle width={24} height={24} color={accentColor} />,
-            "prohibited",
-          )}
-          {renderSection(
-            "Important Information",
-            <View>
-              <View style={styles.bulletPoints}>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: "#444444" }]}>
-                    We do not make any exclusive contract with our registered property owners and registered travelers
-                    which means you are totally free to work with other companies while working with our company.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    We may provide you with an online payment portal for your convenience but we are not liable for any
-                    losses you suffer due to the decision of PayPal and bank.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color: "#444444" }]}>
-                    You agree to indemnify us from or against any or all the claims or legal fees incurred by you
-                    against an action brought by you against the payment gateway.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    In case you find any content, video or photos defamatory or against public policy, you can notify us
-                    on the email address provided on the website.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    We provide advertising services for our registered customers and we also serve as an accommodation
-                    search system to our travelers, we don't assure personal inspections of the property.
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <View style={[styles.bullet, { backgroundColor: accentColor }]} />
-                  <Text style={[styles.bulletText, { color:  "#444444" }]}>
-                    We shall only be liable for any direct loss incurred by you due to our website and not for any
-                    indirect losses.
-                  </Text>
-                </View>
-              </View>
-            </View>,
-            <Info width={24} height={24} color={accentColor} />,
-            "important",
-          )}
-          <View style={[styles.footer, { borderTopColor:  "#e0e0e0" }]}>
-            <Text style={[styles.footerText, { color: "#777777" }]}>
-              Last Updated:  2025
-            </Text>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Last Updated: 2026</Text>
           </View>
         </View>
       </ScrollView>
@@ -305,130 +202,177 @@ const PrivacyPolicy = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 15,
+    paddingBottom: 28,
   },
-  headerContainer: {
-    marginBottom: 18,
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  headerGradient: {
-    borderRadius: 16,
-  },
-  headerContent: {
-    padding: 10,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#ffffff",
-    marginTop: 12,
-    marginBottom: 8,
-   
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "rgba(255, 255, 255, 0.8)",
-  },
-  card: {
-    marginBottom: 14,
-    borderRadius: 12,
-    overflow: "hidden",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  cardHeader: {
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 18,
+    backgroundColor: "#FFFFFF",
+    position: "relative",
+    overflow: "hidden",
   },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#333333",
-    flex: 1,
-    
+  topBarBackdrop: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+  headerAuraPrimary: {
+    position: "absolute",
+    top: -42,
+    right: -12,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: "rgba(254, 168, 80, 0.10)",
   },
-  iconContainer: {
+  headerAuraSecondary: {
+    position: "absolute",
+    top: 16,
+    left: -30,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "rgba(255, 228, 196, 0.55)",
+  },
+  headerAccentLine: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    bottom: 0,
+    height: 1,
+    backgroundColor: "#F1F1F1",
+  },
+  backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
+    backgroundColor: "#F6F6F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  topBarTitle: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#1A1A1A",
+    marginLeft: 12,
+    flex: 1,
+  },
+  heroBlock: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+  },
+  heroEyebrow: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#A1A1AA",
+    letterSpacing: 1.1,
+    marginBottom: 6,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1A1A1A",
+  },
+  heroSubtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#6B7280",
+  },
+  policyContainer: {
+    paddingHorizontal: 20,
+    backgroundColor: "#FFFFFF",
+  },
+  sectionRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F1F1",
+    paddingVertical: 18,
+  },
+  sectionRowLast: {
+    borderBottomWidth: 0,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  sectionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    flex: 1,
+    paddingRight: 14,
+  },
+  iconContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
-  },
-  cardContent: {
-    padding: 16,
-    paddingTop: 0,
+    backgroundColor: "#F6F6F6",
   },
   sectionTitle: {
-    fontSize: 15,
+    flex: 1,
+    fontSize: 17,
     fontWeight: "600",
+    color: "#1A1A1A",
+    lineHeight: 23,
+    paddingTop: 4,
+  },
+  sectionContent: {
+    paddingLeft: 46,
+    paddingTop: 12,
   },
   paragraph: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 23,
+    color: "#4B5563",
     marginBottom: 12,
   },
-  bulletPoints: {
-    marginTop: 8,
+  bulletList: {
+    marginTop: 2,
   },
-  bulletPoint: {
+  bulletRow: {
     flexDirection: "row",
-    marginBottom: 12,
     alignItems: "flex-start",
+    marginBottom: 12,
   },
   bullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     marginTop: 8,
     marginRight: 12,
+    backgroundColor: "#ff9f43",
   },
   bulletText: {
     flex: 1,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 23,
+    color: "#4B5563",
   },
   footer: {
     marginTop: 30,
-    paddingTop: 20,
-    borderTopWidth: 1,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
   footerText: {
-    fontSize: 14,
+    fontSize: 12,
+    color: "#B0B0B0",
     textAlign: "center",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal: 20,
-    height: "7%",
-    backgroundColor: "#fff",
-    elevation: 5,
-    gap: 10,
-  }
 })
 
 export default PrivacyPolicy

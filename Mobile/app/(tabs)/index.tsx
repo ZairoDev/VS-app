@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Platform
 } from "react-native";
+import { InteractionManager } from "react-native";
 import axios from "axios";
 import { Link, Route, router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -21,6 +22,10 @@ import { propertyTypes } from "@/Constants/Country";
 import { useAuthStore } from "@/store/auth-store";
 import useSearchStore from "@/store/location-search-store";
 import { extractLocationParts } from "@/utils/extractLocation";
+<<<<<<< HEAD
+=======
+import AsyncStorage from "@react-native-async-storage/async-storage";
+>>>>>>> 5657544 (bumb v-10)
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -45,6 +50,15 @@ export interface FetchPropertiesResponse {
   status?: number;
   error?: string;
   data: PropertyInterface[];
+}
+
+function getPropertyPriceDisplay(p: PropertyInterface): { amount: number; suffix: string } {
+  const isLongTerm = (p.rentalType || "").toLowerCase().includes("long");
+  if (isLongTerm) {
+    const amount = typeof p.basePriceLongTerm === "number" && p.basePriceLongTerm > 0 ? p.basePriceLongTerm : p.basePrice;
+    return { amount, suffix: "/month" };
+  }
+  return { amount: p.basePrice, suffix: "/night" };
 }
 
 enum SelectedType {
@@ -84,6 +98,14 @@ export default function Index() {
   const fetchProperties = async () => {
     try {
       setLoading(true);
+<<<<<<< HEAD
+=======
+      if (!process.env.EXPO_PUBLIC_BASE_URL) {
+        throw new Error(
+          "Missing EXPO_PUBLIC_BASE_URL. Set it in Mobile/.env and restart Expo."
+        );
+      }
+>>>>>>> 5657544 (bumb v-10)
       let city = "";
       let state = "";
       let country = "";
@@ -123,7 +145,18 @@ export default function Index() {
       console.log("response", response.data.data.length);
       setProperties((prev) => [...prev, ...response.data.data]);
     } catch (err) {
-      console.log("err in explore page: ", err);
+      if (axios.isAxiosError(err)) {
+        console.log("err in explore page:", {
+          message: err.message,
+          code: err.code,
+          url: err.config?.url,
+          baseURL: err.config?.baseURL,
+          status: err.response?.status,
+          data: err.response?.data,
+        });
+      } else {
+        console.log("err in explore page: ", err);
+      }
     } finally {
       setLoading(false);
     }
@@ -171,17 +204,23 @@ export default function Index() {
     console.log("selectedPlace: ", selectedPlace);
   }, [properties]);
 
-  const handleWishlistToggle = async (propertyId: string) => {
-    const { user } = useAuthStore.getState();
-    if (!user || !user._id) {
+  const handleWishlistToggle = (propertyId: string) => {
+    const { user: currentUser, setUser } = useAuthStore.getState();
+    if (!currentUser || !currentUser._id) {
       console.log("User not logged in");
       return;
     }
+<<<<<<< HEAD
     const isInWishlist = wishlist.includes(propertyId);
+=======
+    const currentWishlist = currentUser.wishlist || [];
+    const isInWishlist = currentWishlist.includes(propertyId);
+>>>>>>> 5657544 (bumb v-10)
     const updatedWishlist = isInWishlist
-      ? wishlist.filter((id) => id !== propertyId)
-      : [...wishlist, propertyId];
+      ? currentWishlist.filter((id) => id !== propertyId)
+      : [...currentWishlist, propertyId];
 
+<<<<<<< HEAD
     setWishlist(updatedWishlist);
     try {
       const endpoint = isInWishlist
@@ -215,6 +254,56 @@ export default function Index() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <SafeAreaView style={styles.safeArea}>
       <View style={styles.mainContainer}>
+=======
+    // Single source of truth: update auth store + local state instantly.
+    const updatedUser = { ...currentUser, wishlist: updatedWishlist };
+    setUser(updatedUser);
+    setWishlist(updatedWishlist);
+
+    InteractionManager.runAfterInteractions(() => {
+      (async () => {
+        try {
+          // persist for app-wide consistency (don't block UI)
+          await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser));
+          const endpoint = isInWishlist
+            ? `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`
+            : `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/add`;
+          const response = await axios.post(endpoint, {
+            userId: currentUser._id,
+            propertyId,
+          });
+          console.log("Success:", response.data.message);
+        } catch (error) {
+          // rollback on failure (rare, but keeps correctness)
+          const rolledBackWishlist = isInWishlist
+            ? [...currentWishlist, propertyId]
+            : currentWishlist.filter((id) => id !== propertyId);
+          const rolledBackUser = { ...currentUser, wishlist: rolledBackWishlist };
+          setUser(rolledBackUser);
+          setWishlist((prev) =>
+            isInWishlist ? [...prev, propertyId] : prev.filter((id) => id !== propertyId)
+          );
+          try {
+            await AsyncStorage.setItem("authUser", JSON.stringify(rolledBackUser));
+          } catch {}
+          if (
+            axios.isAxiosError(error) &&
+            error.response &&
+            error.response.data?.message
+          ) {
+            console.log("Error:", error.response.data.message);
+          } else {
+            console.log("Unknown error:", error);
+          }
+        }
+      })();
+    });
+  };
+
+  return (
+    <SafeAreaView style={styles.mainContainer}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+>>>>>>> 5657544 (bumb v-10)
       <FlatList
         data={properties}
         keyExtractor={(item) =>
@@ -259,9 +348,15 @@ export default function Index() {
       </Text>
       <Text style={{ color: "gray", fontWeight: 400, fontSize: 14 }}>
         <Text style={{ color: "black", fontWeight: 600, fontSize: 18 }}>
+<<<<<<< HEAD
           €{item.basePrice}
         </Text>
         /night
+=======
+          €{getPropertyPriceDisplay(item).amount}
+        </Text>
+        {getPropertyPriceDisplay(item).suffix}
+>>>>>>> 5657544 (bumb v-10)
       </Text>
     </View>
   </View>

@@ -147,8 +147,10 @@ interface Guests {
 
 export interface Booking {
   _id: string;
-  propertyId: Property;
-  userId: User; 
+  // These are populated on the backend. They can be null if the referenced
+  // document was deleted or if population failed.
+  propertyId: Property | null;
+  userId: User | null; 
   travellerId: string; 
   startDate: string; 
   endDate: string;   

@@ -15,19 +15,25 @@
           "apiKey": "AIzaSyATr11LECo9hnbdn7gYGYu-ew6mnWvLczw"
         }
       },
-      "bundleIdentifier": "com.vacationsaga.mobile"
+      "bundleIdentifier": "com.vacationsaga.app"
     },
     "android": {
+      "package": "com.vacationsaga.app",
+      "versionCode":10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/app-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "usesCleartextTraffic": true,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyATr11LECo9hnbdn7gYGYu-ew6mnWvLczw"
         }
       },
-      "package": "com.vacationsaga.mobile"
+      "navigationBar": {
+        "backgroundColor": "#ffffff",
+        "barStyle": "dark-content"
+      }
     },
     "web": {
       "bundler": "metro",

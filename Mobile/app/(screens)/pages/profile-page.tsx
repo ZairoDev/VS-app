@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import {
   View,
@@ -12,7 +12,6 @@ import {
 import axios from "axios";
 import { Feather } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/auth-store";
-import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { UserDataType } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -38,49 +37,44 @@ const ProfileCard = ({
   const isEmpty = value === "Not provided";
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
+    <View style={styles.row}>
+      <View style={styles.rowLeft}>
         <View style={styles.iconContainer}>
-          <Feather name={icon as any} size={20} color="#555" />
+          <Feather name={icon as any} size={18} color="#5f5f5f" />
         </View>
-        <Text style={styles.cardLabel}>{label}</Text>
-      </View>
-
-      <View style={styles.cardContent}>
-        <Text style={isEmpty ? styles.emptyValue : styles.valueText}>
-          {value}
-        </Text>
+        <View style={styles.rowContent}>
+          <Text style={styles.cardLabel}>{label}</Text>
+          <Text style={isEmpty ? styles.emptyValue : styles.valueText}>
+            {value}
+          </Text>
         {description && (
           <Text style={styles.descriptionText}>{description}</Text>
         )}
       </View>
-
-      <TouchableOpacity
-        style={[
-          styles.actionBtn,
-          { backgroundColor: "transparent"},
-        ]}
-        onPress={onEdit}
-      >
-        <Text
-          style={[styles.actionText, { color:  "#Fea850" }]}
+      </View>
+      {onEdit ? (
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={onEdit}
+          activeOpacity={0.7}
         >
-          {" "}
-          {actionText}{" "}
-        </Text>
-        <Feather
-          name={isEmpty ? "plus" : "edit-2"}
-          size={16}
-          color={ "#Fea850"}
-          style={{ marginLeft: 4 }}
-        />
-      </TouchableOpacity>
+          <Text style={styles.actionText}>{actionText}</Text>
+          <Feather
+            name={isEmpty ? "plus" : "edit-2"}
+            size={14}
+            color={"#Fea850"}
+            style={styles.actionIcon}
+          />
+        </TouchableOpacity>
+      ) : (
+        <Text style={styles.staticMeta}>Verified</Text>
+      )}
     </View>
   );
 };
 
 const ProfilePage = () => {
-   const { user,setUser} = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [fieldLabel, setFieldLabel] = useState("");
@@ -96,7 +90,7 @@ const ProfilePage = () => {
 
   const saveChanges = async (newValue: string) => {
     try{
-      const res= await axios.put(`${process.env.EXPO_PUBLIC_BASE_URL}/user/update`,{
+      await axios.put(`${process.env.EXPO_PUBLIC_BASE_URL}/user/update`,{
         [fieldKey]:newValue,
         userId:user?._id
       });
@@ -116,14 +110,19 @@ const ProfilePage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#Fea850" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      <LinearGradient colors={["#fea850", "orange"]} style={styles.header}>
+      <View style={styles.header}>
+        <View style={styles.headerBackdrop} pointerEvents="none">
+          <View style={styles.headerAuraPrimary} />
+          <View style={styles.headerAuraSecondary} />
+          <View style={styles.headerAccentLine} />
+        </View>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={22} color="#1a1a1a" />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle}>Profile Details</Text>
@@ -131,9 +130,17 @@ const ProfilePage = () => {
             Manage your personal information
           </Text>
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.introBlock}>
+          <Text style={styles.introEyebrow}>ACCOUNT</Text>
+          <Text style={styles.introTitle}>Personal information</Text>
+          <Text style={styles.introText}>
+            Keep your contact details and identity information up to date for smoother bookings and support.
+          </Text>
+        </View>
+
         <View style={styles.cardsContainer}>
           <ProfileCard
             icon="user"
@@ -186,75 +193,141 @@ const ProfilePage = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
   header: {
     flexDirection: "row",
-    paddingTop: 20,
-    paddingBottom: 30,
+    paddingTop: 12,
+    paddingBottom: 18,
     paddingHorizontal: 20,
-    // marginBottom: 20,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    position: "relative",
+    overflow: "hidden",
+  },
+  headerBackdrop: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  headerAuraPrimary: {
+    position: "absolute",
+    top: -42,
+    right: -12,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: "rgba(254, 168, 80, 0.10)",
+  },
+  headerAuraSecondary: {
+    position: "absolute",
+    top: 16,
+    left: -30,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "rgba(255, 228, 196, 0.55)",
+  },
+  headerAccentLine: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    bottom: 0,
+    height: 1,
+    backgroundColor: "#F1F1F1",
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 12,
+    backgroundColor: "#F6F6F6",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 15,
   },
-  headerTextContainer: { paddingLeft: 10 },
-  headerTitle: { fontSize: 28, fontWeight: "bold", color: "#fff" },
+  headerTextContainer: { paddingLeft: 12, flex: 1 },
+  headerTitle: { fontSize: 26, fontWeight: "700", color: "#1A1A1A" },
   headerSubtitle: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
-    marginTop: 5,
+    color: "#6B7280",
+    marginTop: 4,
   },
-  content: { flex: 1, paddingHorizontal: 20 },
-  cardsContainer: { paddingBottom: 20 },
-  card: {
+  content: { flex: 1 },
+  introBlock: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 14,
+  },
+  introEyebrow: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#A1A1AA",
+    letterSpacing: 1.1,
+    marginBottom: 6,
+  },
+  introTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1A1A1A",
+  },
+  introText: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#6B7280",
+  },
+  cardsContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F1F1",
+  },
+  rowLeft: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    flex: 1,
+    paddingRight: 16,
+  },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#ccc",
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#F6F6F6",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  cardLabel: { fontSize: 16, fontWeight: "600", color: "#555" },
-  cardContent: { marginBottom: 16 },
-  valueText: { fontSize: 18, color: "#333", marginBottom: 6 },
+  rowContent: { flex: 1 },
+  cardLabel: { fontSize: 13, fontWeight: "600", color: "#8A8A8A", marginBottom: 6 },
+  valueText: { fontSize: 17, color: "#1A1A1A", marginBottom: 4, fontWeight: "500" },
   emptyValue: {
     fontSize: 16,
     color: "#AAAAAA",
     fontStyle: "italic",
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  descriptionText: { fontSize: 14, color: "#777", lineHeight: 20 },
+  descriptionText: { fontSize: 13, color: "#777", lineHeight: 19 },
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    backgroundColor: "transparent",
-    borderColor: "orange",
+    paddingTop: 2,
   },
-  actionText: { fontSize: 14, fontWeight: "600" },
+  actionText: { fontSize: 14, fontWeight: "700", color: "#Fea850" },
+  actionIcon: { marginLeft: 4 },
+  staticMeta: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#9A9A9A",
+    paddingTop: 4,
+  },
 }); 
 
 export default ProfilePage;

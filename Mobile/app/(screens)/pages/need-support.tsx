@@ -1,5 +1,4 @@
-
-import { useState, useRef } from "react"
+import React, { useState } from "react"
 import {
   View,
   Text,
@@ -7,24 +6,19 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Animated,
-  Dimensions,
   Platform,
   Linking,
   StatusBar,
   KeyboardAvoidingView,
   ActivityIndicator,
-  Image,
+  ScrollView,
 } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
-import { FontAwesome, MaterialCommunityIcons, Ionicons, Feather } from "@expo/vector-icons"
-import { MotiView, MotiText } from "moti"
+import { FontAwesome, MaterialCommunityIcons, Feather } from "@expo/vector-icons"
+import { MotiView } from "moti"
 import axios from "axios";
 
-const { width, height } = Dimensions.get("window")
 const SPACING = 16
-const CARD_PADDING = 20
-const ANIMATION_DURATION = 600
+const ANIMATION_DURATION = 420
 
 export default function ContactScreen() {
   const [name, setName] = useState("")
@@ -33,20 +27,6 @@ export default function ContactScreen() {
   const [activeTab, setActiveTab] = useState("info")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
-
-  const scrollY = useRef(new Animated.Value(0)).current
-
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [1, 0.9],
-    extrapolate: "clamp",
-  })
-
-  const headerHeight = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [200, 120],
-    extrapolate: "clamp",
-  })
 
   const handleSend = async () => {
     if (!name || !email || !message) {
@@ -91,6 +71,60 @@ export default function ContactScreen() {
     Linking.openURL("https://maps.google.com/?q=Kakadeo Kanpur")
   }
 
+  const renderSectionIntro = (eyebrow: string, title: string, description: string) => (
+    <View style={styles.sectionIntro}>
+      <Text style={styles.sectionEyebrow}>{eyebrow}</Text>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={styles.sectionDescription}>{description}</Text>
+    </View>
+  )
+
+  const renderSupportRow = ({
+    label,
+    icon,
+    content,
+    onPress,
+    external,
+    hideDivider,
+  }: {
+    label: string
+    icon: string
+    content: React.ReactNode
+    onPress?: () => void
+    external?: boolean
+    hideDivider?: boolean
+  }) => {
+    const rowContent = (
+      <View style={[styles.supportRow, hideDivider && styles.supportRowLast]}>
+        <View style={styles.supportIconBox}>
+          <MaterialCommunityIcons name={icon as any} size={18} color="#5f5f5f" />
+        </View>
+        <View style={styles.supportBody}>
+          <Text style={styles.supportLabel}>{label}</Text>
+          {content}
+        </View>
+        {onPress ? (
+          <Feather
+            name={external ? "external-link" : "chevron-right"}
+            size={16}
+            color="#b1b1b1"
+            style={styles.supportArrow}
+          />
+        ) : null}
+      </View>
+    )
+
+    if (onPress) {
+      return (
+        <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
+          {rowContent}
+        </TouchableOpacity>
+      )
+    }
+
+    return rowContent
+  }
+
   const renderInfoTab = () => (
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
@@ -98,101 +132,97 @@ export default function ContactScreen() {
       transition={{ type: "timing", duration: ANIMATION_DURATION }}
       style={styles.tabContent}
     >
-      <View style={styles.card}>
-        <LinearGradient
-          colors={["#fea850", "orange"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.cardHeader}
-        >
-          <View style={styles.cardHeaderContent}>
-            <Text style={styles.cardTitle}>Company Information</Text>
-            <Text style={styles.cardSubtitle}>Reach out to us through any of these channels</Text>
-          </View>
-        </LinearGradient>
+      {renderSectionIntro(
+        "SUPPORT",
+        "Ways to reach us",
+        "Choose the channel that fits your question best. Everything here follows the same calm, flatter style as the rest of the app."
+      )}
 
-        <View style={styles.cardContent}>
-          <View style={styles.infoSection}>
-            <Text style={styles.infoLabel}>LEGAL NAME</Text>
-            <Text style={styles.infoText}>Zairo International Pvt. Ltd.</Text>
-          </View>
+      <View style={styles.surface}>
+        {renderSupportRow({
+          label: "Legal name",
+          icon: "office-building-outline",
+          content: <Text style={styles.supportValue}>Zairo International Pvt. Ltd.</Text>,
+        })}
 
-          <TouchableOpacity style={styles.infoSection} onPress={handleMap}>
-            <Text style={styles.infoLabel}>ADDRESS</Text>
-            <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="map-marker" size={18} color="orange" />
-              <Text style={styles.infoText}>117/N/70 3rd Floor Kakadeo Kanpur</Text>
-              <Feather name="external-link" size={14} color="orange" style={{ marginLeft: 8 }} />
+        {renderSupportRow({
+          label: "Address",
+          icon: "map-marker-outline",
+          onPress: handleMap,
+          external: true,
+          content: (
+            <>
+              <Text style={styles.supportValue}>117/N/70 3rd Floor Kakadeo Kanpur</Text>
+              <Text style={styles.supportMeta}>Open location in maps</Text>
+            </>
+          ),
+        })}
+
+        {renderSupportRow({
+          label: "General email",
+          icon: "email-outline",
+          onPress: () => handleEmail("info@vacationsaga.com"),
+          content: <Text style={styles.supportValue}>info@vacationsaga.com</Text>,
+        })}
+
+        {renderSupportRow({
+          label: "Support email",
+          icon: "lifebuoy",
+          onPress: () => handleEmail("support@vacationsaga.com"),
+          content: <Text style={styles.supportValue}>support@vacationsaga.com</Text>,
+        })}
+
+        {renderSupportRow({
+          label: "Sales support",
+          icon: "phone-outline",
+          onPress: () => handleCall("919120851166"),
+          content: <Text style={styles.supportValue}>+91 9120851166</Text>,
+        })}
+
+        {renderSupportRow({
+          label: "Booking support",
+          icon: "phone-in-talk-outline",
+          content: (
+            <View style={styles.phoneStack}>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => handleCall("918960980806")}>
+                <Text style={styles.inlineLink}>+91 8960980806</Text>
+              </TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => handleCall("919621119484")}>
+                <Text style={styles.inlineLink}>+91 9621119484</Text>
+              </TouchableOpacity>
             </View>
+          ),
+        })}
+
+        {renderSupportRow({
+          label: "Business hours",
+          icon: "clock-outline",
+          hideDivider: true,
+          content: (
+            <View>
+              <Text style={styles.supportValue}>Monday - Friday: 9:00 AM - 6:00 PM</Text>
+              <Text style={styles.supportMeta}>Saturday: 10:00 AM - 4:00 PM</Text>
+              <Text style={styles.supportMeta}>Sunday: Closed</Text>
+            </View>
+          ),
+        })}
+      </View>
+
+      <View style={styles.socialSection}>
+        <Text style={styles.sectionLabel}>SOCIAL</Text>
+        <View style={styles.socialRow}>
+          <TouchableOpacity style={styles.socialButton} activeOpacity={0.75}>
+            <FontAwesome name="facebook" size={18} color="#ff8c1a" />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.infoSection} onPress={() => handleEmail("info@vacationsaga.com")}>
-            <Text style={styles.infoLabel}>EMAIL</Text>
-            <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="email" size={18} color="orange" />
-              <Text style={styles.infoText}>info@vacationsaga.com</Text>
-            </View>
+          <TouchableOpacity style={styles.socialButton} activeOpacity={0.75}>
+            <FontAwesome name="instagram" size={18} color="#ff8c1a" />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.infoSection} onPress={() => handleEmail("support@vacationsaga.com")}>
-            <Text style={styles.infoLabel}>FOR SUPPORT</Text>
-            <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="email" size={18} color="orange" />
-              <Text style={styles.infoText}>support@vacationsaga.com</Text>
-            </View>
+          <TouchableOpacity style={styles.socialButton} activeOpacity={0.75}>
+            <FontAwesome name="twitter" size={18} color="#ff8c1a" />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.infoSection} onPress={() => handleCall("919120851166")}>
-            <Text style={styles.infoLabel}>FOR SALES SUPPORT</Text>
-            <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="phone" size={18} color="orange" />
-              <Text style={styles.infoText}>+91 9120851166</Text>
-            </View>
+          <TouchableOpacity style={styles.socialButton} activeOpacity={0.75}>
+            <FontAwesome name="linkedin" size={18} color="#ff8c1a" />
           </TouchableOpacity>
-
-          <View style={styles.infoSection}>
-            <Text style={styles.infoLabel}>FOR BOOKING SUPPORT</Text>
-            <View style={styles.phoneContainer}>
-              <TouchableOpacity style={styles.infoRow} onPress={() => handleCall("918960980806")}>
-                <MaterialCommunityIcons name="phone" size={18} color="orange" />
-                <Text style={styles.infoText}>+91 8960980806</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.infoRow} onPress={() => handleCall("919621119484")}>
-                <MaterialCommunityIcons name="phone" size={18} color="orange" />
-                <Text style={styles.infoText}>+91 9621119484</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.infoSection}>
-            <Text style={styles.infoLabel}>BUSINESS HOURS</Text>
-            <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="clock-outline" size={18} color="orange" />
-              <View>
-                <Text style={styles.infoText}>Monday - Friday: 9:00 AM - 6:00 PM</Text>
-                <Text style={styles.infoText}>Saturday: 10:00 AM - 4:00 PM</Text>
-                <Text style={styles.infoText}>Sunday: Closed</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.infoSection}>
-            <Text style={styles.infoLabel}>SOCIALS</Text>
-            <View style={styles.socialIcons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <FontAwesome name="facebook" size={20} color="orange" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <FontAwesome name="instagram" size={20} color="orange" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <FontAwesome name="twitter" size={20} color="orange" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <FontAwesome name="linkedin" size={20} color="orange" />
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
       </View>
     </MotiView>
@@ -205,185 +235,161 @@ export default function ContactScreen() {
       transition={{ type: "timing", duration: ANIMATION_DURATION }}
       style={styles.tabContent}
     >
-      <View style={styles.card}>
-        <LinearGradient
-          colors={["#fea850", "orange"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.cardHeader}
-        >
-          <View style={styles.cardHeaderContent}>
-            <Text style={styles.cardTitle}>Send Us a Message</Text>
-            <Text style={styles.cardSubtitle}>We'll get back to you as soon as possible</Text>
-          </View>
-        </LinearGradient>
+      {renderSectionIntro(
+        "MESSAGE",
+        "Send us a note",
+        "Share your issue or question and the team will reply as soon as possible."
+      )}
 
-        <View style={styles.cardContent}>
-          {isSubmitted ? (
-            <View style={styles.successContainer}>
-              <View style={styles.successIcon}>
-                <MaterialCommunityIcons name="check-circle" size={60} color="#4ade80" />
-              </View>
-              <Text style={styles.successTitle}>Message Sent!</Text>
-              <Text style={styles.successText}>Thank you for reaching out. We'll get back to you shortly.</Text>
+      <View style={styles.surface}>
+        {isSubmitted ? (
+          <View style={styles.successContainer}>
+            <View style={styles.successIcon}>
+              <MaterialCommunityIcons name="check-circle" size={40} color="#22c55e" />
             </View>
-          ) : (
-            <>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Full Name</Text>
-                <View style={styles.inputContainer}>
-                  <MaterialCommunityIcons name="account" size={20} color="orange" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your full name"
-                    placeholderTextColor="#aaa"
-                    value={name}
-                    onChangeText={setName}
-                  />
+            <Text style={styles.successTitle}>Message sent</Text>
+            <Text style={styles.successText}>
+              Thank you for reaching out. Our team will get back to you shortly.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Full name</Text>
+              <View style={styles.inputRow}>
+                <View style={styles.inputIconBox}>
+                  <MaterialCommunityIcons name="account-outline" size={18} color="#6a6a6a" />
                 </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#a8a8a8"
+                  value={name}
+                  onChangeText={setName}
+                />
               </View>
+            </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Email Address</Text>
-                <View style={styles.inputContainer}>
-                  <MaterialCommunityIcons name="email-outline" size={20} color="orange" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your email address"
-                    placeholderTextColor="#aaa"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Email address</Text>
+              <View style={styles.inputRow}>
+                <View style={styles.inputIconBox}>
+                  <MaterialCommunityIcons name="email-outline" size={18} color="#6a6a6a" />
                 </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email address"
+                  placeholderTextColor="#a8a8a8"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
               </View>
+            </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Message</Text>
-                <View style={[styles.inputContainer, styles.textareaContainer]}>
-                  <MaterialCommunityIcons
-                    name="message-text-outline"
-                    size={20}
-                    color="orange"
-                    style={[styles.inputIcon, { alignSelf: "flex-start", marginTop: 12 }]}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.textarea]}
-                    placeholder="How can we help you?"
-                    placeholderTextColor="#aaa"
-                    value={message}
-                    onChangeText={setMessage}
-                    multiline
-                    numberOfLines={5}
-                    textAlignVertical="top"
-                  />
+            <View style={[styles.formGroup, styles.formGroupLast]}>
+              <Text style={styles.label}>Message</Text>
+              <View style={[styles.inputRow, styles.inputRowMultiline]}>
+                <View style={[styles.inputIconBox, styles.inputIconBoxTop]}>
+                  <MaterialCommunityIcons name="message-text-outline" size={18} color="#6a6a6a" />
                 </View>
+                <TextInput
+                  style={[styles.input, styles.textarea]}
+                  placeholder="How can we help you?"
+                  placeholderTextColor="#a8a8a8"
+                  value={message}
+                  onChangeText={setMessage}
+                  multiline
+                  numberOfLines={5}
+                  textAlignVertical="top"
+                />
               </View>
+            </View>
 
-              <TouchableOpacity style={styles.button} onPress={handleSend} disabled={isSubmitting} activeOpacity={0.8}>
-                <LinearGradient
-                  colors={["#fea850", "orange"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.buttonGradient}
-                >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <>
-                      <MaterialCommunityIcons name="send" size={18} color="#fff" style={styles.buttonIcon} />
-                      <Text style={styles.buttonText}>Send Message</Text>
-                    </>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+            <TouchableOpacity
+              style={[styles.button, isSubmitting && styles.buttonDisabled]}
+              onPress={handleSend}
+              disabled={isSubmitting}
+              activeOpacity={0.85}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="send" size={17} color="#fff" style={styles.buttonIcon} />
+                  <Text style={styles.buttonText}>Send message</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </MotiView>
   )
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#fea850" />
-
-      <Animated.View style={[styles.header, { height: headerHeight, opacity: headerOpacity }]}>
-        <LinearGradient
-           colors={["#fea850", "orange"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
-        >
-        
-          <View style={styles.headerContent}>
-            <MotiText
-              from={{ opacity: 0, translateY: -20 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: "timing", duration: ANIMATION_DURATION }}
-              style={styles.title}
-            >
-              Contact Us
-            </MotiText>
-            <MotiText
-              from={{ opacity: 0, translateY: 20 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: "timing", duration: ANIMATION_DURATION, delay: 200 }}
-              style={styles.subtitle}
-            >
-              Have questions or need assistance? Our team is here to help you with any inquiries.
-            </MotiText>
-          </View>
-        </LinearGradient>
-      </Animated.View>
-
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === "info" && styles.activeTabButton]}
-          onPress={() => setActiveTab("info")}
-        >
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={20}
-            color={activeTab === "info" ? "orange" : "#666"}
-          />
-          <Text style={[styles.tabButtonText, activeTab === "info" && styles.activeTabButtonText]}>Information</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === "contact" && styles.activeTabButton]}
-          onPress={() => setActiveTab("contact")}
-        >
-          <MaterialCommunityIcons
-            name="message-outline"
-            size={20}
-            color={activeTab === "contact" ? "orange" : "#666"}
-          />
-          <Text style={[styles.tabButtonText, activeTab === "contact" && styles.activeTabButtonText]}>
-            Contact Form
-          </Text>
-        </TouchableOpacity>
-      </View>
-
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+        style={styles.keyboardContainer}
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
-        <Animated.ScrollView
+        <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         >
+          <View style={styles.header}>
+            <View style={styles.headerBackdrop} pointerEvents="none">
+              <View style={styles.headerAuraPrimary} />
+              <View style={styles.headerAuraSecondary} />
+              <View style={styles.headerAccentLine} />
+            </View>
+            <Text style={styles.headerEyebrow}>HELP</Text>
+            <Text style={styles.title}>Need support?</Text>
+            <Text style={styles.subtitle}>
+              Contact the team, find the right support channel, or send us a message in a calmer layout that matches the rest of the app.
+            </Text>
+          </View>
+
+          <View style={styles.tabBar}>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === "info" && styles.activeTabButton]}
+              onPress={() => setActiveTab("info")}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name="information-outline"
+                size={18}
+                color={activeTab === "info" ? "#ff8c1a" : "#777"}
+              />
+              <Text style={[styles.tabButtonText, activeTab === "info" && styles.activeTabButtonText]}>Information</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === "contact" && styles.activeTabButton]}
+              onPress={() => setActiveTab("contact")}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name="message-outline"
+                size={18}
+                color={activeTab === "contact" ? "#ff8c1a" : "#777"}
+              />
+              <Text style={[styles.tabButtonText, activeTab === "contact" && styles.activeTabButtonText]}>
+                Contact form
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {activeTab === "info" ? renderInfoTab() : renderContactTab()}
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>© {new Date().getFullYear()} Zairo International Pvt. Ltd.</Text>
             <Text style={styles.footerText}>All rights reserved</Text>
           </View>
-        </Animated.ScrollView>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
@@ -394,57 +400,80 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
+  keyboardContainer: {
+    flex: 1,
+  },
   container: {
-    padding: SPACING,
-    paddingTop: 0,
-    backgroundColor: "#fff",
+    paddingBottom: 32,
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    width: "100%",
+    position: "relative",
     overflow: "hidden",
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 22,
+    backgroundColor: "#FFFFFF",
   },
-  headerGradient: {
-    flex: 1,
-    justifyContent: "flex-end",
+  headerBackdrop: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
-  headerPattern: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.1,
+  headerAuraPrimary: {
+    position: "absolute",
+    top: -54,
+    right: -18,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(255, 196, 122, 0.16)",
   },
-  headerContent: {
-    padding: SPACING,
-    paddingBottom: SPACING * 2,
+  headerAuraSecondary: {
+    position: "absolute",
+    top: 18,
+    left: -40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(255, 234, 214, 0.45)",
+  },
+  headerAccentLine: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    bottom: 0,
+    height: 1,
+    backgroundColor: "#F1F1F1",
+  },
+  headerEyebrow: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#A1A1AA",
+    letterSpacing: 1.1,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 8,
-    textShadowColor: "rgba(0, 0, 0, 0.1)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1A1A1A",
   },
   subtitle: {
-    fontSize: 16,
-    color: "rgba(255, 255, 255, 0.9)",
-    textAlign: "left",
-    maxWidth: "90%",
-    lineHeight: 22,
+    marginTop: 8,
+    fontSize: 14,
+    color: "#6B7280",
+    lineHeight: 21,
   },
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "#fff",
-    paddingHorizontal: SPACING,
-    paddingVertical: SPACING / 2,
-    borderRadius: 12,
-    marginTop: -SPACING,
-    marginHorizontal: SPACING,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    zIndex: 10,
+    marginHorizontal: 20,
+    marginTop: 18,
+    marginBottom: 6,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 14,
+    padding: 4,
   },
   tabButton: {
     flex: 1,
@@ -452,139 +481,182 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   activeTabButton: {
-    backgroundColor: "rgba(249, 115, 22, 0.1)",
+    backgroundColor: "#FFFFFF",
   },
   tabButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
+    color: "#777",
     marginLeft: 6,
   },
   activeTabButtonText: {
-    color: "orange",
+    color: "#ff8c1a",
   },
   tabContent: {
-    marginTop: SPACING,
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
-  card: {
-    borderRadius: 16,
-    backgroundColor: "#fff",
-    marginBottom: SPACING,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-    overflow: "hidden",
+  sectionIntro: {
+    paddingTop: 12,
+    paddingBottom: 14,
   },
-  cardHeader: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+  sectionEyebrow: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#A1A1AA",
+    marginBottom: 6,
+    letterSpacing: 1.1,
   },
-  cardHeaderContent: {
-    padding: CARD_PADDING,
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1A1A1A",
   },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  cardSubtitle: {
+  sectionDescription: {
+    marginTop: 8,
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.9)",
-    marginTop: 4,
+    lineHeight: 21,
+    color: "#6B7280",
   },
-  cardContent: {
-    padding: CARD_PADDING,
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#A1A1AA",
+    letterSpacing: 1.1,
+    marginBottom: 10,
   },
-  infoSection: {
-    marginBottom: SPACING,
+  surface: {
+    backgroundColor: "#FFFFFF",
   },
-  infoLabel: {
+  supportRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F1F1",
+  },
+  supportRowLast: {
+    borderBottomWidth: 0,
+  },
+  supportIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#F6F6F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  supportBody: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  supportLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#ffa500",
+    color: "#8B8B8B",
     marginBottom: 6,
-    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  supportValue: {
+    fontSize: 16,
+    color: "#1F2937",
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+  supportMeta: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#757575",
+    lineHeight: 19,
+  },
+  supportArrow: {
+    marginTop: 16,
+  },
+  phoneStack: {
     gap: 10,
   },
-  phoneContainer: {
-    gap: 8,
-  },
-  infoText: {
+  inlineLink: {
     fontSize: 15,
-    color: "#444",
-    flex: 1,
+    fontWeight: "600",
+    color: "#ff8c1a",
   },
-  socialIcons: {
+  socialSection: {
+    paddingTop: 24,
+  },
+  socialRow: {
     flexDirection: "row",
-    marginTop: 8,
     gap: 12,
   },
   socialButton: {
-    backgroundColor: "rgba(249, 115, 22, 0.1)",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#F8F5F0",
     alignItems: "center",
+    justifyContent: "center",
   },
   formGroup: {
-    marginBottom: SPACING,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F1F1",
+  },
+  formGroupLast: {
+    borderBottomWidth: 0,
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#444",
-    marginBottom: 8,
+    color: "#3F3F46",
+    marginBottom: 10,
   },
-  inputContainer: {
+  inputRow: {
     flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-    borderRadius: 12,
-    backgroundColor: "#fafafa",
-    overflow: "hidden",
+    alignItems: "flex-start",
   },
-  inputIcon: {
-    marginHorizontal: 12,
+  inputRowMultiline: {
+    minHeight: 120,
+  },
+  inputIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#F6F6F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    marginTop: 2,
+  },
+  inputIconBoxTop: {
+    marginTop: 4,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: "#333",
-    padding: 12,
-  },
-  textareaContainer: {
-    alignItems: "flex-start",
+    color: "#1F2937",
+    paddingTop: 6,
+    paddingBottom: 6,
+    paddingRight: 4,
   },
   textarea: {
-    height: 120,
+    minHeight: 110,
     textAlignVertical: "top",
   },
   button: {
     borderRadius: 12,
-    marginTop: 8,
-    overflow: "hidden",
-    shadowColor: "#f97316",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonGradient: {
+    marginTop: 20,
+    backgroundColor: "#ff9f39",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    paddingVertical: 15,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonIcon: {
     marginRight: 8,
@@ -592,20 +664,26 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontWeight: "700",
-    fontSize: 16,
+    fontSize: 15,
   },
   successContainer: {
     alignItems: "center",
     justifyContent: "center",
-    padding: SPACING,
+    paddingVertical: 28,
   },
   successIcon: {
-    marginBottom: 16,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: "#F4FBF6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
   },
   successTitle: {
     fontSize: 22,
-    fontWeight: "bold",
-    color: "#f97316",
+    fontWeight: "700",
+    color: "#1A1A1A",
     marginBottom: 8,
   },
   successText: {
@@ -614,65 +692,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
-  faqButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 12,
-    marginBottom: SPACING,
-    backgroundColor: "rgba(249, 115, 22, 0.1)",
-    borderRadius: 12,
-  },
-  faqButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#f97316",
-    marginRight: 6,
-  },
-  faqContainer: {
-    marginBottom: SPACING,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    padding: SPACING,
-    overflow: "hidden",
-  },
-  faqItem: {
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  faqQuestion: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    gap: 8,
-  },
-  faqQuestionText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#333",
-    flex: 1,
-  },
-  faqAnswer: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
-    paddingLeft: 26,
-  },
   footer: {
     alignItems: "center",
-    marginTop: SPACING,
-    marginBottom: SPACING * 2,
+    marginTop: 30,
+    paddingHorizontal: 20,
   },
   footerText: {
     fontSize: 12,
-    color: "#999",
+    color: "#B0B0B0",
     marginBottom: 4,
   },
 })

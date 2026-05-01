@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,6 @@ import {
   RefreshControl,
   Platform,
   Alert,
-  Modal,
-  Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -21,8 +19,7 @@ import { Feather, MaterialCommunityIcons, Ionicons, FontAwesome5, AntDesign } fr
 import axios from "axios";
 import { useAuthStore } from "@/store/auth-store";
 import type { Booking } from "@/types";
-import { router } from "expo-router";
-import RazorpayCheckout from 'react-native-razorpay';
+import { router, useFocusEffect } from "expo-router";
 const { width, height } = Dimensions.get("window");
 import BookingDetailsModal from "@/components/BookingDetailsModal";
 import BookingCard from "@/components/BookingCard";
@@ -36,7 +33,6 @@ const formatFullDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString("en-IN", options);
 }
 const BookingHubScreen = () => {
-  const [activeTab, setActiveTab] = useState("upcoming")
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuthStore()
@@ -44,107 +40,36 @@ const BookingHubScreen = () => {
   const scrollViewRef = useRef<ScrollView>(null)
   const [detailsModalVisible, setDetailsModalVisible] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
-  const [isEditingNotes, setIsEditingNotes] = useState(false)
-  const [notes, setNotes] = useState("")
-  const slideAnimation = useRef(new Animated.Value(0)).current
-  const fadeAnimation = useRef(new Animated.Value(0)).current
   const getBookings = async () => {
+    if (!travellerId) {
+      setBookings([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
-      const response = await axios.get(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/${travellerId}`)
+      const response = await axios.get(`${process.env.EXPO_PUBLIC_BASE_URL}/traveller-booking/${travellerId}`)
       setBookings(response.data.bookings)
     } catch (error: any) {
-      console.error("error fetching bookings", error)
-      Alert.alert("Error", "Failed to load bookings. Please try again.")
+      // 404 from the backend means "no bookings yet" — treat it as an empty list, not an error.
+      if (error?.response?.status === 404) {
+        setBookings([])
+      } else {
+        console.error("error fetching bookings", error)
+        Alert.alert("Error", "Failed to load bookings. Please try again.")
+      }
     } finally {
       setLoading(false)
     }
   }
-  useEffect(() => {
-    getBookings()
-  }, [travellerId])
-  const handleContactHost = (email: string) => {
-    if (email) {
-      Linking.openURL(`mailto:${email}`)
-    } else {
-      Alert.alert("Contact Info", "Host email is not available")
-    }
-  }
-  const handleCallHost = (phone: string) => {
-    if (phone) {
-      Linking.openURL(`tel:${phone}`)
-    } else {
-      Alert.alert("Contact Info", "Host phone number is not available")
-    }
-  }
-  const handleContactSupport = () => {
-    Linking.openURL(`tel:+447897037080 `)
-  }
- const handlePayPlatformFees = async (booking: Booking) => {
-  Alert.alert(
-    "Pay Platform Fees",
-    "You are about to pay the platform fees for this booking.",
-    [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Continue to Payment",
-        onPress: async () => {
-          try {
-            // 1️⃣ Create order on backend with bookingId too
-            const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/pay/create-order`, {
-              amount: booking.price,
-              bookingId: booking._id
-            });
-
-            const orderId = response.data.order.id;
-
-            // 2️⃣ Setup payment options
-            const options = {
-              key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID!, 
-              amount: booking.price,  // in paise
-              currency: 'INR',
-              name: 'Vacation Saga',
-              description: 'Booking Platform Fees',
-              order_id: orderId,
-              prefill: {
-                email: "johndoe@example.com",
-                contact: "+91999999999",
-                name: "John Doe"
-              },
-              theme: {
-                color: '#FF9933'
-              }
-            };
-
-            // 3️⃣ Open Razorpay native checkout
-            RazorpayCheckout.open(options)
-              .then(async (data: any) => {
-                console.log('Payment Success:', data);
-
-                Alert.alert("Success", "Payment completed successfully!");
-
-                // ✅ Call backend to verify and update booking/payment status
-                await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/pay/verify`, {
-                  razorpay_order_id: data.razorpay_order_id,
-                  razorpay_payment_id: data.razorpay_payment_id,
-                  razorpay_signature: data.razorpay_signature
-                });
-
-              })
-              .catch((error: any) => {
-                console.error('Payment Failed:', error);
-                Alert.alert("Payment Failed", error.description || "Something went wrong.");
-              });
-
-          } catch (error) {
-            console.error("Payment order creation failed", error);
-            Alert.alert("Error", "Failed to create payment order.");
-          }
-        }
-      }
-    ]
-  );
-};
+  // Refetch whenever the tab is focused (e.g. after a user returns here
+  // from the reserve page after creating a new booking).
+  useFocusEffect(
+    useCallback(() => {
+      getBookings()
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [travellerId])
+  )
 const handleCancelBooking = (id: string) => {
   Alert.alert(
     "Cancel Booking",
@@ -157,7 +82,7 @@ const handleCancelBooking = (id: string) => {
         onPress: async () => {
           try {
             setLoading(true)
-            const response = await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/booking/cancel/${id}`)
+            const response = await axios.patch(`${process.env.EXPO_PUBLIC_BASE_URL}/traveller-booking/cancel/${id}`)
             getBookings()
             if (detailsModalVisible) {
               setDetailsModalVisible(false)
@@ -184,47 +109,20 @@ const handleCancelBooking = (id: string) => {
     ]
   )
 }
-  const handleRebook = (booking: Booking) => {
-    
-    Alert.alert(
-      "Rebook Property",
-      `You're about to rebook ${booking.propertyId.placeName}. This functionality will be implemented by you.`,
-    )
-  }
   const handleViewDetails = (booking: Booking) => {
     setSelectedBooking(booking)
-    setNotes(booking.notes || "")
     setDetailsModalVisible(true)
-
-    // Animate the modal
-    Animated.timing(slideAnimation, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start()
-
-    Animated.timing(fadeAnimation, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start()
   }
   
   const upcomingBookings = bookings.filter(
-    (item) => item.bookingStatus !== "cancelled" && new Date(item.endDate) >= new Date(),
+    (item) => item.bookingStatus !== "cancelled"
   )
-  const pastBookings = bookings.filter(
-    (item) => item.bookingStatus === "cancelled" || new Date(item.endDate) < new Date(),
-  )
-  const isContactHostEnabled = (booking: Booking) => {
-    return booking.bookingStatus === "confirmed" && booking.paymentStatus === "paid"
-  }
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="calendar" size={60} color="#ccc" />
       <Text style={styles.emptyStateTitle}>No bookings found</Text>
       <Text style={styles.emptyStateText}>
-        {activeTab === "upcoming" ? "You don't have any upcoming bookings" : "You don't have any past bookings"}
+        You don't have any bookings yet.
       </Text>
     </View>
   )
@@ -247,20 +145,6 @@ const handleCancelBooking = (id: string) => {
             <View style={styles.headerTop}>
               <Text style={styles.heading}>My Bookings</Text>
             </View>
-            <View style={styles.tabContainer}>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === "upcoming" && styles.activeTab]}
-                onPress={() => setActiveTab("upcoming")}
-              >
-                <Text style={[styles.tabText, activeTab === "upcoming" && styles.activeTabText]}>Upcoming</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === "past" && styles.activeTab]}
-                onPress={() => setActiveTab("past")}
-              >
-                <Text style={[styles.tabText, activeTab === "past" && styles.activeTabText]}>Past</Text>
-              </TouchableOpacity>
-            </View>
           </LinearGradient>
         </BlurView>
       </View>
@@ -272,53 +156,26 @@ const handleCancelBooking = (id: string) => {
       >
         {loading
           ? renderLoadingState()
-          : activeTab === "upcoming"
-            ? upcomingBookings.length > 0
-              ? upcomingBookings.map((booking) => (
- <BookingCard
-  key={booking._id}
-  booking={booking}
-  loading={loading}
-  onPress={handleViewDetails}
-  onCancel={handleCancelBooking}
-  onPayFees={handlePayPlatformFees}
-  onRebook={handleRebook}
-  onCallHost={(phone) => handleCallHost(phone)}
-  onEmailHost={(email) => handleContactHost(email)}
-  onContactSupport={handleContactSupport}
-/>
-))
-              : renderEmptyState()
-            : pastBookings.length > 0
-              ? pastBookings.map((booking) => (
-  <BookingCard
-  key={booking._id}
-  booking={booking}
-  loading={loading}
-  onPress={handleViewDetails}
-  onCancel={handleCancelBooking}
-  onPayFees={handlePayPlatformFees}
-  onRebook={handleRebook}
-  onCallHost={(phone) => handleCallHost(phone)}
-  onEmailHost={(email) => handleContactHost(email)}
-  onContactSupport={handleContactSupport}
-/>
-))
-      : renderEmptyState()}
+          : upcomingBookings.length > 0
+            ? upcomingBookings.map((booking) => (
+                <BookingCard
+                  key={booking._id}
+                  booking={booking}
+                  loading={loading}
+                  onPress={handleViewDetails}
+                  onCancel={handleCancelBooking}
+                />
+              ))
+            : renderEmptyState()}
       </ScrollView>
       <BookingDetailsModal
-  visible={detailsModalVisible}
-  booking={selectedBooking}
-  loading={loading}
-  onClose={() => {
-    setDetailsModalVisible(false);
-    setIsEditingNotes(false);
-  }}
-  onCancelBooking={handleCancelBooking}
-  onPayPlatformFees={handlePayPlatformFees}
-  onCallHost={handleCallHost}       
-  onEmailHost={handleContactHost}   
-  onRebook={handleRebook}
+        visible={detailsModalVisible}
+        booking={selectedBooking}
+        loading={loading}
+        onClose={() => {
+          setDetailsModalVisible(false);
+        }}
+        onCancelBooking={handleCancelBooking}
 />
     </View>
   )

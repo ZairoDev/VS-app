@@ -24,6 +24,7 @@ export interface PropertyInterface {
   party: string;
   cooking: string;
   basePrice: number;
+  basePriceLongTerm?: number;
   propertyImages: string[];
   propertyCoverFileUrl: string;
   propertyType: string;

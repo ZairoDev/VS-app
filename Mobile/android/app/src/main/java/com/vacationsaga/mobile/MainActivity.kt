@@ -1,4 +1,4 @@
-package com.vacationsaga.mobile
+package com.vacationsaga.app
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

@@ -15,7 +15,7 @@
       "preview": {
         "distribution": "internal",
         "android": {
-          "gradleCommand": ":app:assembleRelease"
+          "gradleCommand": ":app:bundleRelease"
         },
         "ios": {
           "buildConfiguration": "Release"
@@ -23,12 +23,28 @@
       },
       "production": {
         "android": {
-          "gradleCommand": ":app:assembleRelease"
+          "gradleCommand": ":app:bundleRelease"
         },
         "ios": {
           "buildConfiguration": "Release"
-        }
+        },
+        "env":{
+
+          "EXPO_PUBLIC_BASE_URL":"https://api.vacationsaga.com",
+          
+          "EXPO_PUBLIC_WEBSITE_URL":"https://vacationsaga.com",
+          "EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID":"143436177377-ene3s66me4b7tgo5b3dcsdhrf1nn5js0.apps.googleusercontent.com",
+          "EXPO_PUBLIC_ANDROID_CLIENT_ID":"360635271354-mqhpajjdosd9anp80jfeohg7nqgm7l0m.apps.googleusercontent.com",
+          "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY":"AIzaSyATr11LECo9hnbdn7gYGYu-ew6mnWvLczw",
+          "EXPO_PUBLIC_BUNNY_STORAGE_ZONE":"vacationsaga",
+          "EXPO_PUBLIC_BUNNY_ACCESS_KEY":"ed9221fc-6530-47b2-b4b852d6e29a-c84e-493d",
+          "EXPO_PUBLIC_BUNNY_STORAGE_URL":"https://storage.bunnycdn.com",
+          "EXPO_PUBLIC_BUNNY_CDN_URL":"https://vacationsaga.b-cdn.net",
+          "EXPO_PUBLIC_RAZORPAY_KEY_ID":"rzp_test_Z3hcA7oseHUY41"
+          
+                }
       }
+     
     },
     "submit": {
       "production": {}

@@ -5,6 +5,7 @@ import { type Route, useLocalSearchParams, router } from "expo-router"
 import Carousel from "react-native-reanimated-carousel"
 import ImageViewer from "react-native-image-zoom-viewer"
 import { Modalize } from "react-native-modalize"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
   Text,
   View,
@@ -26,6 +27,24 @@ import { Ionicons, FontAwesome, MaterialIcons, MaterialCommunityIcons } from "@e
 
 const { width: screenWidth } = Dimensions.get("window")
 
+<<<<<<< HEAD
+=======
+function getDisplayPrice(p?: PropertyInterface): { text: string; suffix?: string } {
+  const rentalType = (p?.rentalType ?? "").toLowerCase()
+  const isLongTerm = rentalType.includes("long")
+
+  if (isLongTerm) {
+    const monthly = typeof p?.basePriceLongTerm === "number" ? p.basePriceLongTerm : undefined
+    if (!monthly || monthly <= 0) return { text: "Contact for price" }
+    return { text: `€${monthly}`, suffix: "/month" }
+  }
+
+  const nightly = typeof p?.basePrice === "number" ? p.basePrice : undefined
+  if (!nightly || nightly <= 0) return { text: "Contact for price" }
+  return { text: `€${nightly}`, suffix: "/night" }
+}
+
+>>>>>>> 5657544 (bumb v-10)
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams()
   const { user } = useAuthStore()
@@ -36,6 +55,8 @@ export default function PropertyInfo() {
   const [property, setProperty] = useState<PropertyInterface>()
   const [users, setUsers] = useState<UserDataType>()
   const modalizeRef = useRef<Modalize>(null)
+  const [isWishlisted, setIsWishlisted] = useState(false)
+  const [wishlistBusy, setWishlistBusy] = useState(false)
 
   const handleOpenBottomsheet = () => {
     if (modalizeRef.current) {
@@ -71,6 +92,74 @@ export default function PropertyInfo() {
   useEffect(() => {
     getUser()
   }, [property])
+
+  useEffect(() => {
+    const inWishlist = !!(user?.wishlist && property?._id && user.wishlist.includes(property._id))
+    setIsWishlisted(inWishlist)
+  }, [user, property?._id])
+
+  useEffect(() => {
+    async function syncWishlistFromServer() {
+      try {
+        if (!user?._id || !property?._id) return
+        const res = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/get`, {
+          userId: user._id,
+        })
+        const ids: string[] = res.data?.wishlist || []
+        setIsWishlisted(ids.includes(property._id))
+      } catch (e) {
+        // If this fails, we still show local state from auth store.
+      }
+    }
+    syncWishlistFromServer()
+  }, [user?._id, property?._id])
+
+  const handleWishlistToggle = () => {
+    const { user: currentUser, setUser } = useAuthStore.getState()
+    const propertyId = property?._id
+
+    if (!currentUser?._id) {
+      router.push("/(tabs)/Menu")
+      return
+    }
+    if (!propertyId) return
+    if (wishlistBusy) return
+
+    const isInWishlist = !!(currentUser.wishlist && currentUser.wishlist.includes(propertyId))
+    const updatedWishlist = isInWishlist
+      ? currentUser.wishlist.filter((pid) => pid !== propertyId)
+      : [...(currentUser.wishlist || []), propertyId]
+
+    // optimistic UI + persist in auth store so other screens stay in sync
+    setWishlistBusy(true)
+    setIsWishlisted(!isInWishlist)
+    const updatedUser = { ...currentUser, wishlist: updatedWishlist }
+    setUser(updatedUser)
+
+    // Don't block UI on storage/network; run in background.
+    setTimeout(() => {
+      ;(async () => {
+        try {
+          await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser))
+          const endpoint = isInWishlist
+            ? `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`
+            : `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/add`
+          await axios.post(endpoint, { userId: currentUser._id, propertyId })
+        } catch (error) {
+          // rollback on failure
+          const rolledBackWishlist = isInWishlist
+            ? [...(currentUser.wishlist || []), propertyId]
+            : (currentUser.wishlist || []).filter((pid) => pid !== propertyId)
+          const rolledBackUser = { ...currentUser, wishlist: rolledBackWishlist }
+          setUser(rolledBackUser)
+          await AsyncStorage.setItem("authUser", JSON.stringify(rolledBackUser))
+          setIsWishlisted(isInWishlist)
+        } finally {
+          setWishlistBusy(false)
+        }
+      })()
+    }, 0)
+  }
 
   const openImageViewer = (index: number) => {
     setImageIndex(index)
@@ -228,6 +317,7 @@ export default function PropertyInfo() {
   }
 
   const renderPricingCard = () => {
+<<<<<<< HEAD
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Room Rates</Text>
@@ -253,6 +343,45 @@ export default function PropertyInfo() {
           <View style={styles.rateItem}>
             <Text style={styles.rateLabel}>Maximum nights</Text>
             <Text style={styles.rateValue}>{property?.night[1]} nights</Text>
+=======
+    const isLongTerm = (property?.rentalType ?? "").toLowerCase().includes("long")
+    const monthly = property?.basePriceLongTerm
+    const minNights = property?.night?.[0]
+    const maxNights = property?.night?.[1]
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Pricing</Text>
+        <Text style={styles.subtitle}>
+          {isLongTerm ? "Monthly pricing for long-term stays" : "Prices may increase on weekends and holidays"}
+        </Text>
+
+        <View style={styles.pricingBlock}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.rowLabel}>Per {isLongTerm ? "month" : "night"}</Text>
+            <Text style={styles.rowValue}>
+              {isLongTerm ? `€${monthly ?? 0}` : `€${property?.basePrice ?? 0}`}
+            </Text>
+          </View>
+
+          <View style={styles.blockDivider} />
+
+          <View style={styles.rowBetween}>
+            <Text style={styles.rowLabel}>Weekly discount</Text>
+            <Text style={[styles.rowValue, styles.discountValue]}>
+              €{property?.weeklyDiscount ?? 0}
+            </Text>
+          </View>
+
+          <View style={styles.stayRow}>
+            <View style={styles.stayCol}>
+              <Text style={styles.stayKicker}>MIN. STAY</Text>
+              <Text style={styles.stayValue}>{minNights ?? "—"} nights</Text>
+            </View>
+            <View style={styles.stayColRight}>
+              <Text style={styles.stayKicker}>MAX. STAY</Text>
+              <Text style={styles.stayValue}>{maxNights ?? "—"} nights</Text>
+            </View>
+>>>>>>> 5657544 (bumb v-10)
           </View>
         </View>
       </View>
@@ -303,8 +432,12 @@ export default function PropertyInfo() {
   }
 
   const renderThingsToKnow = () => {
+    const checkIn = property?.time?.[0]
+    const checkOut = property?.time?.[1]
+    const ruleDotColors = ["#E04F5F", "#F0A020", "#2DA771", "#3B82F6"]
     return (
       <View style={styles.section}>
+<<<<<<< HEAD
         <View style={styles.checkInOutContainer}>
           <View style={styles.checkInOutHeader}>
             <Text style={styles.checkInOutTitle}>Check-in</Text>
@@ -321,6 +454,34 @@ export default function PropertyInfo() {
             <View style={styles.ruleItem} key={index}>
               <Text style={styles.bulletPoint}>•</Text>
               <Text style={styles.ruleText}>{item}</Text>
+=======
+        <Text style={styles.blockHeading}>CHECK-IN & CHECK-OUT</Text>
+        <View style={styles.checkBlock}>
+          <View style={styles.checkCol}>
+            <Text style={styles.checkLabel}>Check-In</Text>
+            <Text style={styles.checkTime}>{checkIn ?? "—"}:00</Text>
+          </View>
+          <View style={styles.checkDivider} />
+          <View style={styles.checkCol}>
+            <Text style={styles.checkLabel}>Check-Out</Text>
+            <Text style={styles.checkTime}>{checkOut ?? "—"}:00</Text>
+          </View>
+        </View>
+
+        <View style={styles.blockDividerWide} />
+
+        <Text style={styles.blockHeading}>House Rules</Text>
+        <View style={styles.rulesList}>
+          {(property?.additionalRules ?? []).map((item, index) => (
+            <View key={index} style={styles.ruleRow}>
+              <View
+                style={[
+                  styles.ruleDot,
+                  { backgroundColor: ruleDotColors[index % ruleDotColors.length] },
+                ]}
+              />
+              <Text style={styles.ruleRowText}>{item}</Text>
+>>>>>>> 5657544 (bumb v-10)
             </View>
           ))}
         </View>
@@ -344,6 +505,7 @@ export default function PropertyInfo() {
                   height={300}
                   width={screenWidth}
                   data={property.propertyImages}
+                  onSnapToItem={(idx) => setImageIndex(idx)}
                   renderItem={({ item, index }) => (
                     <View key={index}>
                       <Image source={{ uri: item }} resizeMode="cover" style={styles.carouselImage} />
@@ -354,6 +516,29 @@ export default function PropertyInfo() {
             ) : (
               <Text style={styles.noImagesText}>No images available</Text>
             )}
+
+            {/* Photo count + wishlist overlay */}
+            {property?.propertyImages?.length ? (
+              <View style={styles.heroOverlayBottom} pointerEvents="box-none">
+                <View style={styles.photosPill}>
+                  <Text style={styles.photosPillText}>
+                    {imageIndex + 1} / {property.propertyImages.length} photos
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.wishlistBtn}
+                  activeOpacity={0.85}
+                  onPress={handleWishlistToggle}
+                  disabled={wishlistBusy}
+                >
+                  <Ionicons
+                    name={isWishlisted ? "heart" : "heart-outline"}
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </View>
         }
         renderItem={() => (
@@ -399,10 +584,22 @@ export default function PropertyInfo() {
       </Modalize>
       <View style={styles.footer}>
         <View style={styles.footerContent}>
+<<<<<<< HEAD
           <TouchableOpacity style={styles.priceContainer}>
             <Text style={styles.footerPrice}>€{property?.basePrice}</Text>
             <Text style={styles.perNight}>/night</Text>
           </TouchableOpacity>
+=======
+          {(() => {
+            const p = getDisplayPrice(property)
+            return (
+          <TouchableOpacity style={styles.priceContainer}>
+            <Text style={styles.footerPrice}>{p.text}</Text>
+            {p.suffix ? <Text style={styles.perNight}>{p.suffix}</Text> : null}
+          </TouchableOpacity>
+            )
+          })()}
+>>>>>>> 5657544 (bumb v-10)
           <TouchableOpacity
             onPress={() => {
               if (user) {
@@ -431,6 +628,10 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     backgroundColor: '#f8f9fa',
+<<<<<<< HEAD
+=======
+    position: "relative",
+>>>>>>> 5657544 (bumb v-10)
   },
   carouselImage: {
     height: 300,
@@ -442,6 +643,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+<<<<<<< HEAD
+=======
+  heroOverlayBottom: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  photosPill: {
+    backgroundColor: "rgba(0,0,0,0.55)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  photosPillText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    fontSize: 12,
+  },
+  wishlistBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+>>>>>>> 5657544 (bumb v-10)
   contentContainer: {
     backgroundColor: '#fff',
   },
@@ -549,6 +781,7 @@ const styles = StyleSheet.create({
   amenityText: {
     fontSize: 14,
     color: '#333',
+<<<<<<< HEAD
   },
   viewAllButton: {
     backgroundColor: 'orange',
@@ -565,6 +798,74 @@ const styles = StyleSheet.create({
   },
   rateContainer: {
     gap: 16,
+=======
+  },
+  viewAllButton: {
+    backgroundColor: 'orange',
+    borderColor: '#ff7f11',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  viewAllText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  rateContainer: {
+    gap: 16,
+  },
+  pricingBlock: {
+    marginTop: 6,
+    gap: 14,
+  },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  rowLabel: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "500",
+  },
+  rowValue: {
+    fontSize: 16,
+    color: "#1a1a1a",
+    fontWeight: "600",
+  },
+  discountValue: {
+    color: "#2DA771",
+  },
+  blockDivider: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+  },
+  stayRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginTop: 8,
+  },
+  stayCol: {
+    flex: 1,
+  },
+  stayColRight: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
+  stayKicker: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "600",
+  },
+  stayValue: {
+    marginTop: 6,
+    fontSize: 14,
+    fontWeight: "400",
+    color: "#1a1a1a",
+>>>>>>> 5657544 (bumb v-10)
   },
   rateItem: {
     flexDirection: 'row',
@@ -599,6 +900,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#1a1a1a',
+<<<<<<< HEAD
   },
   hostDetails: {
     gap: 16,
@@ -691,6 +993,162 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+=======
+  },
+  hostDetails: {
+    gap: 16,
+  },
+  hostDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  hostDetailText: {
+    fontSize: 15,
+    color: '#666',
+  },
+  checkInOutContainer: {
+    marginBottom: 20,
+  },
+  checkInOutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  checkInOutTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  checkInOutTimes: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  checkInOutTime: {
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+  rulesContainer: {
+    gap: 8,
+  },
+  blockHeading: {
+    marginTop: 6,
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#1a1a1a",
+  },
+  checkBlock: {
+    marginTop: 12,
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+  },
+  checkCol: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  checkDivider: {
+    width: 1,
+    backgroundColor: "#E5E7EB",
+  },
+  checkLabel: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "600",
+  },
+  checkTime: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#1a1a1a",
+  },
+  blockDividerWide: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+    marginVertical: 18,
+  },
+  rulesList: {
+    marginTop: 10,
+  },
+  ruleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  ruleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 99,
+  },
+  ruleRowText: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "400",
+  },
+  ruleItem: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  bulletPoint: {
+    fontSize: 16,
+    color: '#333',
+  },
+  ruleText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+    lineHeight: 22,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  footerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  footerPrice: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  perNight: {
+    fontSize: 16,
+    color: '#666',
+  },
+>>>>>>> 5657544 (bumb v-10)
   reserveButton: {
     paddingHorizontal: 20,
     paddingVertical: 14,

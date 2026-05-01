@@ -1,6 +1,6 @@
 
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   View,
   Text,
@@ -20,6 +20,8 @@ import { useAuthStore } from "@/store/auth-store"
 import { LinearGradient } from "expo-linear-gradient"
 import { AntDesign, Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useFocusEffect } from "@react-navigation/native"
 
 const { width } = Dimensions.get("window")
 
@@ -67,9 +69,18 @@ const Wishlist = () => {
     }
   }
 
+  // Keep the tab always fresh when you come back to it.
+  useFocusEffect(
+    useCallback(() => {
+      fetchWishlist()
+    }, [user?._id, token]),
+  )
+
+  // Also refresh when wishlist changes elsewhere (index / info).
   useEffect(() => {
-    fetchWishlist()
-  }, [user])
+    fetchWishlist(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.wishlist?.length])
 
   const onRefresh = () => {
     setRefreshing(true)
@@ -77,15 +88,35 @@ const Wishlist = () => {
   }
 
   const handleRemoveFromWishlist = async (propertyId: string) => {
-    try {
-      const res = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`, {
-        userId: user?._id,
-        propertyId,
-      })
-      fetchWishlist()
-    } catch (error: any) {
-      console.error("Error removing from wishlist:", error.message)
-    }
+    const { user: currentUser, setUser } = useAuthStore.getState()
+    if (!currentUser?._id) return
+
+    // optimistic UI: remove immediately everywhere
+    const prevWishlist = currentUser.wishlist || []
+    const nextWishlist = prevWishlist.filter((id) => id !== propertyId)
+    const updatedUser = { ...currentUser, wishlist: nextWishlist }
+    setUser(updatedUser)
+    setWishlistProperties((prev) => prev.filter((p) => p._id !== propertyId))
+
+    // background persistence + backend update
+    setTimeout(() => {
+      ;(async () => {
+        try {
+          await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser))
+          await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`, {
+            userId: currentUser._id,
+            propertyId,
+          })
+        } catch (error: any) {
+          // rollback if failed
+          const rolledBackUser = { ...currentUser, wishlist: prevWishlist }
+          setUser(rolledBackUser)
+          await AsyncStorage.setItem("authUser", JSON.stringify(rolledBackUser))
+          fetchWishlist()
+          console.error("Error removing from wishlist:", error?.message)
+        }
+      })()
+    }, 0)
   }
 
   const renderItem = ({ item, index }: { item: PropertyInterface; index: number }) => (

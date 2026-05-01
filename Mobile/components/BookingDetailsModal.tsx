@@ -9,6 +9,7 @@ import {
   Text,
   StyleSheet,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { Feather, AntDesign, FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,10 +24,6 @@ interface BookingDetailsModalProps {
   loading: boolean;
   onClose: () => void;
   onCancelBooking: (id: string) => void;
-  onPayPlatformFees: (booking: Booking) => void;
-  onRebook: (booking: Booking) => void;
-  onCallHost: (phone: string) => void;
-  onEmailHost: (email: string) => void;
 }
 
 const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
@@ -35,10 +32,6 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
   loading,
   onClose,
   onCancelBooking,
-  onPayPlatformFees,
-  onRebook,
-  onCallHost,
-  onEmailHost
 }) => {
   const slideAnimation = useRef(new Animated.Value(0)).current;
 
@@ -58,6 +51,17 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
 
   const isContactHostEnabled = booking.bookingStatus === "confirmed" && booking.paymentStatus === "paid";
   const hasEnded = new Date(booking.endDate) < new Date();
+  const host = booking.userId ?? null
+  const property = booking.propertyId ?? null
+  const canContactHost = isContactHostEnabled && !!host
+
+  const openWhatsApp = () => {
+    const number = "447897037080"
+    const text = encodeURIComponent(
+      `Hi Vacation Saga team, I submitted a booking request (ID: ${booking._id}). Please help me with the next steps.`
+    )
+    Linking.openURL(`https://wa.me/${number}?text=${text}`)
+  }
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
@@ -90,7 +94,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
             {/* Hero Image */}
             <View style={styles.imageContainer}>
               <Image 
-                source={{ uri: booking.propertyId.propertyCoverFileUrl }} 
+                source={{ uri: property?.propertyCoverFileUrl || "https://via.placeholder.com/800x600?text=Vacation+Saga" }} 
                 style={styles.heroImage}
                 resizeMode="cover"
               />
@@ -104,11 +108,11 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
             <View style={styles.content}>
               {/* Title Section */}
               <View style={styles.titleSection}>
-                <Text style={styles.propertyTitle}>{booking.propertyId.placeName}</Text>
+                <Text style={styles.propertyTitle}>{property?.placeName ?? "Property"}</Text>
                 <View style={styles.locationContainer}>
                   <Feather name="map-pin" size={16} color="#9CA3AF" />
                   <Text style={styles.locationText}>
-                    {booking.propertyId.city}, {booking.propertyId.country}
+                    {property ? `${property.city}, ${property.country}` : "Location unavailable"}
                   </Text>
                 </View>
               </View>
@@ -161,60 +165,26 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
 
               {/* Host Section */}
               <View style={styles.hostContainer}>
-                <Text style={styles.sectionTitle}>Host</Text>
+                <Text style={styles.sectionTitle}>Booking status</Text>
                 <View style={styles.hostCard}>
-                  <View style={styles.hostInfo}>
-                    <View style={styles.hostAvatar}>
-                      <FontAwesome5 name="user" size={18} color="#9CA3AF" />
-                    </View>
-                    <Text style={styles.hostName}>{booking.userId.name}</Text>
-                  </View>
-                  
-                  {isContactHostEnabled && (
-                    <View style={styles.hostActions}>
-                      <TouchableOpacity 
-                        style={styles.hostActionButton}
-                        onPress={() => onCallHost(booking.userId.phone || "")}
-                      >
-                        <Feather name="phone" size={16} color="#6B7280" />
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.hostActionButton}
-                        onPress={() => onEmailHost(booking.userId.email || "")}
-                      >
-                        <Feather name="mail" size={16} color="#6B7280" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
+                  <Text style={styles.statusNoteTitle}>Booking request submitted</Text>
+                  <Text style={styles.statusNoteText}>
+                    Our team will reach out to you very soon.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.whatsAppButton}
+                    onPress={openWhatsApp}
+                    disabled={loading}
+                    activeOpacity={0.85}
+                  >
+                    <FontAwesome5 name="whatsapp" size={16} color="#fff" />
+                    <Text style={styles.whatsAppButtonText}>Chat with us on WhatsApp</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 
               {/* Action Buttons */}
               <View style={styles.actionsContainer}>
-                {booking.paymentStatus !== "paid" && booking.bookingStatus === "confirmed" && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.primaryButton]}
-                    onPress={() => onPayPlatformFees(booking)}
-                    disabled={loading}
-                  >
-                    <Feather name="credit-card" size={18} color="#fff" />
-                    <Text style={styles.primaryButtonText}>Pay Platform Fees</Text>
-                  </TouchableOpacity>
-                )}
-
-                {hasEnded && booking.bookingStatus === "confirmed" && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.secondaryButton]}
-                    onPress={() => {
-                      onClose();
-                      onRebook(booking);
-                    }}
-                  >
-                    <Feather name="refresh-cw" size={18} color="#374151" />
-                    <Text style={styles.secondaryButtonText}>Book Again</Text>
-                  </TouchableOpacity>
-                )}
-
                 {(booking.bookingStatus === "pending" || booking.bookingStatus === "confirmed")
                   && (
                   <TouchableOpacity
@@ -447,6 +417,34 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#F9FAFB",
     borderRadius: 16,
+  },
+  statusNoteTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#166534",
+  },
+  statusNoteText: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#166534",
+    opacity: 0.9,
+  },
+  whatsAppButton: {
+    marginTop: 14,
+    backgroundColor: "#22C55E",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  whatsAppButtonText: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 14,
   },
   hostInfo: {
     flexDirection: "row",

@@ -6,7 +6,8 @@ import {
   Image,
   StyleSheet,
   Dimensions,
-  Platform
+  Platform,
+  Linking
 } from 'react-native';
 import { Feather, MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,11 +21,6 @@ interface BookingCardProps {
   booking: Booking;
   onPress: (booking: Booking) => void;
   onCancel: (id: string) => void;
-  onPayFees: (booking: Booking) => void;
-  onRebook: (booking: Booking) => void;
-  onCallHost: (phone: string) => void;
-  onEmailHost: (email: string) => void;
-  onContactSupport: () => void;
   loading: boolean;
 }
 
@@ -32,16 +28,18 @@ const BookingCard: React.FC<BookingCardProps> = ({
   booking,
   onPress,
   onCancel,
-  onPayFees,
-  onRebook,
-  onCallHost,
-  onEmailHost,
-  onContactSupport,
   loading,
 }) => {
-  const isContactHostEnabled =
-    booking.bookingStatus === 'confirmed' && booking.paymentStatus === 'paid';
-  const hasEnded = new Date(booking.endDate) < new Date();
+  const host = booking.userId ?? null
+  const property = booking.propertyId ?? null
+
+  const openWhatsApp = () => {
+    const number = "447897037080"
+    const text = encodeURIComponent(
+      `Hi Vacation Saga team, I submitted a booking request (ID: ${booking._id}). Please help me with the next steps.`
+    )
+    Linking.openURL(`https://wa.me/${number}?text=${text}`)
+  }
 
   return (
     <TouchableOpacity
@@ -52,7 +50,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
       {/* Image with Status Badge */}
       <View style={styles.imageContainer}>
         <Image 
-          source={{ uri: booking.propertyId.propertyCoverFileUrl }} 
+          source={{ uri: property?.propertyCoverFileUrl || "https://via.placeholder.com/800x600?text=Vacation+Saga" }} 
           style={styles.image}
           resizeMode="cover"
         />
@@ -84,12 +82,12 @@ const BookingCard: React.FC<BookingCardProps> = ({
         {/* Title and Location */}
         <View style={styles.headerSection}>
           <Text style={styles.title} numberOfLines={2}>
-            {booking.propertyId.placeName}
+            {property?.placeName ?? "Property"}
           </Text>
           <View style={styles.locationRow}>
             <Feather name="map-pin" size={14} color="#666" />
             <Text style={styles.location} numberOfLines={1}>
-              {booking.propertyId.city}, {booking.propertyId.country}
+              {property ? `${property.city}, ${property.country}` : "Location unavailable"}
             </Text>
           </View>
         </View>
@@ -130,84 +128,28 @@ const BookingCard: React.FC<BookingCardProps> = ({
           <Text style={styles.price}>€{booking.price.toLocaleString('en-IN')}</Text>
         </View>
 
-        {/* Host Info */}
-        <View style={styles.hostSection}>
-          <FontAwesome5 name="user-circle" size={18} color="#666" />
-          <Text style={styles.hostLabel}>Host:</Text>
-          <Text style={styles.hostName}>{booking.userId.name}</Text>
+        {/* Status message */}
+        <View style={styles.infoBanner}>
+          <View style={styles.infoIcon}>
+            <Feather name="check-circle" size={16} color="#16a34a" />
+          </View>
+          <View style={styles.infoTextWrap}>
+            <Text style={styles.infoTitle}>Booking request submitted</Text>
+            <Text style={styles.infoText}>Our team will reach out to you very soon.</Text>
+          </View>
         </View>
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
-          {booking.bookingStatus !== 'confirmed' ? (
-            <View style={styles.waitingContainer}>
-              <Feather name="clock" size={16} color="#7A5800" />
-              <Text style={styles.waitingText}>Pending host confirmation</Text>
-            </View>
-          ) : (
-            <>
-              {/* Contact Buttons */}
-              <View style={[
-                styles.contactSection,
-                !isContactHostEnabled && styles.disabledSection
-              ]}>
-                <Text style={styles.sectionTitle}>Contact Host</Text>
-                <View style={styles.contactButtonsRow}>
-                  <TouchableOpacity
-                    style={[styles.contactButton, styles.callButton]}
-                    onPress={() => onCallHost(booking.userId.phone || '')}
-                    disabled={!isContactHostEnabled || loading}
-                  >
-                    <Feather name="phone" size={16} color="#fff" />
-                    <Text style={styles.contactButtonText}>Call</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.contactButton, styles.emailButton]}
-                    onPress={() => onEmailHost(booking.userId.email || '')}
-                    disabled={!isContactHostEnabled || loading}
-                  >
-                    <Feather name="mail" size={16} color="#fff" />
-                    <Text style={styles.contactButtonText}>Email</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.supportButton}
-                  onPress={onContactSupport}
-                  disabled={!isContactHostEnabled || loading}
-                >
-                  <Feather name="headphones" size={16} color="#5E72E4" />
-                  <Text style={styles.supportButtonText}>Contact Support</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Action Buttons */}
-              <View style={styles.actionButtonsRow}>
-                {booking.paymentStatus !== 'paid' && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.payButton]}
-                    onPress={() => onPayFees(booking)}
-                    disabled={loading}
-                  >
-                    <Feather name="credit-card" size={16} color="#fff" />
-                    <Text style={styles.actionButtonText}>Pay Fees</Text>
-                  </TouchableOpacity>
-                )}
-
-                {hasEnded && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.rebookButton]}
-                    onPress={() => onRebook(booking)}
-                    disabled={loading}
-                  >
-                    <Feather name="refresh-cw" size={16} color="#5E72E4" />
-                    <Text style={styles.rebookButtonText}>Rebook</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </>
-          )}
+          <TouchableOpacity
+            style={styles.whatsAppButton}
+            onPress={openWhatsApp}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            <FontAwesome5 name="whatsapp" size={16} color="#fff" />
+            <Text style={styles.whatsAppButtonText}>Chat with us on WhatsApp</Text>
+          </TouchableOpacity>
 
           {/* Cancel Button */}
           {booking.bookingStatus === 'pending' && (
@@ -370,8 +312,56 @@ const styles = StyleSheet.create({
     color: "#333",
     fontWeight: "600",
   },
+  infoBanner: {
+    backgroundColor: "#F0FDF4",
+    borderRadius: 14,
+    padding: 12,
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
+    marginBottom: 18,
+  },
+  infoIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: "#DCFCE7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  infoTextWrap: { flex: 1 },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#166534",
+  },
+  infoText: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#166534",
+    opacity: 0.9,
+  },
   actionsContainer: {
     gap: 16,
+  },
+  whatsAppButton: {
+    backgroundColor: "#22C55E",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  whatsAppButtonText: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 14,
   },
   waitingContainer: {
     flexDirection: "row",
