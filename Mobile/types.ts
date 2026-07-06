@@ -43,6 +43,10 @@ export interface PropertyInterface {
   additionalRules: string[];
   reviews: string;
   newReviews: string;
+  /** Average guest rating when provided by API */
+  rating?: number;
+  /** Total review count when provided by API */
+  reviewCount?: number;
   propertyImages: string[];
   propertyCoverFileUrl: string;
   propertyPictureUrls: string[];
@@ -80,6 +84,33 @@ export interface nearbyLocationInterface {
   nearbyLocationDistance: number[];
   nearbyLocationTag: string[];
   nearbyLocationUrl?: string[];
+}
+
+/** Lightweight property shape for the Trips map tab (VS-TRIP-012) */
+export type MapMarkerProperty = {
+  _id: string
+  title?: string
+  propertyName?: string
+  basePrice?: number
+  propertyCoverFileUrl?: string
+  center?: {
+    lat: number
+    lng: number
+  } | null
+}
+
+/** Server-side cluster bucket (VS-TRIP-063) */
+export type ServerMapCluster = {
+  lat: number
+  lng: number
+  count: number
+  isCluster: true
+}
+
+export type MapMarkersApiResponse = {
+  data: MapMarkerProperty[]
+  clusters?: ServerMapCluster[]
+  status?: number
 }
 
 export interface UserDataType {

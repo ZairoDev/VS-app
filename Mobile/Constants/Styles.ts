@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+import { booking } from "./booking-theme";
 
 export const globalStyles = StyleSheet.create({
   Container: {
@@ -45,14 +46,14 @@ export const globalStyles = StyleSheet.create({
     color: "#4D4C5C",
   },
   btn: {
-    backgroundColor: "#FC941E",
-    height: 50,
-    borderRadius: 8,
+    backgroundColor: booking.colors.accent,
+    height: booking.button.height,
+    borderRadius: booking.button.radius,
     justifyContent: "center",
     alignItems: "center",
   },
   btnText: {
-    color: "#fff",
+    color: booking.colors.surface,
     fontSize: 16,
     fontFamily: "mon-b",
     textAlign: "center",
@@ -67,10 +68,10 @@ export const globalStyles = StyleSheet.create({
     bottom:0,
     left: 0,
     width: "100%",
-    backgroundColor:"white",  
+    backgroundColor: booking.colors.surface,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderTopColor: "gray",
+    borderTopColor: booking.colors.border,
     borderTopWidth: StyleSheet.hairlineWidth,
     zIndex: 10,
     elevation:5

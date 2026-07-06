@@ -3,7 +3,8 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { UserDataType } from "@/types"; // adjust the path
+import { UserDataType } from "@/types";
+import { fetchWishlistIds, normalizeWishlistIds } from "@/utils/wishlist";
 
 type AuthStore = {
   user: UserDataType | null;
@@ -18,10 +19,11 @@ type AuthStore = {
   }) => Promise<void>;
   logout: () => Promise<void>;
   loadAuthData: () => Promise<void>;
+  syncWishlist: () => Promise<void>;
   setUser: (user: UserDataType | null) => void;
 };
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   token: null,
   loading: false,
@@ -34,11 +36,16 @@ export const useAuthStore = create<AuthStore>((set) => ({
         { email, password }
       );
       const { token, user } = res.data;
-      console.log("Login response:", res.data);
+
+      const userWithWishlist = {
+        ...user,
+        wishlist: normalizeWishlistIds(user?.wishlist),
+      };
 
       await AsyncStorage.setItem("authToken", token);
-      await AsyncStorage.setItem("authUser", JSON.stringify(user));
-      set({ user, token, loading: false });
+      await AsyncStorage.setItem("authUser", JSON.stringify(userWithWishlist));
+      set({ user: userWithWishlist, token, loading: false });
+      await get().syncWishlist();
     } catch (error) {
       console.error("Login error:", error);
       set({ loading: false });
@@ -46,7 +53,26 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
 
-  setUser: (user) => set({ user }),
+  setUser: (user) =>
+    set({
+      user: user
+        ? { ...user, wishlist: normalizeWishlistIds(user.wishlist) }
+        : null,
+    }),
+
+  syncWishlist: async () => {
+    const { user, token } = get();
+    if (!user?._id || !token) return;
+
+    try {
+      const ids = await fetchWishlistIds(user._id);
+      const updatedUser = { ...user, wishlist: ids };
+      await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser));
+      set({ user: updatedUser });
+    } catch (error) {
+      console.error("Wishlist sync error:", error);
+    }
+  },
 
   register: async ({ name, email, password, phone }) => {
     set({ loading: true });
@@ -76,7 +102,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     if (token && userString) {
       const user: UserDataType = JSON.parse(userString);
-      set({ token, user });
+      const userWithWishlist = {
+        ...user,
+        wishlist: normalizeWishlistIds(user.wishlist),
+      };
+      set({ token, user: userWithWishlist });
+      await get().syncWishlist();
     }
   },
 }));

@@ -70,6 +70,7 @@ export default function GoogleAuthCallback() {
         await AsyncStorage.setItem("authToken", token)
         await AsyncStorage.setItem("authUser", JSON.stringify(loggedInUser))
         setUser(loggedInUser)
+        await useAuthStore.getState().syncWishlist()
       } catch (e) {
         console.error("Failed to persist Google auth session:", e)
       }

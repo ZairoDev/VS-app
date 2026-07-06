@@ -10,8 +10,8 @@ export const addToWishlist =async(req:Request,res:Response)=>{
             res.status(404).json({message:"user not found"});
             return;
         }
-        if(user.wishlist.includes(propertyId)){
-            res.status(400).json({message:"property already in woshlist"});
+        if(user.wishlist.some((id: Types.ObjectId) => id.toString() === String(propertyId))){
+            res.status(400).json({message:"property already in wishlist"});
             return;
         }
         user.wishlist.push(propertyId);
@@ -49,13 +49,15 @@ export const getWishlist = async (req: Request, res: Response) => {
     try {
       const { userId } = req.body;
   
-      const user = await Traveller.findById(userId).populate("wishlist");
+      const user = await Traveller.findById(userId);
       if (!user){
          res.status(404).json({ message: "User not found" });
          return;
       } 
   
-      res.status(200).json({ wishlist: user.wishlist });
+      res.status(200).json({
+        wishlist: user.wishlist.map((id: Types.ObjectId) => id.toString()),
+      });
       return;
     } catch (error) {
        res.status(500).json({ message: "Internal server error", error: error.message });

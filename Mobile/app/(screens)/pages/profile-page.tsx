@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-
+import React, { useState } from "react"
 import {
   View,
   Text,
@@ -8,22 +7,29 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
-} from "react-native";
-import axios from "axios";
-import { Feather } from "@expo/vector-icons";
-import { useAuthStore } from "@/store/auth-store";
-import { useNavigation } from "@react-navigation/native";
-import { UserDataType } from "@/types";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import EditModal from "@/components/edit";
+  Alert,
+} from "react-native"
+import axios from "axios"
+import { Feather } from "@expo/vector-icons"
+import { useAuthStore } from "@/store/auth-store"
+import { useNavigation } from "@react-navigation/native"
+import { UserDataType } from "@/types"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import EditModal from "@/components/edit"
+import { profile } from "@/Constants/profile-theme"
 
-interface ProfileFieldProps{
-  icon: string;
-  label: string;
-  value: string;
-  actionText: string;
-  description?: string;
-  onEdit?: () => void;
+const { colors: c, radius: r, space: sp, type: t, size: s, shadow: sh } = profile
+
+type FeatherIconName = React.ComponentProps<typeof Feather>["name"]
+
+interface ProfileFieldProps {
+  icon: FeatherIconName
+  label: string
+  value: string
+  actionText: string
+  description?: string
+  onEdit?: () => void
+  isLast?: boolean
 }
 
 const ProfileCard = ({
@@ -33,114 +39,129 @@ const ProfileCard = ({
   actionText,
   description,
   onEdit,
+  isLast,
 }: ProfileFieldProps) => {
-  const isEmpty = value === "Not provided";
+  const isEmpty = value === "Not provided"
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, isLast && styles.rowLast]}>
       <View style={styles.rowLeft}>
         <View style={styles.iconContainer}>
-          <Feather name={icon as any} size={18} color="#5f5f5f" />
+          <Feather name={icon} size={18} color={c.inkSecondary} />
         </View>
         <View style={styles.rowContent}>
           <Text style={styles.cardLabel}>{label}</Text>
-          <Text style={isEmpty ? styles.emptyValue : styles.valueText}>
+          <Text
+            style={isEmpty ? styles.emptyValue : styles.valueText}
+            numberOfLines={3}
+          >
             {value}
           </Text>
-        {description && (
-          <Text style={styles.descriptionText}>{description}</Text>
-        )}
-      </View>
+          {description ? (
+            <Text style={styles.descriptionText}>{description}</Text>
+          ) : null}
+        </View>
       </View>
       {onEdit ? (
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={onEdit}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`${actionText} ${label}`}
         >
           <Text style={styles.actionText}>{actionText}</Text>
           <Feather
             name={isEmpty ? "plus" : "edit-2"}
             size={14}
-            color={"#Fea850"}
+            color={c.accent}
             style={styles.actionIcon}
           />
         </TouchableOpacity>
       ) : (
-        <Text style={styles.staticMeta}>Verified</Text>
+        <View style={styles.staticMetaRow}>
+          <Feather name="check-circle" size={13} color={c.success} />
+          <Text style={styles.staticMeta}>Verified</Text>
+        </View>
       )}
     </View>
-  );
-};
+  )
+}
 
 const ProfilePage = () => {
-  const { user, setUser } = useAuthStore();
-  const navigation = useNavigation();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [fieldLabel, setFieldLabel] = useState("");
-  const [fieldKey, setFieldKey] = useState("");
-  const [fieldValue, setFieldValue] = useState("");
+  const { user, setUser } = useAuthStore()
+  const navigation = useNavigation()
+  const [modalVisible, setModalVisible] = useState(false)
+  const [fieldLabel, setFieldLabel] = useState("")
+  const [fieldKey, setFieldKey] = useState("")
+  const [fieldValue, setFieldValue] = useState("")
 
-  const handleEdit = (label: string,key: string, value: string) => {
-    setFieldLabel(label);
-    setFieldKey(key);
-    setFieldValue(value);
-    setModalVisible(true);
-  };
+  const handleEdit = (label: string, key: string, value: string) => {
+    setFieldLabel(label)
+    setFieldKey(key)
+    setFieldValue(value)
+    setModalVisible(true)
+  }
 
   const saveChanges = async (newValue: string) => {
-    try{
-      await axios.put(`${process.env.EXPO_PUBLIC_BASE_URL}/user/update`,{
-        [fieldKey]:newValue,
-        userId:user?._id
-      });
+    try {
+      await axios.put(`${process.env.EXPO_PUBLIC_BASE_URL}/user/update`, {
+        [fieldKey]: newValue,
+        userId: user?._id,
+      })
 
       const updatedUser: UserDataType = {
         ...(user as UserDataType),
         [fieldKey]: newValue,
-      };
-      
-      setUser(updatedUser);
-      await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser));
+      }
 
-    }catch(error){
-      console.error("Error saving changes:", error);
+      setUser(updatedUser)
+      await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser))
+    } catch (error) {
+      console.error("Error saving changes:", error)
+      Alert.alert("Couldn't save", "Please try again in a moment.")
+      throw error
     }
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={c.bg} />
 
       <View style={styles.header}>
         <View style={styles.headerBackdrop} pointerEvents="none">
           <View style={styles.headerAuraPrimary} />
           <View style={styles.headerAuraSecondary} />
-          <View style={styles.headerAccentLine} />
         </View>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
-          <Feather name="arrow-left" size={22} color="#1a1a1a" />
+          <Feather name="arrow-left" size={20} color={c.ink} />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>Profile Details</Text>
+          <Text style={styles.headerTitle}>Personal info</Text>
           <Text style={styles.headerSubtitle}>
-            Manage your personal information
+            Details used for bookings and support
           </Text>
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.introBlock}>
-          <Text style={styles.introEyebrow}>ACCOUNT</Text>
-          <Text style={styles.introTitle}>Personal information</Text>
           <Text style={styles.introText}>
-            Keep your contact details and identity information up to date for smoother bookings and support.
+            Keep your contact details up to date so hosts and support can reach
+            you about your stays.
           </Text>
         </View>
 
+        <Text style={styles.sectionTitle}>Identity</Text>
         <View style={styles.cardsContainer}>
           <ProfileCard
             icon="user"
@@ -152,16 +173,23 @@ const ProfilePage = () => {
           <ProfileCard
             icon="smile"
             label="Preferred first name"
-            value={ user?.preferredName || "Not provided"}
+            value={user?.preferredName || "Not provided"}
             actionText={user?.preferredName ? "Edit" : "Add"}
-            onEdit={() => handleEdit("Preffered name", "preferredName", user?.preferredName || "")}
+            onEdit={() =>
+              handleEdit("Preferred name", "preferredName", user?.preferredName || "")
+            }
+            isLast
           />
+        </View>
+
+        <Text style={styles.sectionTitle}>Contact</Text>
+        <View style={styles.cardsContainer}>
           <ProfileCard
             icon="phone"
             label="Phone number"
             value={user?.phone || "Not provided"}
             actionText={user?.phone ? "Edit" : "Add"}
-            description="Contact number (for confirmed guests and service providers to get in touch)."
+            description="Shared with hosts after a booking is confirmed."
             onEdit={() => handleEdit("Phone number", "phone", user?.phone || "")}
           />
           <ProfileCard
@@ -173,11 +201,11 @@ const ProfilePage = () => {
           <ProfileCard
             icon="map-pin"
             label="Address"
-            value={ user?.address || "Not provided"}
+            value={user?.address || "Not provided"}
             actionText={user?.address ? "Edit" : "Add"}
             onEdit={() => handleEdit("Address", "address", user?.address || "")}
+            isLast
           />
-          
         </View>
       </ScrollView>
 
@@ -189,17 +217,17 @@ const ProfilePage = () => {
         onSave={saveChanges}
       />
     </SafeAreaView>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: "row",
     paddingTop: 12,
     paddingBottom: 18,
-    paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
+    paddingHorizontal: sp.lg - 4,
+    backgroundColor: c.bg,
     alignItems: "center",
     position: "relative",
     overflow: "hidden",
@@ -218,7 +246,7 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: "rgba(254, 168, 80, 0.10)",
+    backgroundColor: "rgba(255, 102, 0, 0.10)",
   },
   headerAuraSecondary: {
     position: "absolute",
@@ -229,105 +257,135 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     backgroundColor: "rgba(255, 228, 196, 0.55)",
   },
-  headerAccentLine: {
-    position: "absolute",
-    left: 20,
-    right: 20,
-    bottom: 0,
-    height: 1,
-    backgroundColor: "#F1F1F1",
-  },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: "#F6F6F6",
+    borderRadius: r.md,
+    backgroundColor: c.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     justifyContent: "center",
     alignItems: "center",
   },
   headerTextContainer: { paddingLeft: 12, flex: 1 },
-  headerTitle: { fontSize: 26, fontWeight: "700", color: "#1A1A1A" },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: c.ink,
+    letterSpacing: -0.3,
+  },
   headerSubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
+    ...t.meta,
+    color: c.inkMuted,
     marginTop: 4,
   },
   content: { flex: 1 },
+  contentInner: {
+    paddingBottom: sp.xl,
+  },
   introBlock: {
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 14,
-  },
-  introEyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#A1A1AA",
-    letterSpacing: 1.1,
-    marginBottom: 6,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#1A1A1A",
+    paddingHorizontal: sp.lg - 4,
+    paddingTop: 8,
+    paddingBottom: 18,
   },
   introText: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 21,
-    color: "#6B7280",
+    ...t.meta,
+    color: c.inkSecondary,
+  },
+  sectionTitle: {
+    ...t.sectionTitle,
+    color: c.ink,
+    marginLeft: sp.md + 2,
+    marginRight: sp.md,
+    marginBottom: 10,
   },
   cardsContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    backgroundColor: "#FFFFFF",
+    marginHorizontal: sp.md,
+    marginBottom: sp.lg,
+    backgroundColor: c.surface,
+    borderRadius: r.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    paddingHorizontal: sp.md,
+    ...sh.card,
   },
   row: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F1F1",
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.divider,
+    minHeight: s.rowMinHeight,
+  },
+  rowLast: {
+    borderBottomWidth: 0,
   },
   rowLeft: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     flex: 1,
     paddingRight: 16,
   },
   iconContainer: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "#F6F6F6",
+    width: s.iconWell,
+    height: s.iconWell,
+    borderRadius: r.md,
+    backgroundColor: c.track,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
   rowContent: { flex: 1 },
-  cardLabel: { fontSize: 13, fontWeight: "600", color: "#8A8A8A", marginBottom: 6 },
-  valueText: { fontSize: 17, color: "#1A1A1A", marginBottom: 4, fontWeight: "500" },
-  emptyValue: {
-    fontSize: 16,
-    color: "#AAAAAA",
-    fontStyle: "italic",
+  cardLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: c.inkMuted,
     marginBottom: 4,
   },
-  descriptionText: { fontSize: 13, color: "#777", lineHeight: 19 },
+  valueText: {
+    fontSize: 16,
+    color: c.ink,
+    fontWeight: "500",
+    lineHeight: 22,
+  },
+  emptyValue: {
+    fontSize: 16,
+    color: c.inkPlaceholder,
+    fontStyle: "italic",
+    lineHeight: 22,
+  },
+  descriptionText: {
+    marginTop: 4,
+    fontSize: 13,
+    color: c.inkMuted,
+    lineHeight: 19,
+  },
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    paddingTop: 2,
+    alignSelf: "center",
+    minHeight: 44,
+    justifyContent: "center",
+    paddingLeft: 8,
   },
-  actionText: { fontSize: 14, fontWeight: "700", color: "#Fea850" },
+  actionText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: c.accent,
+  },
   actionIcon: { marginLeft: 4 },
+  staticMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "center",
+  },
   staticMeta: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#9A9A9A",
-    paddingTop: 4,
+    color: c.success,
   },
-}); 
+})
 
-export default ProfilePage;
+export default ProfilePage

@@ -101,15 +101,170 @@ const getParticularProperty = async (req: Request, res: Response) => {
   }
 };
 
-const getProperties = async (req: Request, res: Response) => {
+const getProperties: RequestHandler = async (req, res) => {
   try {
-    const property = await Properties.find({},{center:1});
-    if (!property) {
-       res.status(404).json({ error: "No property found", status: 404 });
-    }
-    res.json({ data:property, status: 200 });
+    const properties = await Properties.find(
+      { isLive: { $ne: false } },
+      {
+        center: 1,
+        title: 1,
+        propertyName: 1,
+        basePrice: 1,
+        propertyCoverFileUrl: 1,
+      }
+    ).lean();
+
+    res.json({ data: properties, status: 200 });
   } catch (err) {
     res.status(500).json({ error: "Unable to fetch property", status: 500 });
   }
 };
-export { getAllProperties, getParticularProperty ,getProperties};
+
+function parseBoundsQuery(req: Request): {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+  zoom: number;
+} | null {
+  const north = Number(req.query.north);
+  const south = Number(req.query.south);
+  const east = Number(req.query.east);
+  const west = Number(req.query.west);
+  const zoom = Number(req.query.zoom ?? 10);
+
+  if (
+    !Number.isFinite(north) ||
+    !Number.isFinite(south) ||
+    !Number.isFinite(east) ||
+    !Number.isFinite(west) ||
+    north <= south ||
+    east <= west
+  ) {
+    return null;
+  }
+
+  return { north, south, east, west, zoom };
+}
+
+function withCenterFromDoc(doc: Record<string, unknown>) {
+  const center = doc.center as { lat?: number; lng?: number } | undefined;
+  const location = doc.location as { coordinates?: [number, number] } | undefined;
+
+  if (center?.lat != null && center?.lng != null) {
+    return { ...doc, center: { lat: center.lat, lng: center.lng } };
+  }
+
+  const coords = location?.coordinates;
+  if (Array.isArray(coords) && coords.length >= 2) {
+    return {
+      ...doc,
+      center: { lat: coords[1], lng: coords[0] },
+    };
+  }
+
+  return doc;
+}
+
+const getMapMarkers: RequestHandler = async (req, res) => {
+  try {
+    const bounds = parseBoundsQuery(req);
+    if (!bounds) {
+      res.status(400).json({
+        error: "Invalid bounds. Required: north, south, east, west (numeric).",
+        status: 400,
+      });
+      return;
+    }
+
+    const { north, south, east, west, zoom } = bounds;
+
+    const viewportMatch = {
+      isLive: { $ne: false },
+      $or: [
+        {
+          location: {
+            $geoWithin: {
+              $box: [
+                [west, south],
+                [east, north],
+              ],
+            },
+          },
+        },
+        {
+          location: { $exists: false },
+          "center.lat": { $gte: south, $lte: north },
+          "center.lng": { $gte: west, $lte: east },
+        },
+      ],
+    };
+
+    // Server-side cluster buckets at low zoom (VS-TRIP-063)
+    if (zoom < 8) {
+      const cellSize = zoom < 4 ? 8 : zoom < 6 ? 4 : 2;
+      const clusters = await Properties.aggregate([
+        { $match: viewportMatch },
+        {
+          $project: {
+            lng: {
+              $ifNull: [
+                { $arrayElemAt: ["$location.coordinates", 0] },
+                "$center.lng",
+              ],
+            },
+            lat: {
+              $ifNull: [
+                { $arrayElemAt: ["$location.coordinates", 1] },
+                "$center.lat",
+              ],
+            },
+          },
+        },
+        { $match: { lat: { $ne: null }, lng: { $ne: null } } },
+        {
+          $group: {
+            _id: {
+              latBucket: { $floor: { $divide: ["$lat", cellSize] } },
+              lngBucket: { $floor: { $divide: ["$lng", cellSize] } },
+            },
+            lat: { $avg: "$lat" },
+            lng: { $avg: "$lng" },
+            count: { $sum: 1 },
+          },
+        },
+        { $limit: 200 },
+      ]);
+
+      const clusterPayload = clusters
+        .filter((c) => c.lat != null && c.lng != null)
+        .map((c) => ({
+          lat: c.lat,
+          lng: c.lng,
+          count: c.count,
+          isCluster: true as const,
+        }));
+
+      res.json({
+        data: [],
+        clusters: clusterPayload,
+        status: 200,
+      });
+      return;
+    }
+
+    const properties = await Properties.find(viewportMatch)
+      .select("title propertyName basePrice propertyCoverFileUrl center location")
+      .limit(200)
+      .lean();
+
+    const data = properties.map((p) => withCenterFromDoc(p as Record<string, unknown>));
+
+    res.json({ data, clusters: [], status: 200 });
+  } catch (err) {
+    console.error("getMapMarkers error:", err);
+    res.status(500).json({ error: "Unable to fetch map markers", status: 500 });
+  }
+};
+
+export { getAllProperties, getParticularProperty, getProperties, getMapMarkers };

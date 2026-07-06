@@ -22,7 +22,7 @@ import { propertyTypes } from "@/Constants/Country";
 import { useAuthStore } from "@/store/auth-store";
 import useSearchStore from "@/store/location-search-store";
 import { extractLocationParts } from "@/utils/extractLocation";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isInWishlist, toggleWishlistProperty } from "@/utils/wishlist";
 
 export interface FetchPropertiesRequest {
   skip: number;
@@ -74,7 +74,6 @@ export default function Index() {
   const [propertyType, setPropertyType] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string[]>([]);
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
-  const [wishlist, setWishlist] = useState<string[]>(user?.wishlist || []);
 
   const {
     beds,
@@ -88,9 +87,50 @@ export default function Index() {
     maxPrice,
     handleCount,
     applyFilters,
+    clearFilters,
   } = useStore();
 
-  const { selectedPlace } = useSearchStore();
+  const { selectedPlace, clearSelectedPlace } = useSearchStore();
+
+  const hasAdvancedFilters =
+    beds > 0 ||
+    bedrooms > 0 ||
+    bathroom > 0 ||
+    allowCooking ||
+    allowParty ||
+    allowPets ||
+    isEnabled ||
+    minPrice !== 10 ||
+    maxPrice !== 5000;
+
+  const hasActiveFilters =
+    selectedCountry.length > 0 || propertyType.length > 0 || hasAdvancedFilters || Boolean(selectedPlace);
+
+  const clearAllFilters = () => {
+    setProperties([]);
+    setSkip(0);
+    setSelectedCountry([]);
+    setPropertyType([]);
+    clearFilters();
+    clearSelectedPlace();
+  };
+
+  const renderClearPill = () => {
+    if (!hasActiveFilters) return null;
+
+    return (
+      <TouchableOpacity
+        style={styles.clearPill}
+        onPress={clearAllFilters}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Clear all filters"
+      >
+        <Ionicons name="close" size={14} color="#FF6600" />
+        <Text style={styles.clearPillText}>Clear</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const fetchProperties = async () => {
     try {
@@ -181,17 +221,28 @@ export default function Index() {
   }, [selectedPlace]);
 
   useEffect(() => {
-    setWishlist(user?.wishlist || []);
-  }, [user]);
-
-  useEffect(() => {
     setProperties([]);
     setSkip(0);
   }, [applyFilters, selectedPlace]);
 
   useEffect(() => {
     fetchProperties();
-  }, [skip, propertyType, selectedCountry]);
+  }, [
+    skip,
+    propertyType,
+    selectedCountry,
+    beds,
+    bedrooms,
+    bathroom,
+    allowCooking,
+    allowParty,
+    allowPets,
+    isEnabled,
+    minPrice,
+    maxPrice,
+    selectedPlace,
+    applyFilters,
+  ]);
 
   useEffect(() => {
     console.log("property array: ", properties.length);
@@ -199,59 +250,19 @@ export default function Index() {
   }, [properties]);
 
   const handleWishlistToggle = (propertyId: string) => {
-    const { user: currentUser, setUser } = useAuthStore.getState();
-    if (!currentUser || !currentUser._id) {
+    if (!user?._id) {
       console.log("User not logged in");
       return;
     }
-    const currentWishlist = currentUser.wishlist || [];
-    const isInWishlist = currentWishlist.includes(propertyId);
-    const updatedWishlist = isInWishlist
-      ? currentWishlist.filter((id) => id !== propertyId)
-      : [...currentWishlist, propertyId];
-
-    // Single source of truth: update auth store + local state instantly.
-    const updatedUser = { ...currentUser, wishlist: updatedWishlist };
-    setUser(updatedUser);
-    setWishlist(updatedWishlist);
 
     InteractionManager.runAfterInteractions(() => {
-      (async () => {
-        try {
-          // persist for app-wide consistency (don't block UI)
-          await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser));
-          const endpoint = isInWishlist
-            ? `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`
-            : `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/add`;
-          const response = await axios.post(endpoint, {
-            userId: currentUser._id,
-            propertyId,
-          });
-          console.log("Success:", response.data.message);
-        } catch (error) {
-          // rollback on failure (rare, but keeps correctness)
-          const rolledBackWishlist = isInWishlist
-            ? [...currentWishlist, propertyId]
-            : currentWishlist.filter((id) => id !== propertyId);
-          const rolledBackUser = { ...currentUser, wishlist: rolledBackWishlist };
-          setUser(rolledBackUser);
-          setWishlist((prev) =>
-            isInWishlist ? [...prev, propertyId] : prev.filter((id) => id !== propertyId)
-          );
-          try {
-            await AsyncStorage.setItem("authUser", JSON.stringify(rolledBackUser));
-          } catch {}
-          if (
-            axios.isAxiosError(error) &&
-            error.response &&
-            error.response.data?.message
-          ) {
-            console.log("Error:", error.response.data.message);
-          } else {
-            console.log("Unknown error:", error);
-          }
+      toggleWishlistProperty(propertyId).catch((error) => {
+        if (axios.isAxiosError(error) && error.response?.data?.message) {
+          console.log("Error:", error.response.data.message);
+        } else {
+          console.log("Wishlist toggle error:", error);
         }
-      })();
+      });
     });
   };
 
@@ -286,9 +297,9 @@ export default function Index() {
           <Ionicons
             size={20}
             name={
-              wishlist.includes(item._id) ? "heart" : "heart-outline"
+              isInWishlist(user?.wishlist, item._id) ? "heart" : "heart-outline"
             }
-            color={wishlist.includes(item._id) ? "orange" : "white"}
+            color={isInWishlist(user?.wishlist, item._id) ? "orange" : "white"}
           />
         </Pressable>
       </View>
@@ -387,6 +398,7 @@ export default function Index() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.propertyTypesContainer}
+                ListHeaderComponent={renderClearPill}
                 renderItem={({ item }) => {
                   const isSelected = propertyType.includes(item.name);
                   return (
@@ -552,6 +564,24 @@ const styles = StyleSheet.create({
   },
   selectedPropertyTypeText: {
     color: "#FFFFFF",
+  },
+
+  clearPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: "#FFF4EC",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#FF6600",
+    gap: 4,
+    marginRight: 8,
+  },
+  clearPillText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FF6600",
   },
 
   // Property Cards

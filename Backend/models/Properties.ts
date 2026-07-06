@@ -51,6 +51,17 @@ const PropertySchema: Schema = new Schema(
         lng: Number,
       },
     },
+    /** GeoJSON Point for geospatial queries (VS-TRIP-060). [lng, lat] */
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number],
+      },
+    },
 
     size: Number,
     guests: Number,
@@ -150,6 +161,8 @@ const PropertySchema: Schema = new Schema(
   },
   { timestamps: true }
 );
+
+PropertySchema.index({ location: "2dsphere" });
 
 // Property Model Export
 export const Properties = mongoose.model("properties", PropertySchema);

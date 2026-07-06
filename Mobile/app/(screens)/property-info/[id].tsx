@@ -1,36 +1,68 @@
 "use client"
 import axios from "axios"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { type Route, useLocalSearchParams, router } from "expo-router"
 import Carousel from "react-native-reanimated-carousel"
 import ImageViewer from "react-native-image-zoom-viewer"
 import { Modalize } from "react-native-modalize"
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import * as Haptics from "expo-haptics"
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+} from "react-native-reanimated"
 import {
   Text,
   View,
   Modal,
   Image,
-  FlatList,
-  StatusBar,
   Pressable,
   StyleSheet,
   Dimensions,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
+  Linking,
 } from "react-native"
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import type { PropertyInterface, UserDataType } from "@/types"
 import { useAuthStore } from "@/store/auth-store"
 import { globalStyles } from "@/Constants/Styles"
 import { Ionicons, FontAwesome, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons"
+import { isInWishlist, toggleWishlistProperty } from "@/utils/wishlist"
+import {
+  getStayDescription,
+  getStayExtendedDetails,
+  getStaySpecItems,
+  shouldShowStayMore,
+  truncateStayDescription,
+  getPropertyTrustSummary,
+  formatPropertyLocationLine,
+  getPropertyDisplayName,
+  formatTrustRowText,
+  getActiveAmenities,
+  getPropertyImages,
+  hasPropertyPhotos,
+} from "@/utils/property-display"
+import { StayInfoSheet } from "@/components/property/StayInfoSheet"
+import { AmenitiesSheet } from "@/components/property/AmenitiesSheet"
+import { AmenityIcon } from "@/components/property/AmenityIcon"
+import { ReviewsSheet } from "@/components/property/ReviewsSheet"
+import { PropertyBentoGrid, PropertyGalleryImage } from "@/components/property/PropertyBentoGrid"
+import { PropertyMapPreview } from "@/components/property/PropertyMapPreview"
+import { booking } from "@/Constants/booking-theme"
 
-const { width: screenWidth } = Dimensions.get("window")
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window")
+const STAY_INFO_SHEET_HEIGHT = Math.round(screenHeight * 0.88)
+const AMENITIES_SHEET_HEIGHT = Math.round(screenHeight * 0.88)
+const { colors: c, radius: r, space: sp, shadow: sh } = booking
 
 function getDisplayPrice(p?: PropertyInterface): { text: string; suffix?: string } {
   const rentalType = (p?.rentalType ?? "").toLowerCase()
   const isLongTerm = rentalType.includes("long")
-
+  
   if (isLongTerm) {
     const monthly = typeof p?.basePriceLongTerm === "number" ? p.basePriceLongTerm : undefined
     if (!monthly || monthly <= 0) return { text: "Contact for price" }
@@ -42,8 +74,27 @@ function getDisplayPrice(p?: PropertyInterface): { text: string; suffix?: string
   return { text: `€${nightly}`, suffix: "/night" }
 }
 
+function getLatLng(p?: PropertyInterface): { lat: number; lng: number } | null {
+  const raw: any = p?.center
+  const lat = typeof raw?.lat === "number" ? raw.lat : typeof raw?.latitude === "number" ? raw.latitude : null
+  const lng = typeof raw?.lng === "number" ? raw.lng : typeof raw?.longitude === "number" ? raw.longitude : null
+  if (lat == null || lng == null) return null
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  return { lat, lng }
+}
+
+function buildMapsUrl(p?: PropertyInterface): string {
+  const coords = getLatLng(p)
+  const query = coords
+    ? `${coords.lat},${coords.lng}`
+    : [p?.city, p?.state, p?.country].filter(Boolean).join(", ")
+  const encoded = encodeURIComponent(query || "Vacation Saga property")
+  return `https://www.google.com/maps/search/?api=1&query=${encoded}`
+}
+
 export default function PropertyInfo() {
   const { id } = useLocalSearchParams()
+  const insets = useSafeAreaInsets()
   const { user } = useAuthStore()
   const [imagesModal, setImagesModal] = useState(false)
   const [imageIndex, setImageIndex] = useState(0)
@@ -51,9 +102,30 @@ export default function PropertyInfo() {
   const [bottomsheetVisible, setBottomsheetVisible] = useState(false)
   const [property, setProperty] = useState<PropertyInterface>()
   const [users, setUsers] = useState<UserDataType>()
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const modalizeRef = useRef<Modalize>(null)
-  const [isWishlisted, setIsWishlisted] = useState(false)
+  const stayInfoModalizeRef = useRef<Modalize>(null)
+  const reviewsModalizeRef = useRef<Modalize>(null)
   const [wishlistBusy, setWishlistBusy] = useState(false)
+  const isWishlisted = isInWishlist(user?.wishlist, property?._id)
+  const [stayInfoSheetHeight, setStayInfoSheetHeight] = useState<number>(STAY_INFO_SHEET_HEIGHT)
+  const wishlistScale = useSharedValue(1)
+  const wishlistAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: wishlistScale.value }],
+  }))
+  const footerTranslateY = useSharedValue(80)
+  const footerAnimRan = useRef(false)
+  const footerAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: footerTranslateY.value }],
+  }))
+
+  useEffect(() => {
+    if (footerAnimRan.current) return
+    if (loading || loadError || !property) return
+    footerAnimRan.current = true
+    footerTranslateY.value = withSpring(0, { damping: 16, stiffness: 220 })
+  }, [footerTranslateY, loading, loadError, property])
 
   const handleOpenBottomsheet = () => {
     if (modalizeRef.current) {
@@ -61,14 +133,63 @@ export default function PropertyInfo() {
     }
   }
 
+  const handleOpenStayInfo = () => {
+    stayInfoModalizeRef.current?.open()
+  }
+
+  const stayInfo = useMemo(() => {
+    if (!property) {
+      return {
+        description: "",
+        previewDescription: "",
+        specItems: [] as string[],
+        extendedDetails: [] as { title: string; value: string }[],
+        showMore: false,
+        hasContent: false,
+      }
+    }
+
+    const description = getStayDescription(property)
+    const specItems = getStaySpecItems(property)
+    const extendedDetails = getStayExtendedDetails(property)
+    const previewDescription = truncateStayDescription(description)
+    const showMore = shouldShowStayMore(description, specItems.length, extendedDetails.length)
+
+    return {
+      description,
+      previewDescription,
+      specItems,
+      extendedDetails,
+      showMore,
+      hasContent: Boolean(description || specItems.length || extendedDetails.length),
+    }
+  }, [property])
+
+  const galleryImages = useMemo(
+    () => (property ? getPropertyImages(property) : []),
+    [property],
+  )
+
+  const imageViewerUrls = useMemo(
+    () => galleryImages.map((url) => ({ url })),
+    [galleryImages],
+  )
+
   const getproperty = async () => {
+    setLoading(true)
+    setLoadError(null)
     try {
       const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/properties/getParticularProperty`, {
         propertyId: id,
       })
       setProperty(response.data.data)
     } catch (err) {
-      console.log("error in fetching particular property")
+      setProperty(undefined)
+      setUsers(undefined)
+      setLoadError("We couldn't load this property. Please try again.")
+    }
+    finally {
+      setLoading(false)
     }
   }
 
@@ -79,6 +200,7 @@ export default function PropertyInfo() {
   const getUser = async () => {
     try {
       const userId = property?.userId
+      if (!userId) return
       const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/user/getUser`, { userId })
       setUsers(response.data.user)
     } catch (error) {
@@ -90,72 +212,50 @@ export default function PropertyInfo() {
     getUser()
   }, [property])
 
-  useEffect(() => {
-    const inWishlist = !!(user?.wishlist && property?._id && user.wishlist.includes(property._id))
-    setIsWishlisted(inWishlist)
-  }, [user, property?._id])
+  const plural = (value: number, singular: string, pluralLabel = `${singular}s`) =>
+    value === 1 ? `${value} ${singular}` : `${value} ${pluralLabel}`
 
-  useEffect(() => {
-    async function syncWishlistFromServer() {
-      try {
-        if (!user?._id || !property?._id) return
-        const res = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/get`, {
-          userId: user._id,
-        })
-        const ids: string[] = res.data?.wishlist || []
-        setIsWishlisted(ids.includes(property._id))
-      } catch (e) {
-        // If this fails, we still show local state from auth store.
-      }
-    }
-    syncWishlistFromServer()
-  }, [user?._id, property?._id])
+  const formatQuickFacts = (p?: PropertyInterface) => {
+    const guests = typeof p?.guests === "number" ? plural(p.guests, "guest") : "— guests"
+    const bedsCount =
+      typeof p?.beds === "number" ? p.beds : typeof p?.bedrooms === "number" ? p.bedrooms : undefined
+    const beds = typeof bedsCount === "number" ? plural(bedsCount, "bed") : "— beds"
+    const baths = typeof p?.bathroom === "number" ? plural(p.bathroom, "bath") : "— baths"
+    const size =
+      typeof p?.size === "number" && Number.isFinite(p.size)
+        ? `${p.size} m²`
+        : p?.size
+          ? `${String(p.size)} m²`
+          : "— m²"
+
+    return { guests, beds, baths, size }
+  }
 
   const handleWishlistToggle = () => {
-    const { user: currentUser, setUser } = useAuthStore.getState()
     const propertyId = property?._id
 
-    if (!currentUser?._id) {
+    if (!user?._id) {
       router.push("/(tabs)/Menu")
       return
     }
-    if (!propertyId) return
-    if (wishlistBusy) return
+    if (!propertyId || wishlistBusy) return
 
-    const isInWishlist = !!(currentUser.wishlist && currentUser.wishlist.includes(propertyId))
-    const updatedWishlist = isInWishlist
-      ? currentUser.wishlist.filter((pid) => pid !== propertyId)
-      : [...(currentUser.wishlist || []), propertyId]
-
-    // optimistic UI + persist in auth store so other screens stay in sync
     setWishlistBusy(true)
-    setIsWishlisted(!isInWishlist)
-    const updatedUser = { ...currentUser, wishlist: updatedWishlist }
-    setUser(updatedUser)
-
-    // Don't block UI on storage/network; run in background.
-    setTimeout(() => {
-      ;(async () => {
+    toggleWishlistProperty(propertyId)
+      .then(async () => {
+        wishlistScale.value = withSequence(withSpring(1.25, { damping: 14, stiffness: 220 }), withSpring(1, { damping: 14, stiffness: 220 }))
         try {
-          await AsyncStorage.setItem("authUser", JSON.stringify(updatedUser))
-          const endpoint = isInWishlist
-            ? `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/remove`
-            : `${process.env.EXPO_PUBLIC_BASE_URL}/wishlist/add`
-          await axios.post(endpoint, { userId: currentUser._id, propertyId })
-        } catch (error) {
-          // rollback on failure
-          const rolledBackWishlist = isInWishlist
-            ? [...(currentUser.wishlist || []), propertyId]
-            : (currentUser.wishlist || []).filter((pid) => pid !== propertyId)
-          const rolledBackUser = { ...currentUser, wishlist: rolledBackWishlist }
-          setUser(rolledBackUser)
-          await AsyncStorage.setItem("authUser", JSON.stringify(rolledBackUser))
-          setIsWishlisted(isInWishlist)
-        } finally {
-          setWishlistBusy(false)
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+        } catch {
+          // ignore haptics failures (e.g. simulator)
         }
-      })()
-    }, 0)
+      })
+      .catch(() => {
+        // rollback is handled inside toggleWishlistProperty
+      })
+      .finally(() => {
+        setWishlistBusy(false)
+      })
   }
 
   const openImageViewer = (index: number) => {
@@ -163,152 +263,292 @@ export default function PropertyInfo() {
     setImagesModal(true)
   }
 
-  const bentoStyle = (index: number) => {
-    const spacing = 4
-    const availableWidth = screenWidth - (spacing * 3) // Account for padding and gaps
-    const styles = [
-      { width: availableWidth, height: 200 },
-      { width: (availableWidth - spacing) / 2, height: 200 },
-      { width: (availableWidth - spacing) / 2, height: 200 },
-      { width: availableWidth, height: 300 },
-      { width: (availableWidth - spacing) / 2, height: 150 },
-      { width: (availableWidth - spacing) / 2, height: 150 },
-    ]
-    return styles[index % styles.length]
-  }
+  const renderAllPhotos = () => (
+    <Modal
+      animationType="fade"
+      transparent
+      visible={modalVisible}
+      onRequestClose={() => {
+        setModalVisible(false)
+        setImagesModal(false)
+      }}
+    >
+      <View style={styles.modalContainer}>
+        <ScrollView
+          contentContainerStyle={styles.photoGridScroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <PropertyBentoGrid images={galleryImages} onImagePress={openImageViewer} />
+        </ScrollView>
+        <Pressable
+          style={styles.closeButton}
+          onPress={() => {
+            setModalVisible(false)
+            setImagesModal(false)
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Close photo gallery"
+        >
+          <Ionicons name="close" size={24} color="white" />
+        </Pressable>
+      </View>
 
-  const imageGallery = () => {
-    const images =
-      property?.propertyImages.map((item, index) => {
-        return { url: item }
-      }) ?? []
-    return (
-      <Modal visible={imagesModal} transparent={true} onRequestClose={() => setImagesModal(false)}>
+      <Modal visible={imagesModal} transparent onRequestClose={() => setImagesModal(false)}>
         <ImageViewer
-          enableSwipeDown={true}
+          enableSwipeDown
           onSwipeDown={() => setImagesModal(false)}
-          imageUrls={images}
+          imageUrls={imageViewerUrls}
           index={imageIndex}
+          onChange={(index) => {
+            if (typeof index === "number") setImageIndex(index)
+          }}
         />
       </Modal>
-    )
-  }
+    </Modal>
+  )
 
-  const renderAllPhotos = () => {
-    return (
-      <View style={styles.allPhotosContainer}>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => {
-            setModalVisible(!modalVisible)
-          }}
-        >
-          <View style={styles.modalContainer}>
-            <ScrollView
-              contentContainerStyle={styles.photoGrid}
-              showsVerticalScrollIndicator={false}
-            >
-              {property?.propertyImages.map((item, index: number) => (
-                <TouchableOpacity key={index} onPress={() => openImageViewer(index)}>
-                  <View style={[styles.gridItem, bentoStyle(index)]}>
-                    <Image source={{ uri: item }} style={styles.gridImage} resizeMode="cover" />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <Pressable
-              style={styles.closeButton}
-              onPress={() => setModalVisible(!modalVisible)}
-            >
-              <Ionicons name="close" size={24} color="white" />
-            </Pressable>
-          </View>
-        </Modal>
-        {imagesModal && imageGallery()}
+  const renderHeaderSkeleton = () => (
+    <View style={styles.headerSkeleton} accessibilityLabel="Loading property photos">
+      <View style={styles.skeletonPulse} />
+    </View>
+  )
+
+  const renderContentSkeleton = () => (
+    <View style={styles.contentContainer}>
+      <View style={styles.section}>
+        <View style={[styles.skeletonLine, { width: "68%" }]} />
+        <View style={[styles.skeletonLine, { width: "46%" }]} />
+        <View style={[styles.skeletonLine, { width: "40%", marginBottom: sp.lg }]} />
+
+        <View style={styles.skeletonChipsRow}>
+          <View style={styles.skeletonChip} />
+          <View style={styles.skeletonChip} />
+          <View style={styles.skeletonChip} />
+          <View style={styles.skeletonChip} />
+        </View>
+
+        <View style={[styles.skeletonLine, { width: "58%", marginTop: sp.lg }]} />
+        <View style={[styles.skeletonBlock, { height: 110 }]} />
       </View>
-    )
-  }
+    </View>
+  )
+
+  const renderErrorState = () => (
+    <View style={styles.contentContainer}>
+      <View style={styles.section}>
+        <Text style={styles.errorTitle}>Something went wrong</Text>
+        <Text style={styles.errorText}>{loadError}</Text>
+        <TouchableOpacity
+          style={[styles.retryButton, globalStyles.btn]}
+          onPress={getproperty}
+          accessibilityRole="button"
+          accessibilityLabel="Try again"
+        >
+          <Text style={[globalStyles.btnText, styles.retryButtonText]}>Try again</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  )
 
   const renderPropertyInfo = () => {
+    const propertyTitle = property ? getPropertyDisplayName(property) : "Property"
+    const locationLine = property ? formatPropertyLocationLine(property) : ""
+    const trustSummary = property ? getPropertyTrustSummary(property) : { kind: "new" as const }
+    const trustText = formatTrustRowText(trustSummary)
+    const hasRating = trustSummary.kind !== "new"
+    const quickFacts = formatQuickFacts(property)
+
     return (
       <View style={styles.section}>
-        <View style={styles.propertyHeader}>
-          <View style={styles.propertyTypeTag}>
-            <Ionicons name="home-outline" color="#666" size={14} />
-            <Text style={styles.propertyTypeText}>{property?.propertyType}</Text>
+        <Text
+          style={styles.propertyName}
+          accessibilityRole="header"
+          accessibilityLabel={propertyTitle}
+        >
+          {propertyTitle}
+        </Text>
+
+        {locationLine ? (
+          <View style={styles.locationContainer}>
+            <Ionicons name="location-outline" size={16} color={c.inkMuted} />
+            <Text style={styles.locationText}>{locationLine}</Text>
           </View>
-        </View>
+        ) : null}
 
-        <Text style={styles.vsidText}>VS ID - {property?.VSID}</Text>
+        <Text style={[styles.trustRow, !hasRating && styles.trustRowMuted]}>{trustText}</Text>
 
-        <View style={styles.locationContainer}>
-          <Ionicons name="location" size={18} color="#666" />
-          <Text style={styles.locationText}>{property?.country}</Text>
-        </View>
+        {property?.propertyType ? (
+          <View style={styles.propertyTypeTag}>
+            <Ionicons name="home-outline" color={c.inkMuted} size={14} />
+            <Text style={styles.propertyTypeText}>{property.propertyType}</Text>
+          </View>
+        ) : null}
 
-        <View style={styles.hostContainer}>
-          <Ionicons name="person-circle-outline" size={24} color="#666" />
-          <Text style={styles.hostText} numberOfLines={1}>Hosted by {users?.name}</Text>
-        </View>
+        {property?.VSID ? (
+          <Text style={styles.vsidMeta}>VS ID · {property.VSID}</Text>
+        ) : null}
 
         <View style={styles.detailsRow}>
           <View style={styles.detailBox}>
-            <Ionicons name="person" size={18} color="#666" />
-            <Text style={styles.detailText}>{property?.guests}</Text>
+            <Ionicons name="person" size={18} color={c.inkMuted} />
+            <Text style={styles.detailText}>{quickFacts.guests}</Text>
           </View>
           <View style={styles.detailBox}>
-            <Ionicons name="bed" size={18} color="#666" />
-            <Text style={styles.detailText}>{property?.bedrooms}</Text>
+            <Ionicons name="bed" size={18} color={c.inkMuted} />
+            <Text style={styles.detailText}>{quickFacts.beds}</Text>
           </View>
           <View style={styles.detailBox}>
-            <FontAwesome name="bath" size={18} color="#666" />
-            <Text style={styles.detailText}>{property?.bathroom}</Text>
+            <FontAwesome name="bath" size={18} color={c.inkMuted} />
+            <Text style={styles.detailText}>{quickFacts.baths}</Text>
           </View>
           <View style={styles.detailBox}>
-            <MaterialCommunityIcons name="floor-plan" size={18} color="#666" />
-            <Text style={styles.detailText}>{property?.size}</Text>
+            <MaterialCommunityIcons name="floor-plan" size={18} color={c.inkMuted} />
+            <Text style={styles.detailText}>{quickFacts.size}</Text>
           </View>
         </View>
 
         <View style={styles.descriptionContainer}>
           <Text style={styles.sectionTitle}>Stay Information</Text>
-          <Text style={styles.descriptionText}>
-            {(property?.newReviews || property?.reviews)?.trim() ?? ""}
-          </Text>
+
+          {stayInfo.hasContent ? (
+            <Pressable
+              style={styles.stayInfoCard}
+              onPress={handleOpenStayInfo}
+              accessibilityRole="button"
+              accessibilityLabel="Open stay information"
+            >
+              {stayInfo.previewDescription ? (
+                <Text style={styles.descriptionText} numberOfLines={4}>
+                  {stayInfo.previewDescription}
+                </Text>
+              ) : null}
+
+              {stayInfo.specItems.slice(0, 2).map((item) => (
+                <View key={item} style={styles.staySpecRow}>
+                  <View style={styles.staySpecDot} />
+                  <Text style={styles.staySpecText}>{item}</Text>
+                </View>
+              ))}
+
+              {stayInfo.showMore || stayInfo.description || stayInfo.specItems.length > 0 ? (
+                <View style={styles.showMoreRow}>
+                  <Text style={styles.showMoreText}>Show more</Text>
+                  <Ionicons name="chevron-forward" size={16} color={c.accent} />
+                </View>
+              ) : null}
+            </Pressable>
+          ) : (
+            <Text style={styles.stayInfoEmpty}>No stay information available yet.</Text>
+          )}
         </View>
       </View>
     )
   }
 
   const renderAmenities = () => {
+    const amenities = property ? getActiveAmenities(property) : []
+    const preview = amenities.slice(0, 5)
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Amenities</Text>
         <View style={styles.amenitiesContainer}>
-          {Object.keys({
-            ...property?.generalAmenities,
-            ...property?.safeAmenities,
-            ...property?.otherAmenities,
-          })
-            ?.filter(
-              (item, index) =>
-                (
-                  property?.generalAmenities as {
-                    [key: string]: boolean
-                  }
-                )[item] == true && index < 16,
-            )
-            ?.map((amenity, ind) => (
-              <View style={styles.amenityItem} key={ind}>
-                <Text style={styles.amenityText}>{amenity}</Text>
-              </View>
-            ))}
-          <TouchableOpacity style={styles.viewAllButton} onPress={handleOpenBottomsheet}>
-            <Text style={styles.viewAllText}>View All..</Text>
-          </TouchableOpacity>
+          {preview.map((amenity) => (
+            <View style={styles.amenityItem} key={amenity}>
+              <AmenityIcon amenity={amenity} size={16} color={c.accent} />
+              <Text style={styles.amenityText} numberOfLines={1}>
+                {amenity}
+              </Text>
+            </View>
+          ))}
         </View>
+
+        {amenities.length ? (
+          <Pressable
+            style={styles.showAllAmenitiesRow}
+            onPress={handleOpenBottomsheet}
+            accessibilityRole="button"
+            accessibilityLabel={`Show all ${amenities.length} amenities`}
+          >
+            <Text style={styles.showAllAmenitiesText}>Show all {amenities.length} amenities</Text>
+            <Ionicons name="chevron-forward" size={16} color={c.accent} />
+          </Pressable>
+        ) : null}
+      </View>
+    )
+  }
+
+  const renderReviewsSection = () => {
+    if (!property) return null
+    const rating = typeof (property as any).rating === "number" ? (property as any).rating : undefined
+    const reviewCount = typeof (property as any).reviewCount === "number" ? (property as any).reviewCount : undefined
+    const hasRating = typeof rating === "number" && rating > 0 && typeof reviewCount === "number" && reviewCount > 0
+
+    return (
+      <View style={styles.section}>
+        <View style={styles.reviewsHeader}>
+          <View style={styles.reviewsHeaderLeft}>
+            <Text style={styles.sectionTitle}>Reviews</Text>
+            <Text style={styles.reviewsSub}>
+              {hasRating
+                ? `★ ${rating!.toFixed(1)} · ${reviewCount} review${reviewCount === 1 ? "" : "s"}`
+                : "★ New · Be the first to review"}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => reviewsModalizeRef.current?.open()}
+            accessibilityRole="button"
+            accessibilityLabel="Show all reviews"
+            style={styles.reviewsLink}
+          >
+            <Text style={styles.reviewsLinkText}>Show all</Text>
+            <Ionicons name="chevron-forward" size={16} color={c.accent} />
+          </Pressable>
+        </View>
+
+        <View style={styles.reviewsEmptyCard}>
+          <Ionicons name="chatbubble-ellipses-outline" size={18} color={c.inkMuted} />
+          <Text style={styles.reviewsEmptyText}>
+            {hasRating ? "Read what guests loved about this stay." : "No reviews yet. Book and be the first to share feedback."}
+          </Text>
+        </View>
+      </View>
+    )
+  }
+
+  const renderLocationSection = () => {
+    if (!property) return null
+    const locationLine = [property.city, property.state, property.country].filter(Boolean).join(", ")
+    const coords = getLatLng(property)
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Where you'll stay</Text>
+        <Pressable
+          style={styles.locationCard}
+          onPress={() => Linking.openURL(buildMapsUrl(property))}
+          accessibilityRole="button"
+          accessibilityLabel="Open location in Maps"
+        >
+          <View style={styles.locationCardTop}>
+            <View style={styles.locationPinWrap}>
+              <Ionicons name="location" size={18} color={c.accent} />
+            </View>
+            <View style={styles.locationCopy}>
+              <Text style={styles.locationCardTitle} numberOfLines={2}>
+                {locationLine || property.country || "Location"}
+              </Text>
+              <Text style={styles.locationCardSub} numberOfLines={1}>
+                {coords ? "Tap to open in Google Maps" : "Tap to open the area in Maps"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.inkPlaceholder} />
+          </View>
+
+          <PropertyMapPreview
+            latitude={coords?.lat}
+            longitude={coords?.lng}
+            label={`Map of ${locationLine || "property location"}`}
+          />
+        </Pressable>
       </View>
     )
   }
@@ -371,26 +611,26 @@ export default function PropertyInfo() {
                 : "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png",
             }}
           />
-          <Text style={styles.hostName}>{users?.name}</Text>
+          <View style={styles.hostNameRow}>
+            <Text style={styles.hostName}>{users?.name}</Text>
+            {users?.isVerified ? (
+              <View style={styles.verifiedPill}>
+                <Ionicons name="shield-checkmark" size={14} color={c.success} />
+                <Text style={styles.verifiedText}>Verified</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.hostDetails}>
           <View style={styles.hostDetailItem}>
-            <MaterialIcons name="date-range" size={20} color="#666" />
+            <MaterialIcons name="date-range" size={20} color={c.inkMuted} />
             <Text style={styles.hostDetailText}>
               Joined {users?.createdAt && new Date(users.createdAt).getFullYear()}
             </Text>
           </View>
           <View style={styles.hostDetailItem}>
-            <MaterialCommunityIcons name="message-text-outline" size={20} color="#666" />
-            <Text style={styles.hostDetailText}>Response rate - 100%</Text>
-          </View>
-          <View style={styles.hostDetailItem}>
-            <MaterialCommunityIcons name="clock-time-nine-outline" size={20} color="#666" />
-            <Text style={styles.hostDetailText}>Fast response - within a few hours</Text>
-          </View>
-          <View style={styles.hostDetailItem}>
-            <Ionicons name="language-outline" size={20} color="#666" />
+            <Ionicons name="language-outline" size={20} color={c.inkMuted} />
             <Text style={styles.hostDetailText}>
               Language Spoken - {users?.spokenLanguage || "English"}
             </Text>
@@ -403,10 +643,9 @@ export default function PropertyInfo() {
   const renderThingsToKnow = () => {
     const checkIn = property?.time?.[0]
     const checkOut = property?.time?.[1]
-    const ruleDotColors = ["#E04F5F", "#F0A020", "#2DA771", "#3B82F6"]
     return (
       <View style={styles.section}>
-        <Text style={styles.blockHeading}>CHECK-IN & CHECK-OUT</Text>
+        <Text style={styles.sectionTitle}>Check-in & check-out</Text>
         <View style={styles.checkBlock}>
           <View style={styles.checkCol}>
             <Text style={styles.checkLabel}>Check-In</Text>
@@ -421,16 +660,11 @@ export default function PropertyInfo() {
 
         <View style={styles.blockDividerWide} />
 
-        <Text style={styles.blockHeading}>House Rules</Text>
+        <Text style={styles.subSectionTitle}>House rules</Text>
         <View style={styles.rulesList}>
           {(property?.additionalRules ?? []).map((item, index) => (
             <View key={index} style={styles.ruleRow}>
-              <View
-                style={[
-                  styles.ruleDot,
-                  { backgroundColor: ruleDotColors[index % ruleDotColors.length] },
-                ]}
-              />
+              <Ionicons name="checkmark-circle" size={18} color={c.inkMuted} />
               <Text style={styles.ruleRowText}>{item}</Text>
             </View>
           ))}
@@ -439,124 +673,199 @@ export default function PropertyInfo() {
     )
   }
 
-  return (
-    <SafeAreaView style={styles.safeAreaView}>
-      <StatusBar hidden={true} />
-      <FlatList
-        data={[1]}
-        contentContainerStyle={styles.flatListContainer}
-        keyExtractor={(item, index) => index.toString()}
-        ListHeaderComponent={
-          <View style={styles.imageContainer}>
-            {property?.propertyImages && property?.propertyImages?.length > 0 ? (
-              <Pressable onPress={() => setModalVisible(true)}>
-                <Carousel
-                  loop
-                  height={300}
-                  width={screenWidth}
-                  data={property.propertyImages}
-                  onSnapToItem={(idx) => setImageIndex(idx)}
-                  renderItem={({ item, index }) => (
-                    <View key={index}>
-                      <Image source={{ uri: item }} resizeMode="cover" style={styles.carouselImage} />
-                    </View>
-                  )}
-                />
-              </Pressable>
-            ) : (
-              <Text style={styles.noImagesText}>No images available</Text>
-            )}
+  const canReserve = Boolean(property) && !loading && !loadError
 
-            {/* Photo count + wishlist overlay */}
-            {property?.propertyImages?.length ? (
-              <View style={styles.heroOverlayBottom} pointerEvents="box-none">
-                <View style={styles.photosPill}>
-                  <Text style={styles.photosPillText}>
-                    {imageIndex + 1} / {property.propertyImages.length} photos
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.wishlistBtn}
-                  activeOpacity={0.85}
-                  onPress={handleWishlistToggle}
-                  disabled={wishlistBusy}
-                >
+  return (
+    <SafeAreaView style={styles.safeAreaView} edges={["top", "left", "right"]}>
+      <ScrollView
+        contentContainerStyle={styles.flatListContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.imageContainer}>
+          {loading ? (
+            renderHeaderSkeleton()
+          ) : property && hasPropertyPhotos(property) ? (
+            <Pressable
+              onPress={() => setModalVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Show all ${galleryImages.length} photos`}
+            >
+              <Carousel
+                loop={galleryImages.length > 1}
+                height={300}
+                width={screenWidth}
+                data={galleryImages}
+                onSnapToItem={(idx) => setImageIndex(idx)}
+                renderItem={({ item }) => (
+                  <View>
+                    <PropertyGalleryImage uri={item} containerStyle={styles.carouselImage} />
+                  </View>
+                )}
+              />
+            </Pressable>
+          ) : (
+            <Text style={styles.noImagesText}>No images available</Text>
+          )}
+
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={22} color={c.ink} />
+          </Pressable>
+
+          {/* Photo count + wishlist overlay */}
+          {!loading && property && hasPropertyPhotos(property) ? (
+            <View style={styles.heroOverlayBottom} pointerEvents="box-none">
+              <Pressable
+                style={styles.photosPill}
+                onPress={() => setModalVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel={`Show all ${galleryImages.length} photos`}
+              >
+                  <Animated.Text
+                    key={imageIndex}
+                    entering={FadeIn.duration(150)}
+                    exiting={FadeOut.duration(150)}
+                    style={styles.photosPillText}
+                  >
+                  {imageIndex + 1} / {galleryImages.length} photos
+                  </Animated.Text>
+              </Pressable>
+              <TouchableOpacity
+                style={styles.wishlistBtn}
+                activeOpacity={0.85}
+                onPress={handleWishlistToggle}
+                disabled={wishlistBusy}
+              >
+                <Animated.View style={wishlistAnimStyle}>
                   <Ionicons
                     name={isWishlisted ? "heart" : "heart-outline"}
                     size={18}
-                    color="#FFFFFF"
+                    color={c.surface}
                   />
-                </TouchableOpacity>
-              </View>
-            ) : null}
-          </View>
-        }
-        renderItem={() => (
+                </Animated.View>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
+
+        {loading ? (
+          renderContentSkeleton()
+        ) : loadError ? (
+          renderErrorState()
+        ) : (
           <View style={styles.contentContainer} key={property?._id}>
             {renderPropertyInfo()}
+            {renderReviewsSection()}
             {renderAmenities()}
-            {renderPricingCard()}
+            {renderLocationSection()}
             {renderThingsToKnow()}
             {renderHostInfo()}
+            {renderPricingCard()}
           </View>
         )}
-      />
-      {modalVisible && renderAllPhotos()}
+      </ScrollView>
+      {!loading && modalVisible ? renderAllPhotos() : null}
       <Modalize
         ref={modalizeRef}
-        adjustToContentHeight
-        childrenStyle={{ height: 500 }}
+        modalHeight={AMENITIES_SHEET_HEIGHT}
+        handlePosition="inside"
+        withHandle={false}
+        disableScrollIfPossible={false}
+        modalStyle={styles.staySheetModal}
+        scrollViewProps={{
+          showsVerticalScrollIndicator: false,
+          bounces: true,
+          nestedScrollEnabled: true,
+          keyboardShouldPersistTaps: "handled",
+        }}
         onClose={() => setBottomsheetVisible(false)}
         onOpen={() => setBottomsheetVisible(true)}
       >
-        <View style={styles.modalizeContent}>
-          <View style={styles.amenitiesContainer}>
-            {Object.keys({
-              ...property?.generalAmenities,
-              ...property?.safeAmenities,
-              ...property?.otherAmenities,
-            })
-              ?.filter(
-                (item, index) =>
-                  (
-                    property?.generalAmenities as {
-                      [key: string]: boolean
-                    }
-                  )[item] == true,
-              )
-              ?.map((amenity, ind) => (
-                <View style={styles.amenityItem} key={ind}>
-                  <Text style={styles.amenityText}>{amenity}</Text>
-                </View>
-              ))}
-          </View>
-        </View>
+        <AmenitiesSheet property={property} onClose={() => modalizeRef.current?.close()} />
       </Modalize>
-      <View style={styles.footer}>
+
+      <Modalize
+        ref={stayInfoModalizeRef}
+        modalHeight={stayInfoSheetHeight}
+        handlePosition="inside"
+        withHandle={false}
+        disableScrollIfPossible={false}
+        modalStyle={styles.staySheetModal}
+        scrollViewProps={{
+          showsVerticalScrollIndicator: false,
+          bounces: true,
+          nestedScrollEnabled: true,
+          keyboardShouldPersistTaps: "handled",
+        }}
+      >
+        <StayInfoSheet
+          property={property}
+          stayInfo={stayInfo}
+          onContentHeight={(h) => {
+            if (!h || !Number.isFinite(h)) return
+            const capped = Math.min(Math.max(320, Math.ceil(h)), STAY_INFO_SHEET_HEIGHT)
+            setStayInfoSheetHeight(capped)
+          }}
+          onClose={() => stayInfoModalizeRef.current?.close()}
+        />
+      </Modalize>
+
+      <Modalize
+        ref={reviewsModalizeRef}
+        modalHeight={STAY_INFO_SHEET_HEIGHT}
+        handlePosition="inside"
+        withHandle={false}
+        disableScrollIfPossible={false}
+        modalStyle={styles.staySheetModal}
+        scrollViewProps={{
+          showsVerticalScrollIndicator: false,
+          bounces: true,
+          nestedScrollEnabled: true,
+          keyboardShouldPersistTaps: "handled",
+        }}
+      >
+        <ReviewsSheet
+          rating={(property as any)?.rating}
+          reviewCount={(property as any)?.reviewCount}
+          items={[]}
+          onClose={() => reviewsModalizeRef.current?.close()}
+        />
+      </Modalize>
+
+      <Animated.View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }, footerAnimStyle]}>
         <View style={styles.footerContent}>
           {(() => {
             const p = getDisplayPrice(property)
             return (
-          <TouchableOpacity style={styles.priceContainer}>
+          <View style={styles.priceContainer}>
             <Text style={styles.footerPrice}>{p.text}</Text>
             {p.suffix ? <Text style={styles.perNight}>{p.suffix}</Text> : null}
-          </TouchableOpacity>
+          </View>
             )
           })()}
           <TouchableOpacity
             onPress={() => {
+              if (!canReserve) return
               if (user) {
                 router.push(`/(screens)/reserve-page/${id}` as Route)
               } else {
                 router.push("/(tabs)/Menu")
               }
             }}
-            style={[globalStyles.btn, styles.reserveButton]}
+            style={[globalStyles.btn, styles.reserveButton, !canReserve && styles.reserveButtonDisabled]}
+            disabled={!canReserve}
           >
-            <Text style={[globalStyles.btnText, styles.reserveButtonText]}>Reserve</Text>
+            <Text style={[globalStyles.btnText, styles.reserveButtonText]}>
+              {loading ? "Loading…" : loadError ? "Unavailable" : "Reserve"}
+            </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     </SafeAreaView>
   )
 }
@@ -564,24 +873,51 @@ export default function PropertyInfo() {
 const styles = StyleSheet.create({
   safeAreaView: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: c.surface,
   },
   flatListContainer: {
     paddingBottom: 100,
   },
   imageContainer: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: c.track,
     position: "relative",
   },
   carouselImage: {
     height: 300,
-    width: '100%',
+    width: "100%",
+  },
+  headerSkeleton: {
+    height: 300,
+    backgroundColor: c.track,
+    overflow: "hidden",
+  },
+  skeletonPulse: {
+    flex: 1,
+    opacity: 0.7,
+    backgroundColor: c.border,
+  },
+  backButton: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: c.overlayLight,
+    zIndex: 2,
+    shadowColor: c.ink,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
   },
   noImagesText: {
     textAlign: 'center',
     padding: 40,
     fontSize: 16,
-    color: '#666',
+    color: c.inkMuted,
   },
   heroOverlayBottom: {
     position: "absolute",
@@ -599,7 +935,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   photosPillText: {
-    color: "#FFFFFF",
+    color: c.surface,
     fontWeight: "800",
     fontSize: 12,
   },
@@ -612,69 +948,120 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.18)",
   },
   contentContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: c.surface,
+  },
+  skeletonLine: {
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: c.border,
+    marginBottom: 10,
+    opacity: 0.7,
+  },
+  skeletonBlock: {
+    width: "100%",
+    borderRadius: r.lg,
+    backgroundColor: c.border,
+    opacity: 0.6,
+    marginTop: 10,
+  },
+  skeletonChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  skeletonChip: {
+    width: "47%",
+    height: 38,
+    borderRadius: r.md,
+    backgroundColor: c.border,
+    opacity: 0.6,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: c.ink,
+    marginBottom: sp.sm,
+  },
+  errorText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: c.inkMuted,
+    marginBottom: sp.md,
+  },
+  retryButton: {
+    width: "100%",
+    marginTop: sp.sm,
+  },
+  retryButtonText: {
+    fontWeight: "700",
   },
   section: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingHorizontal: sp.lg - 4,
+    paddingVertical: sp.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: c.divider,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 16,
+    fontSize: booking.type.sectionTitleLarge.fontSize,
+    fontWeight: booking.type.sectionTitleLarge.fontWeight,
+    color: c.ink,
+    marginBottom: sp.md,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+    color: c.inkMuted,
+    marginBottom: sp.md,
   },
-  propertyHeader: {
-    marginBottom: 16,
+  propertyName: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: c.ink,
+    letterSpacing: -0.5,
+    lineHeight: 32,
+    marginBottom: sp.sm,
+  },
+  trustRow: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: c.ink,
+    marginBottom: sp.md,
+  },
+  trustRowMuted: {
+    color: c.inkMuted,
+    fontWeight: "500",
   },
   propertyTypeTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: c.track,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     alignSelf: 'flex-start',
     gap: 6,
+    marginBottom: sp.sm,
   },
   propertyTypeText: {
     fontSize: 14,
-    color: '#666',
+    color: c.inkMuted,
     fontWeight: '500',
   },
-  vsidText: {
-    fontSize: 16,
-    color: '#1a1a1a',
-    fontWeight: '500',
-    marginBottom: 12,
+  vsidMeta: {
+    fontSize: 12,
+    color: c.inkMuted,
+    fontWeight: "500",
+    marginBottom: sp.md,
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: sp.sm,
   },
   locationText: {
-    fontSize: 16,
-    color: '#1a1a1a',
+    fontSize: 15,
+    color: c.inkSecondary,
     fontWeight: '500',
-  },
-  hostContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
-  },
-  hostText: {
-    fontSize: 16,
-    color: '#1a1a1a',
     flex: 1,
   },
   detailsRow: {
@@ -685,24 +1072,74 @@ const styles = StyleSheet.create({
   detailBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: c.track,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: r.md,
     gap: 6,
   },
   detailText: {
     fontSize: 14,
-    color: '#1a1a1a',
+    color: c.ink,
     fontWeight: '500',
   },
   descriptionContainer: {
     marginTop: 8,
   },
+  stayInfoCard: {
+    backgroundColor: c.surface,
+    borderRadius: r.lg,
+    padding: sp.md,
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    ...sh.card,
+  },
   descriptionText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#333',
+    color: c.inkSecondary,
+  },
+  staySpecRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  staySpecDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: c.accent,
+    marginTop: 8,
+  },
+  staySpecText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    color: c.inkSecondary,
+  },
+  showMoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+    alignSelf: "flex-start",
+  },
+  showMoreText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: c.accent,
+  },
+  stayInfoEmpty: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: c.inkMuted,
+  },
+  staySheetModal: {
+    backgroundColor: c.bg,
+    borderTopLeftRadius: r.sheet,
+    borderTopRightRadius: r.sheet,
+    overflow: "hidden",
   },
   amenitiesContainer: {
     flexDirection: 'row',
@@ -710,27 +1147,114 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   amenityItem: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: c.track,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    maxWidth: "100%",
   },
   amenityText: {
     fontSize: 14,
-    color: '#333',
+    color: c.inkSecondary,
+    flexShrink: 1,
   },
-  viewAllButton: {
-    backgroundColor: 'orange',
-    borderColor: '#ff7f11',
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+  reviewsHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: sp.md,
   },
-  viewAllText: {
-    color: 'white',
+  reviewsHeaderLeft: {
+    flex: 1,
+    gap: 6,
+  },
+  reviewsSub: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "600",
+    color: c.inkMuted,
+  },
+  reviewsLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 4,
+  },
+  reviewsLinkText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: c.accent,
+  },
+  reviewsEmptyCard: {
+    backgroundColor: c.surface,
+    borderRadius: r.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    padding: sp.md,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    ...sh.card,
+  },
+  reviewsEmptyText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+    color: c.inkSecondary,
+  },
+  locationCard: {
+    backgroundColor: c.surface,
+    borderRadius: r.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    overflow: "hidden",
+  },
+  locationCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: sp.md,
+    paddingTop: sp.md,
+    paddingBottom: sp.sm,
+  },
+  locationPinWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: r.md,
+    backgroundColor: c.accentSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  locationCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  locationCardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: c.ink,
+    letterSpacing: -0.2,
+  },
+  locationCardSub: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: c.inkMuted,
+  },
+  showAllAmenitiesRow: {
+    marginTop: sp.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+  },
+  showAllAmenitiesText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: c.accent,
   },
   rateContainer: {
     gap: 16,
@@ -746,20 +1270,20 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 16,
-    color: "#333",
+    color: c.inkSecondary,
     fontWeight: "500",
   },
   rowValue: {
     fontSize: 16,
-    color: "#1a1a1a",
+    color: c.ink,
     fontWeight: "600",
   },
   discountValue: {
-    color: "#2DA771",
+    color: c.success,
   },
   blockDivider: {
     height: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: c.border,
   },
   stayRow: {
     flexDirection: "row",
@@ -776,14 +1300,14 @@ const styles = StyleSheet.create({
   },
   stayKicker: {
     fontSize: 12,
-    color: "#666",
+    color: c.inkMuted,
     fontWeight: "600",
   },
   stayValue: {
     marginTop: 6,
     fontSize: 14,
     fontWeight: "400",
-    color: "#1a1a1a",
+    color: c.ink,
   },
   rateItem: {
     flexDirection: 'row',
@@ -792,22 +1316,30 @@ const styles = StyleSheet.create({
   },
   rateLabel: {
     fontSize: 16,
-    color: '#333',
+    color: c.inkSecondary,
   },
   ratePrice: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: c.ink,
   },
   rateValue: {
     fontSize: 16,
-    color: '#1a1a1a',
+    color: c.ink,
   },
   hostProfile: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     marginBottom: 20,
+  },
+  hostNameRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    columnGap: 10,
+    rowGap: 8,
   },
   hostImage: {
     width: 60,
@@ -817,7 +1349,21 @@ const styles = StyleSheet.create({
   hostName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: c.ink,
+  },
+  verifiedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: c.successSoft,
+  },
+  verifiedText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: c.success,
   },
   hostDetails: {
     gap: 16,
@@ -829,7 +1375,7 @@ const styles = StyleSheet.create({
   },
   hostDetailText: {
     fontSize: 15,
-    color: '#666',
+    color: c.inkMuted,
   },
   checkInOutContainer: {
     marginBottom: 20,
@@ -837,31 +1383,31 @@ const styles = StyleSheet.create({
   checkInOutHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: c.track,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    borderTopLeftRadius: r.sm,
+    borderTopRightRadius: r.sm,
   },
   checkInOutTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: c.ink,
   },
   checkInOutTimes: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: c.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+    borderColor: c.border,
+    borderBottomLeftRadius: r.sm,
+    borderBottomRightRadius: r.sm,
   },
   checkInOutTime: {
     fontSize: 16,
-    color: '#1a1a1a',
+    color: c.ink,
   },
   rulesContainer: {
     gap: 8,
@@ -870,16 +1416,16 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 16,
     fontWeight: "400",
-    color: "#1a1a1a",
+    color: c.ink,
   },
   checkBlock: {
     marginTop: 12,
     flexDirection: "row",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
+    borderColor: c.border,
+    borderRadius: r.md,
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
   },
   checkCol: {
     flex: 1,
@@ -888,26 +1434,34 @@ const styles = StyleSheet.create({
   },
   checkDivider: {
     width: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: c.border,
   },
   checkLabel: {
     fontSize: 12,
-    color: "#666",
+    color: c.inkMuted,
     fontWeight: "600",
   },
   checkTime: {
     marginTop: 8,
     fontSize: 16,
     fontWeight: "500",
-    color: "#1a1a1a",
+    color: c.ink,
   },
   blockDividerWide: {
     height: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: c.border,
     marginVertical: 18,
   },
   rulesList: {
     marginTop: 10,
+  },
+  subSectionTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: c.ink,
+    marginTop: sp.sm,
+    marginBottom: sp.sm,
+    letterSpacing: -0.2,
   },
   ruleRow: {
     flexDirection: "row",
@@ -915,17 +1469,12 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  ruleDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 99,
+    borderBottomColor: c.divider,
   },
   ruleRowText: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
+    color: c.inkSecondary,
     fontWeight: "400",
   },
   ruleItem: {
@@ -934,11 +1483,11 @@ const styles = StyleSheet.create({
   },
   bulletPoint: {
     fontSize: 16,
-    color: '#333',
+    color: c.inkSecondary,
   },
   ruleText: {
     fontSize: 16,
-    color: '#333',
+    color: c.inkSecondary,
     flex: 1,
     lineHeight: 22,
   },
@@ -947,11 +1496,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: c.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    borderTopColor: c.border,
+    paddingHorizontal: sp.lg - 4,
+    paddingVertical: sp.md,
   },
   footerContent: {
     flexDirection: 'row',
@@ -966,43 +1515,30 @@ const styles = StyleSheet.create({
   footerPrice: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: c.ink,
   },
   perNight: {
     fontSize: 16,
-    color: '#666',
+    color: c.inkMuted,
   },
   reserveButton: {
     paddingHorizontal: 20,
     paddingVertical: 14,
+  },
+  reserveButtonDisabled: {
+    opacity: 0.55,
   },
   reserveButtonText: {
     fontSize: 16,
     fontWeight: '600',
   },
   // Modal styles
-  allPhotosContainer: {
-    flex: 1,
-  },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: c.surface,
   },
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    padding: 8,
-    gap: 4,
-  },
-  gridItem: {
-    marginBottom: 4,
-    borderRadius: 0, // Removed border radius
-    overflow: 'hidden',
-  },
-  gridImage: {
-    height: '100%',
-    width: '100%',
+  photoGridScroll: {
+    paddingBottom: 24,
   },
   closeButton: {
     position: 'absolute',
@@ -1013,6 +1549,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   modalizeContent: {
-    padding: 20,
+    padding: sp.lg - 4,
   },
 })

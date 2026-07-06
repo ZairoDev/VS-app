@@ -3,6 +3,7 @@ import 'react-native-get-random-values'
 import { StatusBar, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import * as SystemUI from 'expo-system-ui';
@@ -30,8 +31,10 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
-      <Stack screenOptions={{ headerShown: false }} />
+      <SafeAreaProvider>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
+        <Stack screenOptions={{ headerShown: false }} />
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   )
 }
